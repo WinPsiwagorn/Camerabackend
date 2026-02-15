@@ -36,6 +36,8 @@ public class LicensePlateRepository {
             Firestore db = getFirestore();
             Map<String, Object> data = new HashMap<>();
             data.put("licensePlate", licensePlate.getLicensePlate());
+            data.put("stringOnPlate", licensePlate.getStringOnPlate());
+            data.put("numberOnPlate", licensePlate.getNumberOnPlate());
             data.put("urlImage", licensePlate.getUrlImage());
             data.put("dateTime", localDateTimeToTimestamp(licensePlate.getDateTime()));
             data.put("cameraId", licensePlate.getCameraId());
@@ -100,6 +102,42 @@ public class LicensePlateRepository {
         return plates;
     }
 
+    // Search by string on plate
+    public List<LicensePlate> findByStringOnPlate(String stringOnPlate) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        List<LicensePlate> plates = new ArrayList<>();
+
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
+                .whereEqualTo("stringOnPlate", stringOnPlate)
+                .get();
+
+        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+
+        for (QueryDocumentSnapshot document : documents) {
+            plates.add(documentToLicensePlate(document));
+        }
+
+        return plates;
+    }
+
+    // Search by number on plate
+    public List<LicensePlate> findByNumberOnPlate(int numberOnPlate) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        List<LicensePlate> plates = new ArrayList<>();
+
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
+                .whereEqualTo("numberOnPlate", numberOnPlate)
+                .get();
+
+        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+
+        for (QueryDocumentSnapshot document : documents) {
+            plates.add(documentToLicensePlate(document));
+        }
+
+        return plates;
+    }
+
     // Search by date range
     public List<LicensePlate> findByDateRange(LocalDateTime startDate, LocalDateTime endDate) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
@@ -144,6 +182,9 @@ public class LicensePlateRepository {
     private LicensePlate documentToLicensePlate(QueryDocumentSnapshot document) {
         LicensePlate plate = new LicensePlate();
         plate.setLicensePlate(document.getString("licensePlate"));
+        plate.setStringOnPlate(document.getString("stringOnPlate"));
+        Long numberOnPlate = document.getLong("numberOnPlate");
+        plate.setNumberOnPlate(numberOnPlate != null ? numberOnPlate.intValue() : 0);
         plate.setUrlImage(document.getString("urlImage"));
         plate.setCameraId(document.getString("cameraId"));
 

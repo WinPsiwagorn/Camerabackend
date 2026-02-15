@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 @Setter
 public class LicensePlate {
     private String licensePlate;
+    private String stringOnPlate;
+    private int numberOnPlate;
     private String urlImage;
     private LocalDateTime dateTime;
     private String cameraId;
