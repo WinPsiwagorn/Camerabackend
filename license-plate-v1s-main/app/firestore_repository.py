@@ -4,11 +4,11 @@ from typing import Dict
 import os
 
 class FirestoreRepository:
-    def __init__(self, credentials_path: str = None):
+    def __init__(self):
         # Use credentials from environment or default path
-        cred_path = credentials_path or os.getenv('FIREBASE_CREDENTIALS_PATH', 'secrets/serviceAccount.json')
+        cred_path = os.path.join(os.path.dirname(__file__), '..', 'secrets', 'serviceAccount.json')
+        cred = credentials.Certificate(os.path.abspath(cred_path))
         if not firebase_admin._apps:
-            cred = credentials.Certificate(cred_path)
             firebase_admin.initialize_app(cred)
         self.db = firestore.client()
 

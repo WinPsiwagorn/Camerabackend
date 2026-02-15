@@ -287,9 +287,10 @@ class LicensePlateDetector:
 
         # Send result to Firestore
         try:
-            from app.firestore_repository import FirestoreRepository
+            from firestore_repository import FirestoreRepository
             repo = FirestoreRepository()
-            repo.save_license_plate(output_data)
+            mapped_data = self._map_to_firestore_format(output_data)
+            repo.save_license_plate(mapped_data)
             logger.info("   🚀 Sent detection result to Firestore.")
         except Exception as e:
             logger.error(f"   ❌ Failed to send result to Firestore: {e}")
@@ -579,3 +580,40 @@ class LicensePlateDetector:
         logger.info(f"   Total time: {total_time:.2f}s")
         
         return results
+    
+    def _map_to_firestore_format(self, output_data: Dict) -> Dict:
+        """
+        Map detection output to the Firestore format as in proposed.json.
+        """
+        from pathlib import Path
+        mapped = {
+            "timestamp": output_data.get("timestamp"),
+            "kafka_timestamp": output_data.get("kafka_timestamp"),
+            "imageUrl": output_data.get("imageUrl"),
+            "cameraId": output_data.get("cameraId"),
+            "detections": [],
+            "total_plates": output_data.get("total_plates"),
+            "processing_time": output_data.get("processing_time"),
+            "model": {
+                "yolo": Path(output_data["model"]["yolo"]).name if output_data.get("model") and output_data["model"].get("yolo") else None,
+                "ocr": output_data["model"].get("ocr") if output_data.get("model") else None
+            }
+        }
+        for det in output_data.get("detections", []):
+            mapped_det = {
+                "detection_id": det.get("detection_id"),
+                "bbox": det.get("bbox"),
+                "confidence": det.get("confidence"),
+            }
+            if "ocr" in det:
+                ocr = det["ocr"]
+                mapped_det["ocr"] = {
+                    "text": ocr.get("text"),
+                    "license_plate_number": ocr.get("license_plate_number"),
+                    "province": ocr.get("province"),
+                    "confidence": ocr.get("confidence"),
+                    "processing_time": ocr.get("processing_time"),
+                    "attempts": ocr.get("attempts")
+                }
+            mapped["detections"].append(mapped_det)
+        return mapped
