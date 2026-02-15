@@ -81,10 +81,22 @@ class LicensePlateDetector:
         # สร้าง output directories
         settings.create_output_dirs()
         
+        # Project root for relative paths
+        self.project_root = Path(__file__).parent.parent
+        
         # 🆕 โหลดฟอนต์สำหรับภาษาไทย
         self._load_thai_font()
 
         logger.info(f"✅ Detector ready (Gemini OCR: {'enabled' if self.use_gemini else 'disabled'})")
+
+    def _to_relative_path(self, abs_path: str) -> str:
+        """แปลง absolute path เป็น relative path จาก project root"""
+        if not abs_path:
+            return ""
+        try:
+            return str(Path(abs_path).relative_to(self.project_root))
+        except ValueError:
+            return abs_path
 
     def _load_thai_font(self):
         """
@@ -246,12 +258,14 @@ class LicensePlateDetector:
                     logger.info(f"      Plate {i}: '{full_plate}' (conf: {conf:.2%})")
         
         # ===== ขั้นตอนที่ 3: Save Results =====
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        now = datetime.now()
+        timestamp_iso = now.isoformat()
+        timestamp_file = now.strftime("%Y%m%d_%H%M%S")
         filename = Path(image_path).stem
         
         output_data = {
             "input_path": image_path,
-            "timestamp": timestamp,
+            "timestamp": timestamp_iso,
             "kafka_timestamp": kafka_timestamp,
             "imageUrl": image_url,
             "cameraId": camera_id,
@@ -271,14 +285,14 @@ class LicensePlateDetector:
         # บันทึกภาพ
         if save_image and len(detections) > 0:
             annotated_image = self._draw_annotations(image.copy(), detections)
-            image_output_path = f"{settings.OUTPUT_IMAGE_DIR}/{filename}_{timestamp}.jpg"
+            image_output_path = f"{settings.OUTPUT_IMAGE_DIR}/{filename}_{timestamp_file}.jpg"
             cv2.imwrite(image_output_path, annotated_image)
             output_data["output_image_path"] = image_output_path
             logger.info(f"   💾 Saved image: {image_output_path}")
         
         # บันทึก JSON
         if save_json:
-            json_output_path = f"{settings.OUTPUT_JSON_DIR}/{filename}_{timestamp}.json"
+            json_output_path = f"{settings.OUTPUT_JSON_DIR}/{filename}_{timestamp_file}.json"
             with open(json_output_path, 'w', encoding='utf-8') as f:
                 json.dump(output_data, f, indent=2, ensure_ascii=False)
             output_data["output_json_path"] = json_output_path
@@ -426,7 +440,7 @@ class LicensePlateDetector:
                 "processing_time": result.get("processing_time", 0),
                 "raw_response": result.get("raw_response", ""),
                 "mode": result.get("mode", "unknown"),
-                "image_path": result.get("image_path", ""),
+                "image_path": self._to_relative_path(result.get("image_path", "")),
                 "attempts": result.get("attempts", 0)
             }
         
