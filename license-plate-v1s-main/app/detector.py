@@ -173,7 +173,10 @@ class LicensePlateDetector:
         image_path: str,
         save_image: bool = True,
         save_json: bool = True,
-        use_ocr: Optional[bool] = None
+        use_ocr: Optional[bool] = None,
+        kafka_timestamp: Optional[str] = None,
+        image_url: Optional[str] = None,
+        camera_id: Optional[str] = None
     ) -> Dict:
         """
         ตรวจจับป้ายทะเบียนในภาพและอ่านข้อความ (ถ้าเปิดใช้งาน OCR)
@@ -183,6 +186,9 @@ class LicensePlateDetector:
             save_image: บันทึกภาพที่มีการ annotate ผลลัพธ์หรือไม่
             save_json: บันทึกผลลัพธ์เป็นไฟล์ JSON หรือไม่
             use_ocr: ใช้ OCR หรือไม่ (ถ้าไม่ได้ระบุ จะใช้ค่าจากการตั้งค่าเริ่มต้น)
+            kafka_timestamp: timestamp จาก Kafka message
+            image_url: URL ของภาพต้นฉบับจาก Kafka
+            camera_id: ID ของกล้องที่ส่งภาพมา
         
         Returns:
             dict ของผลลัพธ์การตรวจจับ
@@ -228,9 +234,16 @@ class LicensePlateDetector:
         
         # แสดงผล OCR results
         for i, det in enumerate(detections, 1):
-            if 'ocr' in det and det['ocr'].get('text'):
+            if 'ocr' in det and det['ocr'].get('license_plate_number'):
                 ocr = det['ocr']
-                logger.info(f"      Plate {i}: '{ocr['text']}' (conf: {ocr['confidence']:.2%})")
+                plate_number = ocr.get('license_plate_number', '')
+                province = ocr.get('province', '')
+                conf = ocr.get('confidence', 0)
+                
+                if province:
+                    logger.info(f"      Plate {i}: '{plate_number}' | จังหวัด: '{province}' (conf: {conf:.2%})")
+                else:
+                    logger.info(f"      Plate {i}: '{plate_number}' (conf: {conf:.2%})")
         
         # ===== ขั้นตอนที่ 3: Save Results =====
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -239,6 +252,9 @@ class LicensePlateDetector:
         output_data = {
             "input_path": image_path,
             "timestamp": timestamp,
+            "kafka_timestamp": kafka_timestamp,
+            "imageUrl": image_url,
+            "cameraId": camera_id,
             "detections": detections,
             "total_plates": len(detections),
             "processing_time": {
@@ -337,8 +353,14 @@ class LicensePlateDetector:
                 ocr_result = self._read_plate_ocr(image, bbox, i, image_path)
                 detection["ocr"] = ocr_result
                 
-                if ocr_result.get('text'):
-                    logger.info(f"✅ '{ocr_result['text']}'")
+                plate_number = ocr_result.get('license_plate_number', '')
+                province = ocr_result.get('province', '')
+                
+                if plate_number:
+                    if province:
+                        logger.info(f"✅ '{plate_number}' | จังหวัด: '{province}'")
+                    else:
+                        logger.info(f"✅ '{plate_number}'")
                 else:
                     logger.info(f"✗ No text detected")
             
@@ -398,13 +420,16 @@ class LicensePlateDetector:
             
             return {
                 "text": result.get("text", ""),
+                "license_plate_number": result.get("license_plate_number", ""),
+                "province": result.get("province", ""),
                 "confidence": result.get("confidence", 0.0),
                 "engine": "gemini",
                 "model": result.get("model", "unknown"),
                 "processing_time": result.get("processing_time", 0),
                 "raw_response": result.get("raw_response", ""),
                 "mode": result.get("mode", "unknown"),
-                "image_path": result.get("image_path", "")
+                "image_path": result.get("image_path", ""),
+                "attempts": result.get("attempts", 0)
             }
         
         except Exception as e:
@@ -457,12 +482,15 @@ class LicensePlateDetector:
             # Label 2: OCR text (ถ้ามี)
             if 'ocr' in det:
                 ocr = det['ocr']
-                ocr_text = ocr.get('text', '')
+                plate_number = ocr.get('license_plate_number', '')
+                province = ocr.get('province', '')
                 ocr_conf = ocr.get('confidence', 0)
                 ocr_mode = ocr.get('mode', 'unknown')
                 
-                if ocr_text:
-                    labels.append(f"Text: {ocr_text}")  # 🆕 ภาษาไทยแสดงได้แล้ว!
+                if plate_number:
+                    labels.append(f"Plate: {plate_number}")
+                    if province:
+                        labels.append(f"Province: {province}")
                     labels.append(f"OCR: {ocr_conf:.2%} ({ocr_mode})")
                 else:
                     labels.append(f"OCR: No text")
