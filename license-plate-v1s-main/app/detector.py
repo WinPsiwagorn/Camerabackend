@@ -286,13 +286,14 @@ class LicensePlateDetector:
         
         logger.info(f"   ✅ Processing complete\n")
 
-        # Send result to Firestore
+        # Send each license plate as a separate Firestore doc
         try:
             from firestore_repository import FirestoreRepository
             repo = FirestoreRepository()
-            mapped_data = self._map_to_firestore_format(output_data)
-            repo.save_license_plate(mapped_data)
-            logger.info("   🚀 Sent detection result to Firestore.")
+            docs = self._map_each_plate_to_firestore_docs(output_data)
+            for doc in docs:
+                repo.save_license_plate(doc)
+            logger.info(f"   🚀 Sent {len(docs)} license plate(s) to Firestore.")
         except Exception as e:
             logger.error(f"   ❌ Failed to send result to Firestore: {e}")
 
@@ -588,39 +589,26 @@ class LicensePlateDetector:
         
         return results
     
-    def _map_to_firestore_format(self, output_data: Dict) -> Dict:
+    def _map_each_plate_to_firestore_docs(self, output_data: Dict) -> list:
         """
-        Map detection output to the Firestore format as in proposed.json.
+        Map detection output to a list of Firestore docs, one per license plate (proposed_each_doc.json format).
         """
-        from pathlib import Path
-        mapped = {
-            "timestamp": output_data.get("timestamp"),
-            "kafka_timestamp": output_data.get("kafka_timestamp"),
-            "imageUrl": output_data.get("imageUrl"),
-            "cameraId": output_data.get("cameraId"),
-            "detections": [],
-            "total_plates": output_data.get("total_plates"),
-            "processing_time": output_data.get("processing_time"),
-            "model": {
-                "yolo": Path(output_data["model"]["yolo"]).name if output_data.get("model") and output_data["model"].get("yolo") else None,
-                "ocr": output_data["model"].get("ocr") if output_data.get("model") else None
-            }
-        }
+        docs = []
+        timestamp = output_data.get("timestamp")
+        imageUrl = output_data.get("imageUrl")
+        cameraId = output_data.get("cameraId")
         for det in output_data.get("detections", []):
-            mapped_det = {
-                "detection_id": det.get("detection_id"),
-                "bbox": det.get("bbox"),
-                "confidence": det.get("confidence"),
-            }
-            if "ocr" in det:
-                ocr = det["ocr"]
-                mapped_det["ocr"] = {
-                    "text": ocr.get("text"),
-                    "license_plate_number": ocr.get("license_plate_number"),
-                    "province": ocr.get("province"),
-                    "confidence": ocr.get("confidence"),
-                    "processing_time": ocr.get("processing_time"),
-                    "attempts": ocr.get("attempts")
+            ocr = det.get("ocr", {})
+            doc = {
+                "timestamp": timestamp,
+                "imageUrl": imageUrl,
+                "cameraId": cameraId,
+                "licensePlate": {
+                    "fullPlate": ocr.get("full_plate", ""),
+                    "text": ocr.get("text", ""),
+                    "number": ocr.get("license_plate_number", ""),
+                    "province": ocr.get("province", "")
                 }
-            mapped["detections"].append(mapped_det)
-        return mapped
+            }
+            docs.append(doc)
+        return docs
