@@ -2,7 +2,7 @@ import cv2
 import json
 from pathlib import Path
 from ultralytics import YOLO
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import numpy as np
 from typing import Optional, Dict, List
 import time
@@ -258,7 +258,7 @@ class LicensePlateDetector:
                     logger.info(f"      Plate {i}: '{full_plate}' (conf: {conf:.2%})")
         
         # ===== ขั้นตอนที่ 3: Save Results =====
-        now = datetime.now()
+        now = datetime.now(tz=timezone(timedelta(hours=7)))
         timestamp_iso = now.isoformat()
         timestamp_file = now.strftime("%Y%m%d_%H%M%S")
         filename = Path(image_path).stem
