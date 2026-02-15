@@ -13,3 +13,4 @@ scikit-image==0.22.0
 aiokafka>=0.13.0
 python-dotenv>=1.0.0
 pydantic-settings>=2.12.0
+firebase_admin>=7.1.0
