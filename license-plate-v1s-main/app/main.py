@@ -72,7 +72,7 @@ async def root():
         "service": "YOLOv11 License Plate Detection + Gemini OCR",
         "version": "2.0.0",
         "model": {
-            "yolo": settings.MODEL_PATH,
+            "yolo": Path(settings.MODEL_PATH).name,
             "ocr": settings.OCR_ENGINE
         },
         "endpoints": {
@@ -114,8 +114,8 @@ async def detect_from_path(request: DetectionRequest):
         # pull out OCR texts
         ocr_texts = []
         for det in result.get('detections', []):
-            if 'ocr' in det and det['ocr'].get('text'):
-                ocr_texts.append(det['ocr']['text'])
+            if 'ocr' in det and det['ocr'].get('full_plate'):
+                ocr_texts.append(det['ocr']['full_plate'])
         
         message = f"ตรวจพบป้ายทะเบียน {total_plates} ป้าย"
         if ocr_texts:
@@ -174,7 +174,7 @@ async def detect_from_upload(
         # create summary message
         total_plates = result['total_plates']
         ocr_texts = [
-            d.get('ocr', {}).get('text', '')
+            d.get('ocr', {}).get('full_plate', '')
             for d in result.get('detections', [])
         ]
         readable = [t for t in ocr_texts if t]

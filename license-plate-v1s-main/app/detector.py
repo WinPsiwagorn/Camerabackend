@@ -234,16 +234,16 @@ class LicensePlateDetector:
         
         # แสดงผล OCR results
         for i, det in enumerate(detections, 1):
-            if 'ocr' in det and det['ocr'].get('license_plate_number'):
+            if 'ocr' in det and det['ocr'].get('full_plate'):
                 ocr = det['ocr']
-                plate_number = ocr.get('license_plate_number', '')
+                full_plate = ocr.get('full_plate', '')
                 province = ocr.get('province', '')
                 conf = ocr.get('confidence', 0)
                 
                 if province:
-                    logger.info(f"      Plate {i}: '{plate_number}' | จังหวัด: '{province}' (conf: {conf:.2%})")
+                    logger.info(f"      Plate {i}: '{full_plate}' | จังหวัด: '{province}' (conf: {conf:.2%})")
                 else:
-                    logger.info(f"      Plate {i}: '{plate_number}' (conf: {conf:.2%})")
+                    logger.info(f"      Plate {i}: '{full_plate}' (conf: {conf:.2%})")
         
         # ===== ขั้นตอนที่ 3: Save Results =====
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -262,8 +262,9 @@ class LicensePlateDetector:
                 "total": time.time() - start_time
             },
             "model": {
-                "yolo": self.model_path,
-                "ocr": "gemini" if should_use_ocr else "none"
+                "yolo": Path(self.model_path).name,
+                "ocr": "gemini" if should_use_ocr else "none",
+                "ocr_model": self.ocr.model_name if should_use_ocr and hasattr(self, 'ocr') else None
             }
         }
         
@@ -354,7 +355,7 @@ class LicensePlateDetector:
                 ocr_result = self._read_plate_ocr(image, bbox, i, image_path)
                 detection["ocr"] = ocr_result
                 
-                plate_number = ocr_result.get('license_plate_number', '')
+                plate_number = ocr_result.get('full_plate', '')
                 province = ocr_result.get('province', '')
                 
                 if plate_number:
@@ -419,13 +420,19 @@ class LicensePlateDetector:
                 original_filename=Path(image_path).name
             )
             
+            full_plate = result.get("license_plate_number", "") or result.get("text", "")
+            # แยก prefix (เช่น "8กผ") กับ number (เช่น "8167")
+            parts = full_plate.rsplit(" ", 1) if " " in full_plate else [full_plate, ""]
+            plate_prefix = parts[0] if len(parts) > 1 else full_plate
+            plate_number = parts[1] if len(parts) > 1 else ""
+
             return {
-                "text": result.get("text", ""),
-                "license_plate_number": result.get("license_plate_number", ""),
+                "text": plate_prefix,
+                "license_plate_number": plate_number,
+                "full_plate": full_plate,
                 "province": result.get("province", ""),
                 "confidence": result.get("confidence", 0.0),
                 "engine": "gemini",
-                "model": result.get("model", "unknown"),
                 "processing_time": result.get("processing_time", 0),
                 "raw_response": result.get("raw_response", ""),
                 "mode": result.get("mode", "unknown"),
