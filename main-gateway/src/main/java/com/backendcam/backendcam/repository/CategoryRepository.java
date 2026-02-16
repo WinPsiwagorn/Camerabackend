@@ -8,7 +8,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.springframework.stereotype.Repository;
 
-import com.backendcam.backendcam.model.dto.Category;
+import com.backendcam.backendcam.model.entity.Category;
 import com.backendcam.backendcam.service.firestore.FirebaseAdminBootstrap;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentReference;
@@ -120,5 +120,28 @@ public class CategoryRepository {
 
         db.collection(COLLECTION).document(docId).delete().get();
         return true;
+    }
+
+    /**
+     * Find a category by its name
+     */
+    public Category findByName(String name) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
+                .whereEqualTo("name", name)
+                .limit(1)
+                .get();
+
+        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+        if (documents.isEmpty()) {
+            return null;
+        }
+
+        QueryDocumentSnapshot doc = documents.get(0);
+        Category category = new Category();
+        Long idVal = doc.getLong("id");
+        category.setId(idVal != null ? idVal.intValue() : doc.getId().hashCode());
+        category.setName(doc.getString("name"));
+        return category;
     }
 }

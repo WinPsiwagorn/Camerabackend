@@ -1,6 +1,6 @@
 package com.backendcam.backendcam.service.search;
 
-import com.backendcam.backendcam.model.dto.LicensePlate;
+import com.backendcam.backendcam.model.entity.LicensePlate;
 import com.backendcam.backendcam.repository.LicensePlateRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

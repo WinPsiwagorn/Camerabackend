@@ -1,6 +1,6 @@
 package com.backendcam.backendcam.repository;
 
-import com.backendcam.backendcam.model.dto.LicensePlate;
+import com.backendcam.backendcam.model.entity.LicensePlate;
 import com.backendcam.backendcam.model.dto.LicensePlateInfo;
 import com.backendcam.backendcam.service.firestore.FirebaseAdminBootstrap;
 import com.google.api.core.ApiFuture;

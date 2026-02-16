@@ -1,8 +1,10 @@
-package com.backendcam.backendcam.model.dto;
+package com.backendcam.backendcam.model.entity;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import com.backendcam.backendcam.model.dto.LicensePlateInfo;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
