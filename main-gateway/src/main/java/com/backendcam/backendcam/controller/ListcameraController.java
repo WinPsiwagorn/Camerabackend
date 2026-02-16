@@ -15,8 +15,8 @@ public class ListcameraController {
     @Autowired
     private ListCameraService listCameraService;
     
-    @GetMapping("/list/{page}")
-    public ResponseEntity<List<ListCamera>> GetCameraList(@PathVariable int page){
+    @GetMapping("/list")
+    public ResponseEntity<List<ListCamera>> GetCameraList(@RequestParam(defaultValue = "1") int page){
         try {
             List<ListCamera> cameras = listCameraService.getCameraByPage(page, 10);
             return ResponseEntity.ok(cameras);

@@ -49,10 +49,10 @@ public class GetLicensePlate {
 
         // Score each plate, keep those above threshold, sort by score desc then dateTime desc
         return allPlates.stream()
-                .filter(p -> p.getLicensePlate() != null)
-                .filter(p -> fuzzyScore(normalizedQuery, normalize(p.getLicensePlate())) >= FUZZY_THRESHOLD)
+                .filter(p -> p.getFullPlate() != null)
+                .filter(p -> fuzzyScore(normalizedQuery, normalize(p.getFullPlate())) >= FUZZY_THRESHOLD)
                 .sorted(Comparator
-                        .comparingInt((LicensePlate p) -> fuzzyScore(normalizedQuery, normalize(p.getLicensePlate())))
+                        .comparingInt((LicensePlate p) -> fuzzyScore(normalizedQuery, normalize(p.getFullPlate())))
                         .reversed()
                         .thenComparing(
                                 LicensePlate::getDateTime,
