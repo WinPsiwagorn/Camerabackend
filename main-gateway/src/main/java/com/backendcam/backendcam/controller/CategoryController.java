@@ -1,14 +1,16 @@
 package com.backendcam.backendcam.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.backendcam.backendcam.model.entity.CameraCategory;
+import com.backendcam.backendcam.model.dto.CameraInfo;
 import com.backendcam.backendcam.model.entity.Category;
-import com.backendcam.backendcam.service.category.CameraCategoryService;
+import com.backendcam.backendcam.model.entity.RTSP;
+import com.backendcam.backendcam.repository.RTSPRepository;
 import com.backendcam.backendcam.service.category.CategoryService;
 
 @RestController
@@ -20,7 +22,7 @@ public class CategoryController {
     private CategoryService categoryService;
 
     @Autowired
-    private CameraCategoryService cameraCategoryService;
+    private RTSPRepository rtspRepository;
 
     // ==================== Category CRUD ====================
 
@@ -73,9 +75,6 @@ public class CategoryController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteCategory(@PathVariable String id) {
         try {
-            // Also remove all camera-category mappings for this category
-            cameraCategoryService.deleteAllByCategory(id);
-
             boolean deleted = categoryService.deleteCategory(id);
             if (!deleted) {
                 return ResponseEntity.notFound().build();
@@ -86,60 +85,54 @@ public class CategoryController {
         }
     }
 
-    // ==================== CameraCategory CRUD ====================
+    // ==================== Camera-Category Management ====================
 
+    /**
+     * Add a category to a camera's categories array
+     */
     @PostMapping("/camera")
-    public ResponseEntity<?> addCameraToCategory(@RequestBody CameraCategory cameraCategory) {
+    public ResponseEntity<?> addCategoryToCamera(@RequestBody Map<String, String> request) {
         try {
-            CameraCategory created = cameraCategoryService.addCameraToCategory(cameraCategory);
-            return ResponseEntity.ok(created);
+            String categoryId = request.get("categoryId");
+            String cameraId = request.get("cameraId");
+            if (categoryId == null || cameraId == null) {
+                return ResponseEntity.badRequest().body("categoryId and cameraId are required");
+            }
+            rtspRepository.addCategoryToCamera(cameraId, categoryId);
+            return ResponseEntity.ok(Map.of("message", "Category added to camera", "categoryId", categoryId, "cameraId", cameraId));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Failed to add camera to category: " + e.getMessage());
+            return ResponseEntity.status(500).body("Failed to add category to camera: " + e.getMessage());
         }
     }
 
-    @GetMapping("/camera")
-    public ResponseEntity<?> getAllCameraCategories() {
-        try {
-            List<CameraCategory> all = cameraCategoryService.getAll();
-            return ResponseEntity.ok(all);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Failed to fetch camera categories: " + e.getMessage());
-        }
-    }
-
+    /**
+     * Get all cameras in a category
+     */
     @GetMapping("/{categoryId}/cameras")
     public ResponseEntity<?> getCamerasByCategory(@PathVariable String categoryId) {
         try {
-            List<CameraCategory> cameras = cameraCategoryService.getCamerasByCategory(categoryId);
-            return ResponseEntity.ok(cameras);
+            List<RTSP> cameras = rtspRepository.getCamerasByCategoryId(categoryId);
+            List<CameraInfo> cameraInfos = cameras.stream()
+                    .map(cam -> new CameraInfo(cam.getId(), cam.getName()))
+                    .toList();
+            return ResponseEntity.ok(cameraInfos);
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Failed to fetch cameras: " + e.getMessage());
         }
     }
 
-    @GetMapping("/camera/{cameraId}")
-    public ResponseEntity<?> getCategoriesByCamera(@PathVariable String cameraId) {
-        try {
-            List<CameraCategory> categories = cameraCategoryService.getCategoriesByCamera(cameraId);
-            return ResponseEntity.ok(categories);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Failed to fetch categories for camera: " + e.getMessage());
-        }
-    }
-
+    /**
+     * Remove a category from a camera's categories array
+     */
     @DeleteMapping("/{categoryId}/camera/{cameraId}")
-    public ResponseEntity<?> removeCameraFromCategory(
+    public ResponseEntity<?> removeCategoryFromCamera(
             @PathVariable String categoryId,
             @PathVariable String cameraId) {
         try {
-            boolean removed = cameraCategoryService.removeCameraFromCategory(categoryId, cameraId);
-            if (!removed) {
-                return ResponseEntity.notFound().build();
-            }
-            return ResponseEntity.ok("Camera removed from category successfully");
+            rtspRepository.removeCategoryFromCamera(cameraId, categoryId);
+            return ResponseEntity.ok("Category removed from camera successfully");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Failed to remove camera from category: " + e.getMessage());
+            return ResponseEntity.status(500).body("Failed to remove category from camera: " + e.getMessage());
         }
     }
 }

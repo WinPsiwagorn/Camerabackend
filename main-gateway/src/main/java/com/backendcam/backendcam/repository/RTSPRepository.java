@@ -106,4 +106,38 @@ public class RTSPRepository {
         return cameras;
     }
 
+    // Get all cameras that belong to a specific category
+    public List<RTSP> getCamerasByCategoryId(String categoryId) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        List<RTSP> cameras = new ArrayList<>();
+
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
+                .whereArrayContains("categories", categoryId)
+                .get();
+
+        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+
+        for (QueryDocumentSnapshot document : documents) {
+            RTSP camera = document.toObject(RTSP.class);
+            camera.setId(document.getId());
+            cameras.add(camera);
+        }
+
+        return cameras;
+    }
+
+    // Add a category ID to a camera's categories array
+    public void addCategoryToCamera(String cameraId, String categoryId) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        db.collection(COLLECTION).document(cameraId)
+                .update("categories", FieldValue.arrayUnion(categoryId)).get();
+    }
+
+    // Remove a category ID from a camera's categories array
+    public void removeCategoryFromCamera(String cameraId, String categoryId) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        db.collection(COLLECTION).document(cameraId)
+                .update("categories", FieldValue.arrayRemove(categoryId)).get();
+    }
+
 }
