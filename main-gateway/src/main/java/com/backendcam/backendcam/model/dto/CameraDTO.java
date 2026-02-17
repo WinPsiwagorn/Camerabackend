@@ -5,11 +5,10 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ListCamera {
+public class CameraDto {
     private String id;
     private String name;
     private String latlong;
     private String address;
     private String status;
-   
 }

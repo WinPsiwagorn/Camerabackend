@@ -6,12 +6,11 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class RTSP {
+public class Camera {
     private String id;
     private String name;
     private String latlong;
     private String address;
     private String status;
     private String rtspUrl;
-
 }

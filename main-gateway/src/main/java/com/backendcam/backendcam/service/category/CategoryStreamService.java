@@ -4,7 +4,7 @@ import com.backendcam.backendcam.model.dto.CameraInfo;
 import com.backendcam.backendcam.model.entity.CameraCategory;
 import com.backendcam.backendcam.model.entity.Category;
 import com.backendcam.backendcam.model.dto.CategoryStreamResponse;
-import com.backendcam.backendcam.model.entity.RTSP;
+import com.backendcam.backendcam.model.entity.Camera;
 import com.backendcam.backendcam.repository.CameraCategoryRepository;
 import com.backendcam.backendcam.repository.CategoryRepository;
 import com.backendcam.backendcam.repository.CameraRepository;
@@ -51,8 +51,8 @@ public class CategoryStreamService {
         for (CameraCategory mapping : cameraMappings) {
             String cameraId = mapping.getCameraId();
             try {
-                Optional<RTSP> cameraOpt = cameraRepository.getCameraById(cameraId);
-                String cameraName = cameraOpt.map(RTSP::getName).orElse("Unknown");
+                Optional<Camera> cameraOpt = cameraRepository.getCameraById(cameraId);
+                String cameraName = cameraOpt.map(Camera::getName).orElse("Unknown");
                 cameras.add(new CameraInfo(cameraId, cameraName));
             } catch (Exception e) {
                 logger.warn("Failed to fetch camera info for {}: {}", cameraId, e.getMessage());

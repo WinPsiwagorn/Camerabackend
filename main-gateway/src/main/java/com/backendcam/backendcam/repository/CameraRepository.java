@@ -1,6 +1,6 @@
 package com.backendcam.backendcam.repository;
 
-import com.backendcam.backendcam.model.entity.RTSP;
+import com.backendcam.backendcam.model.entity.Camera;
 import com.backendcam.backendcam.service.firestore.FirebaseAdminBootstrap;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
@@ -27,15 +27,15 @@ public class CameraRepository {
     }
 
     // Get all RTSP cameras
-    public List<RTSP> getAllCameras() throws ExecutionException, InterruptedException {
+    public List<Camera> getAllCameras() throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
-        List<RTSP> cameras = new ArrayList<>();
+        List<Camera> cameras = new ArrayList<>();
         
         ApiFuture<QuerySnapshot> future = db.collection(COLLECTION).get();
         List<QueryDocumentSnapshot> documents = future.get().getDocuments();
         
         for (QueryDocumentSnapshot document : documents) {
-            RTSP camera = document.toObject(RTSP.class);
+            Camera camera = document.toObject(Camera.class);
             camera.setId(document.getId());
             cameras.add(camera);
         }
@@ -44,7 +44,7 @@ public class CameraRepository {
     }
 
     // Get RTSP camera by ID
-    public Optional<RTSP> getCameraById(String id) throws ExecutionException, InterruptedException {
+    public Optional<Camera> getCameraById(String id) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
         
         DocumentReference docRef = db.collection(COLLECTION).document(id);
@@ -52,7 +52,7 @@ public class CameraRepository {
         DocumentSnapshot document = future.get();
         
         if (document.exists()) {
-            RTSP camera = document.toObject(RTSP.class);
+            Camera camera = document.toObject(Camera.class);
             camera.setId(document.getId());
             return Optional.of(camera);
         }
@@ -61,7 +61,7 @@ public class CameraRepository {
     }
 
     // Get RTSP camera by name
-    public Optional<RTSP> getCameraByName(String name) throws ExecutionException, InterruptedException {
+    public Optional<Camera> getCameraByName(String name) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
         
         ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
@@ -73,7 +73,7 @@ public class CameraRepository {
         
         if (!documents.isEmpty()) {
             QueryDocumentSnapshot document = documents.get(0);
-            RTSP camera = document.toObject(RTSP.class);
+            Camera camera = document.toObject(Camera.class);
             camera.setId(document.getId());
             return Optional.of(camera);
         }
@@ -83,13 +83,13 @@ public class CameraRepository {
 
     // Get only the RTSP URL by camera ID
     public Optional<String> getRtspUrlById(String id) throws ExecutionException, InterruptedException {
-        return getCameraById(id).map(RTSP::getRtspUrl);
+        return getCameraById(id).map(Camera::getRtspUrl);
     }
 
     // Get all active cameras (status = "active")
-    public List<RTSP> getActiveCameras() throws ExecutionException, InterruptedException {
+    public List<Camera> getActiveCameras() throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
-        List<RTSP> cameras = new ArrayList<>();
+        List<Camera> cameras = new ArrayList<>();
         
         ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
                 .whereEqualTo("status", "active")
@@ -98,7 +98,7 @@ public class CameraRepository {
         List<QueryDocumentSnapshot> documents = future.get().getDocuments();
         
         for (QueryDocumentSnapshot document : documents) {
-            RTSP camera = document.toObject(RTSP.class);
+            Camera camera = document.toObject(Camera.class);
             camera.setId(document.getId());
             cameras.add(camera);
         }

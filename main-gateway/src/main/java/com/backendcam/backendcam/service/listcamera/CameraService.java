@@ -12,12 +12,12 @@ import com.google.cloud.firestore.Query;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.firebase.cloud.FirestoreClient;
-import com.backendcam.backendcam.model.dto.ListCamera;
+import com.backendcam.backendcam.model.dto.CameraDto;
 
 @Service
 public class CameraService {
   
-    public List<ListCamera> getCameraByPage(int page, int pageSize)
+    public List<CameraDto> getCameraByPage(int page, int pageSize)
             throws Exception {
 
         Firestore db = FirestoreClient.getFirestore();
@@ -46,10 +46,10 @@ public class CameraService {
             }
         }
 
-        List<ListCamera> list = new ArrayList<>();
+        List<CameraDto> list = new ArrayList<>();
 
         for (QueryDocumentSnapshot doc : query.get().get().getDocuments()) {
-            ListCamera cam = doc.toObject(ListCamera.class);
+            CameraDto cam = doc.toObject(CameraDto.class);
             cam.setId(doc.getId());
             list.add(cam);
         }
