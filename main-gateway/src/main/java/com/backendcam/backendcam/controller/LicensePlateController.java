@@ -9,9 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/license-plates")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
+@RequestMapping("/license-plates")
 public class LicensePlateController {
 
     private final GetLicensePlate getLicensePlate;

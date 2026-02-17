@@ -1,31 +1,34 @@
 package com.backendcam.backendcam.controller;
 
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.backendcam.backendcam.model.CameraStreamState;
 import com.backendcam.backendcam.model.dto.StreamRequest;
 import com.backendcam.backendcam.model.entity.RTSP;
 import com.backendcam.backendcam.repository.RTSPRepository;
 import com.backendcam.backendcam.service.StreamManager;
 import com.backendcam.backendcam.service.hls.HLSStreamService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/stream")
-@CrossOrigin(origins = "*")
 public class StreamController {
 
-    @Autowired
-    private HLSStreamService hlsService;
-
-    @Autowired
-    private StreamManager streamManager;
-
-    @Autowired
-    private RTSPRepository rtspRepository;
+    private final HLSStreamService hlsService;
+    private final StreamManager streamManager;
+    private final RTSPRepository rtspRepository;
 
     @PostMapping("/hls/start")
     public ResponseEntity<Map<String, String>> startStream(@RequestBody StreamRequest request) {

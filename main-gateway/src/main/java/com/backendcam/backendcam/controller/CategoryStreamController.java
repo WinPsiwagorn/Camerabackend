@@ -10,7 +10,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/stream/category")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class CategoryStreamController {
 
