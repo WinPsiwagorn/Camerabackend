@@ -51,10 +51,9 @@ public class CategoryRepository {
         Firestore db = getFirestore();
 
         Map<String, Object> data = new HashMap<>();
-        data.put("id", category.getId());
         data.put("name", category.getName());
 
-        String docId = String.valueOf(category.getId());
+        String docId = category.getId();
         db.collection(COLLECTION).document(docId).set(data).get();
 
         return category;
@@ -62,14 +61,14 @@ public class CategoryRepository {
 
     public Category getCategoryById(String id) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
-        DocumentSnapshot doc = db.collection(COLLECTION).document(String.valueOf(id)).get().get();
+        DocumentSnapshot doc = db.collection(COLLECTION).document(id).get().get();
 
         if (!doc.exists()) {
             return null;
         }
 
         Category category = new Category();
-        category.setId(id);
+        category.setId(doc.getId());
         category.setName(doc.getString("name"));
         return category;
     }
@@ -91,18 +90,16 @@ public class CategoryRepository {
 
     public Category updateCategory(String id, Category category) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
-        String docId = String.valueOf(id);
-        DocumentSnapshot doc = db.collection(COLLECTION).document(docId).get().get();
+        DocumentSnapshot doc = db.collection(COLLECTION).document(id).get().get();
 
         if (!doc.exists()) {
             return null;
         }
 
         Map<String, Object> data = new HashMap<>();
-        data.put("id", id);
         data.put("name", category.getName());
 
-        db.collection(COLLECTION).document(docId).set(data).get();
+        db.collection(COLLECTION).document(id).set(data).get();
 
         category.setId(id);
         return category;
