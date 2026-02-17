@@ -81,6 +81,33 @@ public class CameraService {
         }
     }
 
+    public List<CameraResponseDto> getCamerasByCategoryId(String categoryId) {
+        try {
+            List<Camera> cameras = cameraRepository.getCamerasByCategoryId(categoryId);
+            return cameras.stream()
+                    .map(this::toDto)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get cameras by category ID: " + categoryId, e);
+        }
+    }
+
+    public void addCategoryToCamera(String cameraId, String categoryId) {
+        try {
+            cameraRepository.addCategoryToCamera(cameraId, categoryId);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to add category to camera: " + cameraId, e);
+        }
+    }
+
+    public void removeCategoryFromCamera(String cameraId, String categoryId) {
+        try {
+            cameraRepository.removeCategoryFromCamera(cameraId, categoryId);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to remove category from camera: " + cameraId, e);
+        }
+    }
+
     private CameraResponseDto toDto(Camera camera) {
         CameraResponseDto dto = new CameraResponseDto();
         dto.setId(camera.getId());
