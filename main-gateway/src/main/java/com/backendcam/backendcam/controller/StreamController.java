@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.backendcam.backendcam.model.CameraStreamState;
 import com.backendcam.backendcam.model.dto.StreamRequest;
 import com.backendcam.backendcam.model.entity.RTSP;
-import com.backendcam.backendcam.repository.RTSPRepository;
+import com.backendcam.backendcam.repository.CameraRepository;
 import com.backendcam.backendcam.service.StreamManager;
 import com.backendcam.backendcam.service.hls.HLSStreamService;
 
@@ -28,7 +28,7 @@ public class StreamController {
 
     private final HLSStreamService hlsService;
     private final StreamManager streamManager;
-    private final RTSPRepository rtspRepository;
+    private final CameraRepository cameraRepository;
 
     @PostMapping("/hls/start")
     public ResponseEntity<Map<String, String>> startStream(@RequestBody StreamRequest request) {
@@ -39,7 +39,7 @@ public class StreamController {
 
         try {
             // Look up camera from Firebase
-            Optional<RTSP> cameraOpt = rtspRepository.getCameraById(request.getCameraId());
+            Optional<RTSP> cameraOpt = cameraRepository.getCameraById(request.getCameraId());
             if (cameraOpt.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Camera not found: " + request.getCameraId()));
             }

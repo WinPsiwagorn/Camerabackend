@@ -23,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CameraCategoryRepository {
 
-    private static final String COLLECTION = "camera_categories";
+    private static final String COLLECTION = "cameraCategories";
     private final FirebaseAdminBootstrap bootstrap;
 
     private Firestore getFirestore() {

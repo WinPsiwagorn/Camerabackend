@@ -7,7 +7,7 @@ import com.backendcam.backendcam.model.dto.CategoryStreamResponse;
 import com.backendcam.backendcam.model.entity.RTSP;
 import com.backendcam.backendcam.repository.CameraCategoryRepository;
 import com.backendcam.backendcam.repository.CategoryRepository;
-import com.backendcam.backendcam.repository.RTSPRepository;
+import com.backendcam.backendcam.repository.CameraRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +26,7 @@ public class CategoryStreamService {
 
     private final CategoryRepository categoryRepository;
     private final CameraCategoryRepository cameraCategoryRepository;
-    private final RTSPRepository rtspRepository;
+    private final CameraRepository cameraRepository;
 
     /**
      * 1. Find category by name
@@ -51,7 +51,7 @@ public class CategoryStreamService {
         for (CameraCategory mapping : cameraMappings) {
             String cameraId = mapping.getCameraId();
             try {
-                Optional<RTSP> cameraOpt = rtspRepository.getCameraById(cameraId);
+                Optional<RTSP> cameraOpt = cameraRepository.getCameraById(cameraId);
                 String cameraName = cameraOpt.map(RTSP::getName).orElse("Unknown");
                 cameras.add(new CameraInfo(cameraId, cameraName));
             } catch (Exception e) {

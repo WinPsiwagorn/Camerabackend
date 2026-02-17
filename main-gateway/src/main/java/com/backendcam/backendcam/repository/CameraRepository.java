@@ -15,7 +15,7 @@ import java.util.concurrent.ExecutionException;
 
 @Repository
 @RequiredArgsConstructor
-public class RTSPRepository {
+public class CameraRepository {
      private static final String COLLECTION = "cameras";
     private final FirebaseAdminBootstrap bootstrap;
 
