@@ -1,0 +1,26 @@
+meta {
+  name: PATCH Category
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{base_url}}/category/{{id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "ประยูน"
+  }
+}
+
+vars:pre-request {
+  id: ZFUsb9bZVPcCyroOkyDl
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

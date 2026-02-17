@@ -1,0 +1,22 @@
+meta {
+  name: POST Category
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/category
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "สันโค้ง"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
