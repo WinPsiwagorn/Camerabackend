@@ -8,20 +8,20 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.backendcam.backendcam.model.dto.ListCamera;
-import com.backendcam.backendcam.service.listcamera.ListCameraService;
+import com.backendcam.backendcam.service.listcamera.CameraService;
 
 import lombok.RequiredArgsConstructor;
 
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/stream")
-public class ListcameraController {
+@RequestMapping("/cameras")
+public class CameraController {
 
-    private final ListCameraService listCameraService;
+    private final CameraService listCameraService;
 
-    @GetMapping("/list")
-    public ResponseEntity<List<ListCamera>> GetCameraList(@RequestParam(defaultValue = "1") int page){
+    @GetMapping("")
+    public ResponseEntity<List<ListCamera>> getCameras(@RequestParam(defaultValue = "1") int page) {
         try {
             List<ListCamera> cameras = listCameraService.getCameraByPage(page, 10);
             return ResponseEntity.ok(cameras);

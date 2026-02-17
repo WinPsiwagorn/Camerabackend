@@ -15,7 +15,7 @@ import com.google.firebase.cloud.FirestoreClient;
 import com.backendcam.backendcam.model.dto.ListCamera;
 
 @Service
-public class ListCameraService {
+public class CameraService {
   
     public List<ListCamera> getCameraByPage(int page, int pageSize)
             throws Exception {
