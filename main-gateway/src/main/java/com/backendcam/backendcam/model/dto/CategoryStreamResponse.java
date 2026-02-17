@@ -14,5 +14,5 @@ import java.util.List;
 public class CategoryStreamResponse {
     private String categoryName;
     private int categoryId;
-    private List<CameraHlsInfo> cameras;
+    private List<CameraInfo> cameras;
 }
