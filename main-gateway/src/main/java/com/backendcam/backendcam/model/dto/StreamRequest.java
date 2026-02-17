@@ -1,23 +1,14 @@
 package com.backendcam.backendcam.model.dto;
 
 public class StreamRequest {
-    private String rtspUrl;
-    private String streamName;
+    private String cameraId;
 
     // getters and setters
-    public String getRtspUrl() {
-        return rtspUrl;
+    public String getCameraId() {
+        return cameraId;
     }
 
-    public void setRtspUrl(String rtspUrl) {
-        this.rtspUrl = rtspUrl;
-    }
-
-    public String getStreamName() {
-        return streamName;
-    }
-
-    public void setStreamName(String streamName) {
-        this.streamName = streamName;
+    public void setCameraId(String cameraId) {
+        this.cameraId = cameraId;
     }
 }

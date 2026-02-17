@@ -9,8 +9,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class CameraHlsInfo {
+public class CameraInfo {
     private String cameraId;
     private String cameraName;
-    private String hlsUrl;
 }

@@ -29,7 +29,7 @@ public class CategoryStreamController {
                 return ResponseEntity.ok(Map.of(
                         "categoryName", response.getCategoryName(),
                         "categoryId", response.getCategoryId(),
-                        "message", "No cameras found or no streams available for this category"
+                        "message", "No cameras found for this category"
                 ));
             }
 

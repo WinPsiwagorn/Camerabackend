@@ -2,6 +2,8 @@ package com.backendcam.backendcam.controller;
 
 import com.backendcam.backendcam.model.CameraStreamState;
 import com.backendcam.backendcam.model.dto.StreamRequest;
+import com.backendcam.backendcam.model.entity.RTSP;
+import com.backendcam.backendcam.repository.RTSPRepository;
 import com.backendcam.backendcam.service.StreamManager;
 import com.backendcam.backendcam.service.hls.HLSStreamService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/stream")
@@ -21,21 +24,36 @@ public class StreamController {
     @Autowired
     private StreamManager streamManager;
 
+    @Autowired
+    private RTSPRepository rtspRepository;
+
     @PostMapping("/hls/start")
     public ResponseEntity<Map<String, String>> startStream(@RequestBody StreamRequest request) {
         // Input validation
-        if (request.getRtspUrl() == null || request.getRtspUrl().trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "RTSP URL cannot be null or empty"));
-        }
-        if (request.getStreamName() == null || request.getStreamName().trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Stream name cannot be null or empty"));
+        if (request.getCameraId() == null || request.getCameraId().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Camera ID cannot be null or empty"));
         }
 
-        // Sanitize stream name to prevent directory traversal
-        String sanitizedStreamName = request.getStreamName().replaceAll("[^a-zA-Z0-9_-]", "_");
+        try {
+            // Look up camera from Firebase
+            Optional<RTSP> cameraOpt = rtspRepository.getCameraById(request.getCameraId());
+            if (cameraOpt.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Camera not found: " + request.getCameraId()));
+            }
 
-        String hlsUrl = hlsService.startHLSStream(request.getRtspUrl(), sanitizedStreamName);
-        return ResponseEntity.ok(Map.of("message", hlsUrl));
+            RTSP camera = cameraOpt.get();
+            if (camera.getRtspUrl() == null || camera.getRtspUrl().isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "No RTSP URL configured for camera: " + request.getCameraId()));
+            }
+
+            // Sanitize camera ID to use as stream name
+            String streamName = request.getCameraId().replaceAll("[^a-zA-Z0-9_-]", "_");
+
+            String hlsUrl = hlsService.startHLSStream(camera.getRtspUrl(), streamName);
+            return ResponseEntity.ok(Map.of("hlsUrl", hlsUrl));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to start stream: " + e.getMessage()));
+        }
     }
 
     @PostMapping("/hls/stop/{streamName}")
