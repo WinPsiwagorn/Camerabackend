@@ -6,7 +6,8 @@ import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.backendcam.backendcam.model.dto.CameraDto;
+import com.backendcam.backendcam.model.dto.camera.CameraResponseDto;
+import com.backendcam.backendcam.model.dto.camera.CreateCameraDto;
 import com.backendcam.backendcam.service.camera.CameraService;
 
 import lombok.RequiredArgsConstructor;
@@ -18,14 +19,20 @@ public class CameraController {
 
     private final CameraService cameraService;
 
+    @PostMapping
+    public ResponseEntity<CameraResponseDto> createCamera(@RequestBody CreateCameraDto createDto) {
+        CameraResponseDto camera = cameraService.createCamera(createDto);
+        return ResponseEntity.ok(camera);
+    }
+
     @GetMapping
-    public ResponseEntity<List<CameraDto>> getCameras(@RequestParam(defaultValue = "1") int page) {
-        List<CameraDto> cameras = cameraService.getCamerasByPage(page, 10);
+    public ResponseEntity<List<CameraResponseDto>> getCameras(@RequestParam(defaultValue = "1") int page) {
+        List<CameraResponseDto> cameras = cameraService.getCamerasByPage(page, 10);
         return ResponseEntity.ok(cameras);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CameraDto> getCameraById(@PathVariable String id) {
+    public ResponseEntity<CameraResponseDto> getCameraById(@PathVariable String id) {
         return cameraService.getCameraById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

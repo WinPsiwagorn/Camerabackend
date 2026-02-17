@@ -79,6 +79,12 @@ public class CameraRepository {
         db.collection(COLLECTION).document(id).update(updates).get();
     }
 
+    public String save(Camera camera) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        ApiFuture<DocumentReference> future = db.collection(COLLECTION).add(camera);
+        return future.get().getId();
+    }
+
     public void delete(String id) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
         db.collection(COLLECTION).document(id).delete().get();

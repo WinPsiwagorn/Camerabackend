@@ -1,4 +1,4 @@
-package com.backendcam.backendcam.model.dto;
+package com.backendcam.backendcam.model.dto.camera;
 
 import java.util.List;
 import lombok.Getter;
@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class CameraDto {
+public class CameraResponseDto {
     private String id;
     private String name;
     private String latLong;
