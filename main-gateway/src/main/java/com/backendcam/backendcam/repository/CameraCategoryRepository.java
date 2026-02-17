@@ -8,7 +8,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.springframework.stereotype.Repository;
 
-import com.backendcam.backendcam.model.dto.CameraCategory;
+import com.backendcam.backendcam.model.entity.CameraCategory;
 import com.backendcam.backendcam.service.firestore.FirebaseAdminBootstrap;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentSnapshot;

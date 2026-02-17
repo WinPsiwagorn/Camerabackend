@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.backendcam.backendcam.model.dto.CameraCategory;
-import com.backendcam.backendcam.model.dto.Category;
+import com.backendcam.backendcam.model.entity.CameraCategory;
+import com.backendcam.backendcam.model.entity.Category;
 import com.backendcam.backendcam.service.category.CameraCategoryService;
 import com.backendcam.backendcam.service.category.CategoryService;
 

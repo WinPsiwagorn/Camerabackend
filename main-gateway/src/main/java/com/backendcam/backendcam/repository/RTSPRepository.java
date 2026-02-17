@@ -81,9 +81,9 @@ public class RTSPRepository {
         return Optional.empty();
     }
 
-    // Get only the RTSP link by camera ID
-    public Optional<String> getRtspLinkById(String id) throws ExecutionException, InterruptedException {
-        return getCameraById(id).map(RTSP::getRtspLink);
+    // Get only the RTSP URL by camera ID
+    public Optional<String> getRtspUrlById(String id) throws ExecutionException, InterruptedException {
+        return getCameraById(id).map(RTSP::getRtspUrl);
     }
 
     // Get all active cameras (status = "active")

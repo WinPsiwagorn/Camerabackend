@@ -1,6 +1,6 @@
 package com.backendcam.backendcam.controller;
 
-import com.backendcam.backendcam.model.dto.LicensePlate;
+import com.backendcam.backendcam.model.entity.LicensePlate;
 import com.backendcam.backendcam.service.search.GetLicensePlate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

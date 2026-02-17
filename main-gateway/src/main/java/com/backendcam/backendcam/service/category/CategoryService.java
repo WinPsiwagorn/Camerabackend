@@ -5,7 +5,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.springframework.stereotype.Service;
 
-import com.backendcam.backendcam.model.dto.Category;
+import com.backendcam.backendcam.model.entity.Category;
 import com.backendcam.backendcam.repository.CategoryRepository;
 
 import lombok.RequiredArgsConstructor;

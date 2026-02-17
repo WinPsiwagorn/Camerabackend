@@ -1,4 +1,4 @@
-package com.backendcam.backendcam.model.dto;
+package com.backendcam.backendcam.model.entity;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -12,6 +12,6 @@ public class RTSP {
     private String latlong;
     private String address;
     private String status;
-    private String rtspLink;
+    private String rtspUrl;
 
 }
