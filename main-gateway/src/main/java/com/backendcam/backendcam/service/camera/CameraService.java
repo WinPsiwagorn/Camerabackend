@@ -1,62 +1,82 @@
 package com.backendcam.backendcam.service.camera;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import com.google.cloud.firestore.DocumentSnapshot;
-import com.google.cloud.firestore.FieldPath;
-import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.Query;
-import com.google.cloud.firestore.QueryDocumentSnapshot;
-import com.google.cloud.firestore.QuerySnapshot;
-import com.google.firebase.cloud.FirestoreClient;
 import com.backendcam.backendcam.model.dto.CameraDto;
+import com.backendcam.backendcam.model.entity.Camera;
+import com.backendcam.backendcam.repository.CameraRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class CameraService {
-  
-    public List<CameraDto> getCameraByPage(int page, int pageSize)
-            throws Exception {
 
-        Firestore db = FirestoreClient.getFirestore();
+    private final CameraRepository cameraRepository;
 
-        Query query = db.collection("cameras")
-                .orderBy(FieldPath.documentId())
-                .limit(pageSize);
-
-        // Convert page number to cursor
-        if (page > 1) {
-            int docsToSkip = (page - 1) * pageSize;
-
-            QuerySnapshot skipped =
-                    db.collection("cameras")
-                      .orderBy(FieldPath.documentId())
-                      .limit(docsToSkip)
-                      .get()
-                      .get();
-
-            if (!skipped.isEmpty()) {
-                DocumentSnapshot lastDoc =
-                        skipped.getDocuments()
-                               .get(skipped.size() - 1);
-
-                query = query.startAfter(lastDoc);
-            }
+    public List<CameraDto> getCamerasByPage(int page, int pageSize) {
+        try {
+            List<Camera> cameras = cameraRepository.getCamerasByPage(page, pageSize);
+            return cameras.stream()
+                    .map(this::toDto)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get cameras", e);
         }
-
-        List<CameraDto> list = new ArrayList<>();
-
-        for (QueryDocumentSnapshot doc : query.get().get().getDocuments()) {
-            CameraDto cam = doc.toObject(CameraDto.class);
-            cam.setId(doc.getId());
-            list.add(cam);
-        }
-
-        return list;
     }
 
+    public Optional<CameraDto> getCameraById(String id) {
+        try {
+            return cameraRepository.getCameraById(id)
+                    .map(this::toDto);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get camera by id: " + id, e);
+        }
+    }
+
+    public void updateCamera(String id, Map<String, Object> updates) {
+        try {
+            cameraRepository.updateFields(id, updates);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update camera: " + id, e);
+        }
+    }
+
+    public void deleteCamera(String id) {
+        try {
+            cameraRepository.delete(id);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete camera: " + id, e);
+        }
+    }
+
+    private CameraDto toDto(Camera camera) {
+        CameraDto dto = new CameraDto();
+        dto.setId(camera.getId());
+        dto.setName(camera.getName());
+        
+        if (camera.getLatLong() != null) {
+            dto.setLatLong(camera.getLatLong().getLatitude() + "," + camera.getLatLong().getLongitude());
+        }
+        
+        dto.setAddress(camera.getAddress());
+        dto.setStatus(camera.getStatus());
+        dto.setCategories(camera.getCategories());
+
+        if (camera.getLastSeen() != null) {
+            CameraDto.LastSeen lastSeenDto = new CameraDto.LastSeen();
+            lastSeenDto.setMessage(camera.getLastSeen().getMessage());
+            lastSeenDto.setTimestamp(camera.getLastSeen().getTimestamp());
+            dto.setLastSeen(lastSeenDto);
+        }
+
+        return dto;
+    }
 }
 
 

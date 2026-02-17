@@ -16,7 +16,8 @@ import java.util.concurrent.ExecutionException;
 @Repository
 @RequiredArgsConstructor
 public class CameraRepository {
-     private static final String COLLECTION = "cameras";
+    
+    private static final String COLLECTION = "cameras";
     private final FirebaseAdminBootstrap bootstrap;
 
     private Firestore getFirestore() {
@@ -26,84 +27,60 @@ public class CameraRepository {
         return FirestoreClient.getFirestore();
     }
 
-    // Get all RTSP cameras
-    public List<Camera> getAllCameras() throws ExecutionException, InterruptedException {
+    public List<Camera> getCamerasByPage(int page, int pageSize) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
+        Query query = db.collection(COLLECTION)
+                .orderBy(FieldPath.documentId())
+                .limit(pageSize);
+
+        if (page > 1) {
+            int docsToSkip = (page - 1) * pageSize;
+            QuerySnapshot skipped = db.collection(COLLECTION)
+                    .orderBy(FieldPath.documentId())
+                    .limit(docsToSkip)
+                    .get()
+                    .get();
+
+            if (!skipped.isEmpty()) {
+                DocumentSnapshot lastDoc = skipped.getDocuments().get(skipped.size() - 1);
+                query = query.startAfter(lastDoc);
+            }
+        }
+
         List<Camera> cameras = new ArrayList<>();
+        QuerySnapshot querySnapshot = query.get().get();
         
-        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION).get();
-        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
-        
-        for (QueryDocumentSnapshot document : documents) {
+        for (QueryDocumentSnapshot document : querySnapshot.getDocuments()) {
             Camera camera = document.toObject(Camera.class);
             camera.setId(document.getId());
             cameras.add(camera);
         }
-        
+
         return cameras;
     }
 
-    // Get RTSP camera by ID
     public Optional<Camera> getCameraById(String id) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
-        
         DocumentReference docRef = db.collection(COLLECTION).document(id);
         ApiFuture<DocumentSnapshot> future = docRef.get();
         DocumentSnapshot document = future.get();
-        
+
         if (document.exists()) {
             Camera camera = document.toObject(Camera.class);
             camera.setId(document.getId());
             return Optional.of(camera);
         }
-        
+
         return Optional.empty();
     }
 
-    // Get RTSP camera by name
-    public Optional<Camera> getCameraByName(String name) throws ExecutionException, InterruptedException {
+    public void updateFields(String id, Map<String, Object> updates) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
-        
-        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
-                .whereEqualTo("name", name)
-                .limit(1)
-                .get();
-        
-        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
-        
-        if (!documents.isEmpty()) {
-            QueryDocumentSnapshot document = documents.get(0);
-            Camera camera = document.toObject(Camera.class);
-            camera.setId(document.getId());
-            return Optional.of(camera);
-        }
-        
-        return Optional.empty();
+        db.collection(COLLECTION).document(id).update(updates).get();
     }
 
-    // Get only the RTSP URL by camera ID
-    public Optional<String> getRtspUrlById(String id) throws ExecutionException, InterruptedException {
-        return getCameraById(id).map(Camera::getRtspUrl);
-    }
-
-    // Get all active cameras (status = "active")
-    public List<Camera> getActiveCameras() throws ExecutionException, InterruptedException {
+    public void delete(String id) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
-        List<Camera> cameras = new ArrayList<>();
-        
-        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
-                .whereEqualTo("status", "active")
-                .get();
-        
-        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
-        
-        for (QueryDocumentSnapshot document : documents) {
-            Camera camera = document.toObject(Camera.class);
-            camera.setId(document.getId());
-            cameras.add(camera);
-        }
-        
-        return cameras;
+        db.collection(COLLECTION).document(id).delete().get();
     }
-
 }
