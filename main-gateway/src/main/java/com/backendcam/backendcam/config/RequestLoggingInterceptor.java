@@ -35,7 +35,7 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
         String iso = zdt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         String handlerInfo = (handler instanceof HandlerMethod) ? ((HandlerMethod) handler).getShortLogMessage() : String.valueOf(handler);
 
-        logger.info("Incoming request - time={}, method={}, uri={}, handler={}, remoteAddr={}",
+        logger.info("time={}, method={}, uri={}, handler={}, remoteAddr={}",
                 iso, request.getMethod(), request.getRequestURI(), handlerInfo, request.getRemoteAddr());
 
         return true;

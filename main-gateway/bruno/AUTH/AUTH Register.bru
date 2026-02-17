@@ -1,0 +1,24 @@
+meta {
+  name: AUTH Register
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/auth/register
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "username": "user2",
+    "password": "user1234",
+    "email": "abc@gmail.com"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

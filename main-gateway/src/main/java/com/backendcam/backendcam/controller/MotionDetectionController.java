@@ -1,11 +1,17 @@
 package com.backendcam.backendcam.controller;
 
-import com.backendcam.backendcam.service.motion.MotionDetectionService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.backendcam.backendcam.service.motion.MotionDetectionService;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * Motion Detection Controller
@@ -16,12 +22,11 @@ import java.util.Map;
  * - GET /motion/status - Get status of all active cameras
  */
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/motion")
-@CrossOrigin(origins = "*")
 public class MotionDetectionController {
 
-    @Autowired
-    private MotionDetectionService motionDetectionService;
+    private final MotionDetectionService motionDetectionService;
 
     /**
      * Start motion detection for a camera

@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class LicensePlateRepository {
 
-    private static final String COLLECTION = "licensePlate";
+    private static final String COLLECTION = "licensePlates";
 
     private final FirebaseAdminBootstrap bootstrap;
 

@@ -1,0 +1,16 @@
+meta {
+  name: GET Cameras
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/cameras
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

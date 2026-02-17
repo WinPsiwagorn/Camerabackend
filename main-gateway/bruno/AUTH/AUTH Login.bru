@@ -1,0 +1,23 @@
+meta {
+  name: AUTH Login
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/auth/login
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "username": "user",
+    "password": "user1234"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

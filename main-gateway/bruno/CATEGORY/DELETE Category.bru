@@ -1,0 +1,26 @@
+meta {
+  name: DELETE Category
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{base_url}}/category/{{id}}
+  body: none
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "แมว"
+  }
+}
+
+vars:pre-request {
+  id: 0
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
