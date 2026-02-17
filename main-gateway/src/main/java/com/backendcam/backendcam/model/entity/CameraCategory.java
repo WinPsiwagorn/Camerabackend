@@ -6,7 +6,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class CameraCategory {
-    private int categoryId;
+    private String categoryId;
     private String cameraId;
 }
  

@@ -45,7 +45,7 @@ public class CategoryController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getCategoryById(@PathVariable int id) {
+    public ResponseEntity<?> getCategoryById(@PathVariable String id) {
         try {
             Category category = categoryService.getCategoryById(id);
             if (category == null) {
@@ -58,7 +58,7 @@ public class CategoryController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateCategory(@PathVariable int id, @RequestBody Category category) {
+    public ResponseEntity<?> updateCategory(@PathVariable String id, @RequestBody Category category) {
         try {
             Category updated = categoryService.updateCategory(id, category);
             if (updated == null) {
@@ -71,7 +71,7 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteCategory(@PathVariable int id) {
+    public ResponseEntity<?> deleteCategory(@PathVariable String id) {
         try {
             // Also remove all camera-category mappings for this category
             cameraCategoryService.deleteAllByCategory(id);
@@ -109,7 +109,7 @@ public class CategoryController {
     }
 
     @GetMapping("/{categoryId}/cameras")
-    public ResponseEntity<?> getCamerasByCategory(@PathVariable int categoryId) {
+    public ResponseEntity<?> getCamerasByCategory(@PathVariable String categoryId) {
         try {
             List<CameraCategory> cameras = cameraCategoryService.getCamerasByCategory(categoryId);
             return ResponseEntity.ok(cameras);
@@ -130,7 +130,7 @@ public class CategoryController {
 
     @DeleteMapping("/{categoryId}/camera/{cameraId}")
     public ResponseEntity<?> removeCameraFromCategory(
-            @PathVariable int categoryId,
+            @PathVariable String categoryId,
             @PathVariable String cameraId) {
         try {
             boolean removed = cameraCategoryService.removeCameraFromCategory(categoryId, cameraId);

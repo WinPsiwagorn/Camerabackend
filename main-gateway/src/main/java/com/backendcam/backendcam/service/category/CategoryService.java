@@ -24,7 +24,7 @@ public class CategoryService {
         return categoryRepository.createCategoryWithId(category);
     }
 
-    public Category getCategoryById(int id) throws ExecutionException, InterruptedException {
+    public Category getCategoryById(String id) throws ExecutionException, InterruptedException {
         return categoryRepository.getCategoryById(id);
     }
 
@@ -32,11 +32,11 @@ public class CategoryService {
         return categoryRepository.getAllCategories();
     }
 
-    public Category updateCategory(int id, Category category) throws ExecutionException, InterruptedException {
+    public Category updateCategory(String id, Category category) throws ExecutionException, InterruptedException {
         return categoryRepository.updateCategory(id, category);
     }
 
-    public boolean deleteCategory(int id) throws ExecutionException, InterruptedException {
+    public boolean deleteCategory(String id) throws ExecutionException, InterruptedException {
         return categoryRepository.deleteCategory(id);
     }
 }
