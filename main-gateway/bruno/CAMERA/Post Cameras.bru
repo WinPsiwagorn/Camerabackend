@@ -1,0 +1,25 @@
+meta {
+  name: Post Cameras
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/cameras
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "กล้องนี้หมาจอง",
+    "latLong": "13.7367, 100.5231",
+    "address": "บ้านสาธุ",
+    "rtspUrl": "wow"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

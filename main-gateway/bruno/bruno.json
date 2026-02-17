@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Central Camera Gateway",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

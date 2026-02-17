@@ -13,6 +13,6 @@ import java.util.List;
 @AllArgsConstructor
 public class CategoryStreamResponse {
     private String categoryName;
-    private int categoryId;
+    private String categoryId;
     private List<CameraInfo> cameras;
 }
