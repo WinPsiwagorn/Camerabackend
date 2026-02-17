@@ -55,7 +55,7 @@ public class CameraCategoryRepository {
     /**
      * Remove a camera from a category
      */
-    public boolean removeCameraFromCategory(int categoryId, String cameraId)
+    public boolean removeCameraFromCategory(String categoryId, String cameraId)
             throws ExecutionException, InterruptedException {
 
         Firestore db = getFirestore();
@@ -81,8 +81,7 @@ public class CameraCategoryRepository {
         List<CameraCategory> result = new ArrayList<>();
         for (QueryDocumentSnapshot doc : documents) {
             CameraCategory cc = new CameraCategory();
-            Long catId = doc.getLong("categoryId");
-            cc.setCategoryId(catId != null ? catId.intValue() : 0);
+            cc.setCategoryId(doc.getId());
             cc.setCameraId(doc.getString("cameraId"));
             result.add(cc);
         }
@@ -92,7 +91,7 @@ public class CameraCategoryRepository {
     /**
      * Get all cameras belonging to a specific category
      */
-    public List<CameraCategory> getCamerasByCategory(int categoryId)
+    public List<CameraCategory> getCamerasByCategory(String categoryId)
             throws ExecutionException, InterruptedException {
 
         Firestore db = getFirestore();
@@ -105,8 +104,7 @@ public class CameraCategoryRepository {
         List<CameraCategory> result = new ArrayList<>();
         for (QueryDocumentSnapshot doc : documents) {
             CameraCategory cc = new CameraCategory();
-            Long catId = doc.getLong("categoryId");
-            cc.setCategoryId(catId != null ? catId.intValue() : 0);
+            cc.setCategoryId(doc.getId());
             cc.setCameraId(doc.getString("cameraId"));
             result.add(cc);
         }
@@ -129,8 +127,7 @@ public class CameraCategoryRepository {
         List<CameraCategory> result = new ArrayList<>();
         for (QueryDocumentSnapshot doc : documents) {
             CameraCategory cc = new CameraCategory();
-            Long catId = doc.getLong("categoryId");
-            cc.setCategoryId(catId != null ? catId.intValue() : 0);
+            cc.setCategoryId(doc.getId());
             cc.setCameraId(doc.getString("cameraId"));
             result.add(cc);
         }
@@ -140,7 +137,7 @@ public class CameraCategoryRepository {
     /**
      * Delete all camera-category mappings for a given category
      */
-    public void deleteAllByCategory(int categoryId) throws ExecutionException, InterruptedException {
+    public void deleteAllByCategory(String categoryId) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
         List<QueryDocumentSnapshot> docs = db.collection(COLLECTION)
                 .whereEqualTo("categoryId", categoryId)

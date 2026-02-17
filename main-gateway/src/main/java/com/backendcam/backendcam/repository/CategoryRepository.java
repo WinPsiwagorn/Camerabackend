@@ -43,7 +43,7 @@ public class CategoryRepository {
         DocumentReference docRef = db.collection(COLLECTION).document();
         docRef.set(data).get();
 
-        category.setId(docRef.getId().hashCode());
+        category.setId(docRef.getId());
         return category;
     }
 
@@ -60,7 +60,7 @@ public class CategoryRepository {
         return category;
     }
 
-    public Category getCategoryById(int id) throws ExecutionException, InterruptedException {
+    public Category getCategoryById(String id) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
         DocumentSnapshot doc = db.collection(COLLECTION).document(String.valueOf(id)).get().get();
 
@@ -82,15 +82,14 @@ public class CategoryRepository {
         List<Category> categories = new ArrayList<>();
         for (QueryDocumentSnapshot doc : documents) {
             Category category = new Category();
-            Long idVal = doc.getLong("id");
-            category.setId(idVal != null ? idVal.intValue() : doc.getId().hashCode());
+            category.setId(doc.getId());
             category.setName(doc.getString("name"));
             categories.add(category);
         }
         return categories;
     }
 
-    public Category updateCategory(int id, Category category) throws ExecutionException, InterruptedException {
+    public Category updateCategory(String id, Category category) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
         String docId = String.valueOf(id);
         DocumentSnapshot doc = db.collection(COLLECTION).document(docId).get().get();
@@ -109,16 +108,15 @@ public class CategoryRepository {
         return category;
     }
 
-    public boolean deleteCategory(int id) throws ExecutionException, InterruptedException {
+    public boolean deleteCategory(String id) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
-        String docId = String.valueOf(id);
-        DocumentSnapshot doc = db.collection(COLLECTION).document(docId).get().get();
+        DocumentSnapshot doc = db.collection(COLLECTION).document(id).get().get();
 
         if (!doc.exists()) {
             return false;
         }
 
-        db.collection(COLLECTION).document(docId).delete().get();
+        db.collection(COLLECTION).document(id).delete().get();
         return true;
     }
 
@@ -139,8 +137,7 @@ public class CategoryRepository {
 
         QueryDocumentSnapshot doc = documents.get(0);
         Category category = new Category();
-        Long idVal = doc.getLong("id");
-        category.setId(idVal != null ? idVal.intValue() : doc.getId().hashCode());
+        category.setId(doc.getId());
         category.setName(doc.getString("name"));
         return category;
     }

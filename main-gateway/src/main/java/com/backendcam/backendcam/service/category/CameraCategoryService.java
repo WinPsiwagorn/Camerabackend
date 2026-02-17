@@ -21,7 +21,7 @@ public class CameraCategoryService {
         return cameraCategoryRepository.addCameraToCategory(cameraCategory);
     }
 
-    public boolean removeCameraFromCategory(int categoryId, String cameraId)
+    public boolean removeCameraFromCategory(String categoryId, String cameraId)
             throws ExecutionException, InterruptedException {
         return cameraCategoryRepository.removeCameraFromCategory(categoryId, cameraId);
     }
@@ -30,7 +30,7 @@ public class CameraCategoryService {
         return cameraCategoryRepository.getAll();
     }
 
-    public List<CameraCategory> getCamerasByCategory(int categoryId)
+    public List<CameraCategory> getCamerasByCategory(String categoryId)
             throws ExecutionException, InterruptedException {
         return cameraCategoryRepository.getCamerasByCategory(categoryId);
     }
@@ -40,7 +40,7 @@ public class CameraCategoryService {
         return cameraCategoryRepository.getCategoriesByCamera(cameraId);
     }
 
-    public void deleteAllByCategory(int categoryId) throws ExecutionException, InterruptedException {
+    public void deleteAllByCategory(String categoryId) throws ExecutionException, InterruptedException {
         cameraCategoryRepository.deleteAllByCategory(categoryId);
     }
 }
