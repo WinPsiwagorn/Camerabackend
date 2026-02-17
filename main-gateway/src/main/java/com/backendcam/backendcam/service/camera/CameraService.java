@@ -1,4 +1,4 @@
-package com.backendcam.backendcam.service.listcamera;
+package com.backendcam.backendcam.service.camera;
 
 import java.util.ArrayList;
 import java.util.List;
