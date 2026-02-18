@@ -85,7 +85,7 @@ public class CategoryController {
     }
 
     /**
-     * Get all cameras in a category
+     * Get all cameras in a category by category ID
      */
     @GetMapping("/{categoryId}/cameras")
     public ResponseEntity<?> getCamerasByCategory(@PathVariable String categoryId) {
@@ -114,4 +114,5 @@ public class CategoryController {
             return ResponseEntity.status(500).body("Failed to remove category from camera: " + e.getMessage());
         }
     }
+    
 }
