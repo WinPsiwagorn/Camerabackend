@@ -69,6 +69,33 @@ public class CategoryRepository {
         return categories;
     }
 
+    public long getTotalCount() throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION).get();
+        return future.get().size();
+    }
+
+    public List<Category> getCategoriesByPage(int page, int pageSize) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        int offset = (page - 1) * pageSize;
+
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
+                .limit(pageSize)
+                .offset(offset)
+                .get();
+
+        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+        List<Category> categories = new ArrayList<>();
+        
+        for (QueryDocumentSnapshot doc : documents) {
+            Category category = doc.toObject(Category.class);
+            category.setId(doc.getId());
+            categories.add(category);
+        }
+        
+        return categories;
+    }
+
     public void updateCategory(String id, Map<String, Object> updates) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
         db.collection(COLLECTION).document(id).update(updates).get();

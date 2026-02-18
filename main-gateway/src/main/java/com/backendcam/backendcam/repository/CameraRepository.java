@@ -90,6 +90,22 @@ public class CameraRepository {
         db.collection(COLLECTION).document(id).delete().get();
     }
 
+    public List<Camera> getAllCameras() throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        List<Camera> cameras = new ArrayList<>();
+
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION).get();
+        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+
+        for (QueryDocumentSnapshot document : documents) {
+            Camera camera = document.toObject(Camera.class);
+            camera.setId(document.getId());
+            cameras.add(camera);
+        }
+
+        return cameras;
+    }
+
     public List<Camera> getCamerasByCategoryId(String categoryId) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
         List<Camera> cameras = new ArrayList<>();
