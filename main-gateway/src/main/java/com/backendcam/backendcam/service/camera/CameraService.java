@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.backendcam.backendcam.model.dto.camera.CameraMapResponseDto;
 import com.backendcam.backendcam.model.dto.camera.CameraResponseDto;
 import com.backendcam.backendcam.model.dto.camera.CreateCameraDto;
 import com.backendcam.backendcam.model.entity.Camera;
@@ -108,6 +109,28 @@ public class CameraService {
         }
     }
 
+    // public List<CameraResponseDto> getCamerasMap() {
+    //     try {
+    //         List<Camera> cameras = cameraRepository.getAllCameras();
+    //         return cameras.stream()
+    //                 .map(this::toDto)
+    //                 .collect(Collectors.toList());
+    //     } catch (Exception e) {
+    //         throw new RuntimeException("Failed to get cameras for map", e);
+    //     }
+    // }
+
+    public List<CameraMapResponseDto> getCamerasForMap() {
+        try {
+            List<Camera> cameras = cameraRepository.getAllCameras();
+            return cameras.stream()
+                    .map(this::toMapDto)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get cameras for map", e);
+        }
+    }
+
     private CameraResponseDto toDto(Camera camera) {
         CameraResponseDto dto = new CameraResponseDto();
         dto.setId(camera.getId());
@@ -128,6 +151,18 @@ public class CameraService {
             dto.setLastSeen(lastSeenDto);
         }
 
+        return dto;
+    }
+
+    private CameraMapResponseDto toMapDto(Camera camera) {
+        CameraMapResponseDto dto = new CameraMapResponseDto();
+        dto.setId(camera.getId());
+        dto.setName(camera.getName());
+        
+        if (camera.getLatLong() != null) {
+            dto.setLatLong(camera.getLatLong().getLatitude() + "," + camera.getLatLong().getLongitude());
+        }
+        
         return dto;
     }
 }

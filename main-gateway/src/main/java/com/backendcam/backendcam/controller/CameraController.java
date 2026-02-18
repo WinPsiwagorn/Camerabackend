@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.backendcam.backendcam.model.dto.camera.CameraMapResponseDto;
 import com.backendcam.backendcam.model.dto.camera.CameraResponseDto;
 import com.backendcam.backendcam.model.dto.camera.CreateCameraDto;
 import com.backendcam.backendcam.service.camera.CameraService;
@@ -48,5 +49,11 @@ public class CameraController {
     public ResponseEntity<Void> deleteCamera(@PathVariable String id) {
         cameraService.deleteCamera(id);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/map")
+    public ResponseEntity<List<CameraMapResponseDto>> getCamerasForMap() {
+        List<CameraMapResponseDto> cameras = cameraService.getCamerasForMap();
+        return ResponseEntity.ok(cameras);
     }
 }
