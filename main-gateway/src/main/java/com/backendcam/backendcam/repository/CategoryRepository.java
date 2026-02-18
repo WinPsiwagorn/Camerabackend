@@ -100,14 +100,29 @@ public class CategoryRepository {
         return categories;
     }
 
-    public void updateCategory(String id, Map<String, Object> updates) throws ExecutionException, InterruptedException {
+    public Category updateCategory(String id, Map<String, Object> updates) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
-        db.collection(COLLECTION).document(id).update(updates).get();
+        DocumentReference docRef = db.collection(COLLECTION).document(id);
+
+        // Check if document exists
+        DocumentSnapshot snapshot = docRef.get().get();
+        if (!snapshot.exists()) {
+            throw new java.util.NoSuchElementException("Category not found with id: " + id);
+        }
+
+        docRef.update(updates).get();
+
+        // Fetch and return the updated document
+        DocumentSnapshot updatedSnapshot = docRef.get().get();
+        Category category = updatedSnapshot.toObject(Category.class);
+        category.setId(updatedSnapshot.getId());
+        return category;
     }
 
-    public void deleteCategory(String id) throws ExecutionException, InterruptedException {
+    public boolean deleteCategory(String id) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
         db.collection(COLLECTION).document(id).delete().get();
+        return true;
     }
 
     /**

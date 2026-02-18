@@ -1,0 +1,20 @@
+meta {
+  name: DELETE Camera
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{base_url}}/cameras/{{cameraId}}
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  cameraId: qvW92YnPNI3JxjKYKEdH
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

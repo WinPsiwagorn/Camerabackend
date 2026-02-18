@@ -6,14 +6,16 @@ import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.backendcam.backendcam.model.dto.CameraInfo;
+import com.backendcam.backendcam.model.dto.MessageResponseDTO;
 import com.backendcam.backendcam.model.dto.PageResponse;
 import com.backendcam.backendcam.model.dto.camera.CameraResponseDto;
+import com.backendcam.backendcam.model.dto.category.AddCategoryDto;
 import com.backendcam.backendcam.model.dto.category.CategoryCreateDTO;
 import com.backendcam.backendcam.model.dto.category.CategoryResponseDTO;
 import com.backendcam.backendcam.service.camera.CameraService;
 import com.backendcam.backendcam.service.category.CategoryService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -34,8 +36,9 @@ public class CategoryController {
 
     @GetMapping
     public ResponseEntity<PageResponse<List<CategoryResponseDTO>>> getCategories(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int limit) {
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(defaultValue = "10") int limit
+    ) {
         PageResponse<List<CategoryResponseDTO>> response = categoryService.getCategoriesByPage(page, limit);
         return ResponseEntity.ok(response);
     }
@@ -54,15 +57,19 @@ public class CategoryController {
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<Void> updateCategory(@PathVariable String id, @RequestBody Map<String, Object> updates) {
-        categoryService.updateCategory(id, updates);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<CategoryResponseDTO> updateCategory(
+        @PathVariable String id, 
+        @RequestBody Map<String, Object> updates
+    ) {
+        return categoryService.updateCategory(id, updates)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCategory(@PathVariable String id) {
+    public ResponseEntity<MessageResponseDTO> deleteCategory(@PathVariable String id) {
         categoryService.deleteCategory(id);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(new MessageResponseDTO("Category ID: " + id + " deleted successfully"));
     }
 
     // ==================== Camera-Category Management ====================
@@ -71,48 +78,35 @@ public class CategoryController {
      * Add a category to a camera's categories array
      */
     @PostMapping("/{categoryId}/cameras")
-    public ResponseEntity<?> addCategoryToCamera(@PathVariable String categoryId, @RequestBody Map<String, String> request) {
-        try {
-            String cameraId = request.get("cameraId");
-            if (cameraId == null) {
-                return ResponseEntity.badRequest().body("cameraId is required");
-            }
-            cameraService.addCategoryToCamera(cameraId, categoryId);
-            return ResponseEntity.ok(Map.of("message", "Category added to camera", "categoryId", categoryId, "cameraId", cameraId));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Failed to add category to camera: " + e.getMessage());
-        }
+    public ResponseEntity<CameraResponseDto> addCategoryToCamera(
+        @PathVariable String categoryId,
+        @Valid @RequestBody AddCategoryDto dto
+    ) {
+        String cameraId = dto.getCameraId();
+        return cameraService.addCategoryToCamera(cameraId, categoryId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**
      * Get all cameras in a category by category ID
      */
     @GetMapping("/{categoryId}/cameras")
-    public ResponseEntity<?> getCamerasByCategory(@PathVariable String categoryId) {
-        try {
-            List<CameraResponseDto> cameras = cameraService.getCamerasByCategoryId(categoryId);
-            List<CameraInfo> cameraInfos = cameras.stream()
-                    .map(cam -> new CameraInfo(cam.getId(), cam.getName()))
-                    .toList();
-            return ResponseEntity.ok(cameraInfos);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Failed to fetch cameras: " + e.getMessage());
-        }
+    public ResponseEntity<List<CameraResponseDto>> getCamerasByCategory(@PathVariable String categoryId) {
+        return cameraService.getCamerasByCategoryId(categoryId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**
      * Remove a category from a camera's categories array
      */
     @DeleteMapping("/{categoryId}/cameras/{cameraId}")
-    public ResponseEntity<?> removeCategoryFromCamera(
-            @PathVariable String categoryId,
-            @PathVariable String cameraId) {
-        try {
-            cameraService.removeCategoryFromCamera(cameraId, categoryId);
-            return ResponseEntity.ok("Category removed from camera successfully");
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Failed to remove category from camera: " + e.getMessage());
-        }
+    public ResponseEntity<MessageResponseDTO> removeCategoryFromCamera(
+        @PathVariable String categoryId,
+        @PathVariable String cameraId
+    ) {
+        cameraService.removeCategoryFromCamera(cameraId, categoryId);
+        return ResponseEntity.ok(new MessageResponseDTO("Category removed from camera successfully"));
     }
-    
 }

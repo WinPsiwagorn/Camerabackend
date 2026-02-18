@@ -1,0 +1,20 @@
+meta {
+  name: GET Camera by category
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{base_url}}/category/{{categoryId}}/cameras
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  categoryId: Qs40ecXoXljZKb23rGMs
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
