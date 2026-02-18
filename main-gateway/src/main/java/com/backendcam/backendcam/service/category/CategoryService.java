@@ -54,12 +54,12 @@ public class CategoryService {
         }
     }
 
-    public PageResponse<List<CategoryResponseDTO>> getCategoriesByPage(int page, int pageSize) {
+    public PageResponse<List<CategoryResponseDTO>> getCategoriesByPage(int page, int limit) {
         try {
-            List<Category> categories = categoryRepository.getCategoriesByPage(page, pageSize);
+            List<Category> categories = categoryRepository.getCategoriesByPage(page, limit);
             long totalItems = categoryRepository.getTotalCount();
             
-            return PaginationUtil.createPaginationResponse(categories, totalItems, page, pageSize, this::toDto);
+            return PaginationUtil.createPaginationResponse(categories, totalItems, page, limit, this::toDto);
         } catch (Exception e) {
             throw new RuntimeException("Failed to get categories by page", e);
         }

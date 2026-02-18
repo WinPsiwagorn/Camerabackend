@@ -27,8 +27,10 @@ public class CameraController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CameraResponseDto>> getCameras(@RequestParam(defaultValue = "1") int page) {
-        List<CameraResponseDto> cameras = cameraService.getCamerasByPage(page, 10);
+    public ResponseEntity<List<CameraResponseDto>> getCameras(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit) {
+        List<CameraResponseDto> cameras = cameraService.getCamerasByPage(page, limit);
         return ResponseEntity.ok(cameras);
     }
 

@@ -46,9 +46,9 @@ public class CameraService {
         }
     }
 
-    public List<CameraResponseDto> getCamerasByPage(int page, int pageSize) {
+    public List<CameraResponseDto> getCamerasByPage(int page, int limit) {
         try {
-            List<Camera> cameras = cameraRepository.getCamerasByPage(page, pageSize);
+            List<Camera> cameras = cameraRepository.getCamerasByPage(page, limit);
             return cameras.stream()
                     .map(this::toDto)
                     .collect(Collectors.toList());

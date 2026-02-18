@@ -12,7 +12,7 @@ public class PaginationUtil {
             List<T> items,
             long totalItems,
             int page,
-            int pageSize,
+            int limit,
             Function<T, R> mapper) {
         
         List<R> mappedData = items.stream()
@@ -24,11 +24,19 @@ public class PaginationUtil {
 
         PageResponse.Meta meta = new PageResponse.Meta();
         meta.setCurrentPage(page);
-        meta.setPageSize(pageSize);
+        meta.setLimit(limit);
         meta.setTotalItems(totalItems);
-        meta.setTotalPages((int) Math.ceil((double) totalItems / pageSize));
-        meta.setHasNext(page < meta.getTotalPages());
-        meta.setHasPrevious(page > 1);
+        
+        if (limit > 0) {
+            meta.setTotalPages((int) Math.ceil((double) totalItems / limit));
+            meta.setHasNext(page < meta.getTotalPages());
+            meta.setHasPrevious(page > 1);
+        } else {
+            meta.setTotalPages(1);
+            meta.setHasNext(false);
+            meta.setHasPrevious(false);
+        }
+        
         response.setMeta(meta);
 
         return response;
