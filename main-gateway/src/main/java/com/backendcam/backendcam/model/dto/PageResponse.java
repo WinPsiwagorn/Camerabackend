@@ -13,7 +13,7 @@ public class PageResponse<T> {
     @Setter
     public static class Meta {
         private int currentPage;
-        private int pageSize;
+        private int limit;
         private long totalItems;
         private int totalPages;
         private boolean hasNext;

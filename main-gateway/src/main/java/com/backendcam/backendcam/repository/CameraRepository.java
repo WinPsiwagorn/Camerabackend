@@ -27,23 +27,32 @@ public class CameraRepository {
         return FirestoreClient.getFirestore();
     }
 
-    public List<Camera> getCamerasByPage(int page, int pageSize) throws ExecutionException, InterruptedException {
+    public long getTotalCount() throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION).get();
+        return future.get().size();
+    }
+
+    public List<Camera> getCamerasByPage(int page, int limit) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
         Query query = db.collection(COLLECTION)
-                .orderBy(FieldPath.documentId())
-                .limit(pageSize);
+                .orderBy(FieldPath.documentId());
+        
+        if (limit > 0) {
+            query = query.limit(limit);
 
-        if (page > 1) {
-            int docsToSkip = (page - 1) * pageSize;
-            QuerySnapshot skipped = db.collection(COLLECTION)
-                    .orderBy(FieldPath.documentId())
-                    .limit(docsToSkip)
-                    .get()
-                    .get();
+            if (page > 1) {
+                int docsToSkip = (page - 1) * limit;
+                QuerySnapshot skipped = db.collection(COLLECTION)
+                        .orderBy(FieldPath.documentId())
+                        .limit(docsToSkip)
+                        .get()
+                        .get();
 
-            if (!skipped.isEmpty()) {
-                DocumentSnapshot lastDoc = skipped.getDocuments().get(skipped.size() - 1);
-                query = query.startAfter(lastDoc);
+                if (!skipped.isEmpty()) {
+                    DocumentSnapshot lastDoc = skipped.getDocuments().get(skipped.size() - 1);
+                    query = query.startAfter(lastDoc);
+                }
             }
         }
 

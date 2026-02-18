@@ -35,8 +35,8 @@ public class CategoryController {
     @GetMapping
     public ResponseEntity<PageResponse<List<CategoryResponseDTO>>> getCategories(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int pageSize) {
-        PageResponse<List<CategoryResponseDTO>> response = categoryService.getCategoriesByPage(page, pageSize);
+            @RequestParam(defaultValue = "10") int limit) {
+        PageResponse<List<CategoryResponseDTO>> response = categoryService.getCategoriesByPage(page, limit);
         return ResponseEntity.ok(response);
     }
 
