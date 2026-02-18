@@ -7,11 +7,13 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.backendcam.backendcam.model.dto.PageResponse;
 import com.backendcam.backendcam.model.dto.camera.CameraMapResponseDto;
 import com.backendcam.backendcam.model.dto.camera.CameraResponseDto;
 import com.backendcam.backendcam.model.dto.camera.CreateCameraDto;
 import com.backendcam.backendcam.model.entity.Camera;
 import com.backendcam.backendcam.repository.CameraRepository;
+import com.backendcam.backendcam.util.PaginationUtil;
 import com.google.cloud.firestore.GeoPoint;
 
 import lombok.RequiredArgsConstructor;
@@ -46,12 +48,11 @@ public class CameraService {
         }
     }
 
-    public List<CameraResponseDto> getCamerasByPage(int page, int limit) {
+    public PageResponse<List<CameraResponseDto>> getCamerasByPage(int page, int limit) {
         try {
             List<Camera> cameras = cameraRepository.getCamerasByPage(page, limit);
-            return cameras.stream()
-                    .map(this::toDto)
-                    .collect(Collectors.toList());
+            long totalItems = cameraRepository.getTotalCount();
+            return PaginationUtil.createPaginationResponse(cameras, totalItems, page, limit, this::toDto);
         } catch (Exception e) {
             throw new RuntimeException("Failed to get cameras", e);
         }

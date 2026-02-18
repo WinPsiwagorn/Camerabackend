@@ -14,6 +14,7 @@ import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.Query;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.firebase.cloud.FirestoreClient;
@@ -75,14 +76,17 @@ public class CategoryRepository {
         return future.get().size();
     }
 
-    public List<Category> getCategoriesByPage(int page, int pageSize) throws ExecutionException, InterruptedException {
+    public List<Category> getCategoriesByPage(int page, int limit) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
-        int offset = (page - 1) * pageSize;
+        
+        Query query = db.collection(COLLECTION);
+        
+        if (limit > 0) {
+            int offset = (page - 1) * limit;
+            query = query.limit(limit).offset(offset);
+        }
 
-        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
-                .limit(pageSize)
-                .offset(offset)
-                .get();
+        ApiFuture<QuerySnapshot> future = query.get();
 
         List<QueryDocumentSnapshot> documents = future.get().getDocuments();
         List<Category> categories = new ArrayList<>();
