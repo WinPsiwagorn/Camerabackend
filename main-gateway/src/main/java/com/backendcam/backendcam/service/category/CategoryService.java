@@ -65,9 +65,12 @@ public class CategoryService {
         }
     }
 
-    public void updateCategory(String id, Map<String, Object> updates) {
+    public Optional<CategoryResponseDTO> updateCategory(String id, Map<String, Object> updates) {
         try {
-            categoryRepository.updateCategory(id, updates);
+            Category updatedCategory = categoryRepository.updateCategory(id, updates);
+            return Optional.of(toDto(updatedCategory));
+        } catch (java.util.NoSuchElementException e) {
+            return Optional.empty();
         } catch (Exception e) {
             throw new RuntimeException("Failed to update category", e);
         }

@@ -1,0 +1,26 @@
+meta {
+  name: POST Add category to camera
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/category/{{categoryId}}/cameras
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "cameraId": "B3BIgDVcbo1l5dz0T3N0"
+  }
+}
+
+vars:pre-request {
+  categoryId: Qs40ecXoXljZKb23rGMs
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

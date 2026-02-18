@@ -67,9 +67,12 @@ public class CameraService {
         }
     }
 
-    public void updateCamera(String id, Map<String, Object> updates) {
+    public Optional<CameraResponseDto> updateCamera(String id, Map<String, Object> updates) {
         try {
-            cameraRepository.updateFields(id, updates);
+            Camera updatedCamera = cameraRepository.updateFields(id, updates);
+            return Optional.of(toDto(updatedCamera));
+        } catch (java.util.NoSuchElementException e) {
+            return Optional.empty();
         } catch (Exception e) {
             throw new RuntimeException("Failed to update camera: " + id, e);
         }
@@ -83,20 +86,23 @@ public class CameraService {
         }
     }
 
-    public List<CameraResponseDto> getCamerasByCategoryId(String categoryId) {
+    public Optional<List<CameraResponseDto>> getCamerasByCategoryId(String categoryId) {
         try {
-            List<Camera> cameras = cameraRepository.getCamerasByCategoryId(categoryId);
-            return cameras.stream()
-                    .map(this::toDto)
-                    .collect(Collectors.toList());
+            return cameraRepository.getCamerasByCategoryId(categoryId)
+                    .map(cameras -> cameras.stream()
+                            .map(this::toDto)
+                            .collect(Collectors.toList()));
         } catch (Exception e) {
             throw new RuntimeException("Failed to get cameras by category ID: " + categoryId, e);
         }
     }
 
-    public void addCategoryToCamera(String cameraId, String categoryId) {
+    public Optional<CameraResponseDto> addCategoryToCamera(String cameraId, String categoryId) {
         try {
-            cameraRepository.addCategoryToCamera(cameraId, categoryId);
+            Camera updatedCamera = cameraRepository.addCategoryToCamera(cameraId, categoryId);
+            return Optional.of(toDto(updatedCamera));
+        } catch (java.util.NoSuchElementException e) {
+            return Optional.empty();
         } catch (Exception e) {
             throw new RuntimeException("Failed to add category to camera: " + cameraId, e);
         }
@@ -109,17 +115,6 @@ public class CameraService {
             throw new RuntimeException("Failed to remove category from camera: " + cameraId, e);
         }
     }
-
-    // public List<CameraResponseDto> getCamerasMap() {
-    //     try {
-    //         List<Camera> cameras = cameraRepository.getAllCameras();
-    //         return cameras.stream()
-    //                 .map(this::toDto)
-    //                 .collect(Collectors.toList());
-    //     } catch (Exception e) {
-    //         throw new RuntimeException("Failed to get cameras for map", e);
-    //     }
-    // }
 
     public List<CameraMapResponseDto> getCamerasForMap() {
         try {
