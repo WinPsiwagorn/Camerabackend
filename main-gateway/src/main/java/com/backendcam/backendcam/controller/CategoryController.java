@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.backendcam.backendcam.model.dto.CameraInfo;
+import com.backendcam.backendcam.model.dto.PageResponse;
 import com.backendcam.backendcam.model.dto.camera.CameraResponseDto;
 import com.backendcam.backendcam.model.dto.category.CategoryCreateDTO;
 import com.backendcam.backendcam.model.dto.category.CategoryResponseDTO;
@@ -32,6 +33,14 @@ public class CategoryController {
     }
 
     @GetMapping
+    public ResponseEntity<PageResponse<List<CategoryResponseDTO>>> getCategories(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit) {
+        PageResponse<List<CategoryResponseDTO>> response = categoryService.getCategoriesByPage(page, limit);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/all")
     public ResponseEntity<List<CategoryResponseDTO>> getAllCategories() {
         List<CategoryResponseDTO> categories = categoryService.getAllCategories();
         return ResponseEntity.ok(categories);
@@ -90,7 +99,6 @@ public class CategoryController {
             return ResponseEntity.status(500).body("Failed to fetch cameras: " + e.getMessage());
         }
     }
-
 
     /**
      * Remove a category from a camera's categories array

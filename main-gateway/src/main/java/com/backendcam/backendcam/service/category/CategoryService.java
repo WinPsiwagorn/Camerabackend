@@ -6,10 +6,12 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.backendcam.backendcam.model.dto.PageResponse;
 import com.backendcam.backendcam.model.dto.category.CategoryCreateDTO;
 import com.backendcam.backendcam.model.dto.category.CategoryResponseDTO;
 import com.backendcam.backendcam.model.entity.Category;
 import com.backendcam.backendcam.repository.CategoryRepository;
+import com.backendcam.backendcam.util.PaginationUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -49,6 +51,17 @@ public class CategoryService {
                     .toList();
         } catch (Exception e) {
             throw new RuntimeException("Failed to get all categories", e);
+        }
+    }
+
+    public PageResponse<List<CategoryResponseDTO>> getCategoriesByPage(int page, int limit) {
+        try {
+            List<Category> categories = categoryRepository.getCategoriesByPage(page, limit);
+            long totalItems = categoryRepository.getTotalCount();
+            
+            return PaginationUtil.createPaginationResponse(categories, totalItems, page, limit, this::toDto);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get categories by page", e);
         }
     }
 

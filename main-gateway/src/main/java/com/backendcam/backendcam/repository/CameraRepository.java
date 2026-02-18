@@ -27,23 +27,32 @@ public class CameraRepository {
         return FirestoreClient.getFirestore();
     }
 
-    public List<Camera> getCamerasByPage(int page, int pageSize) throws ExecutionException, InterruptedException {
+    public long getTotalCount() throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION).get();
+        return future.get().size();
+    }
+
+    public List<Camera> getCamerasByPage(int page, int limit) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
         Query query = db.collection(COLLECTION)
-                .orderBy(FieldPath.documentId())
-                .limit(pageSize);
+                .orderBy(FieldPath.documentId());
+        
+        if (limit > 0) {
+            query = query.limit(limit);
 
-        if (page > 1) {
-            int docsToSkip = (page - 1) * pageSize;
-            QuerySnapshot skipped = db.collection(COLLECTION)
-                    .orderBy(FieldPath.documentId())
-                    .limit(docsToSkip)
-                    .get()
-                    .get();
+            if (page > 1) {
+                int docsToSkip = (page - 1) * limit;
+                QuerySnapshot skipped = db.collection(COLLECTION)
+                        .orderBy(FieldPath.documentId())
+                        .limit(docsToSkip)
+                        .get()
+                        .get();
 
-            if (!skipped.isEmpty()) {
-                DocumentSnapshot lastDoc = skipped.getDocuments().get(skipped.size() - 1);
-                query = query.startAfter(lastDoc);
+                if (!skipped.isEmpty()) {
+                    DocumentSnapshot lastDoc = skipped.getDocuments().get(skipped.size() - 1);
+                    query = query.startAfter(lastDoc);
+                }
             }
         }
 
@@ -88,6 +97,22 @@ public class CameraRepository {
     public void delete(String id) throws ExecutionException, InterruptedException {
         Firestore db = getFirestore();
         db.collection(COLLECTION).document(id).delete().get();
+    }
+
+    public List<Camera> getAllCameras() throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        List<Camera> cameras = new ArrayList<>();
+
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION).get();
+        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+
+        for (QueryDocumentSnapshot document : documents) {
+            Camera camera = document.toObject(Camera.class);
+            camera.setId(document.getId());
+            cameras.add(camera);
+        }
+
+        return cameras;
     }
 
     public List<Camera> getCamerasByCategoryId(String categoryId) throws ExecutionException, InterruptedException {

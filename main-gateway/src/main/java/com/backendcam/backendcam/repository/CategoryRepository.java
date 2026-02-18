@@ -14,6 +14,7 @@ import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.Query;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.firebase.cloud.FirestoreClient;
@@ -66,6 +67,36 @@ public class CategoryRepository {
             category.setId(doc.getId());
             categories.add(category);
         }
+        return categories;
+    }
+
+    public long getTotalCount() throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION).get();
+        return future.get().size();
+    }
+
+    public List<Category> getCategoriesByPage(int page, int limit) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        
+        Query query = db.collection(COLLECTION);
+        
+        if (limit > 0) {
+            int offset = (page - 1) * limit;
+            query = query.limit(limit).offset(offset);
+        }
+
+        ApiFuture<QuerySnapshot> future = query.get();
+
+        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+        List<Category> categories = new ArrayList<>();
+        
+        for (QueryDocumentSnapshot doc : documents) {
+            Category category = doc.toObject(Category.class);
+            category.setId(doc.getId());
+            categories.add(category);
+        }
+        
         return categories;
     }
 
