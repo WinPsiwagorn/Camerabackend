@@ -1,0 +1,29 @@
+meta {
+  name: PATCH Camera
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{base_url}}/cameras/{{cameraId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+  //   "name": "กล้องนี้หมาจอง",
+  //   "latLong": "13.7367, 100.5231",
+    "address": "172 หมู่ 10, อ.เมืองเชียงราย, จ.เชียงราย"
+  //   "rtspUrl": "wow"
+  }
+}
+
+vars:pre-request {
+  cameraId: 2nHfc8xtvrXPmIaLoYN3
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

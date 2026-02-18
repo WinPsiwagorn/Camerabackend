@@ -1,23 +1,17 @@
 meta {
-  name: DELETE Category
+  name: DELETE Camera
   type: http
-  seq: 5
+  seq: 6
 }
 
 delete {
-  url: {{base_url}}/category/{{id}}
+  url: {{base_url}}/cameras/{{cameraId}}
   body: none
   auth: inherit
 }
 
-body:json {
-  {
-    "name": "แมว"
-  }
-}
-
 vars:pre-request {
-  id: 0
+  cameraId: qvW92YnPNI3JxjKYKEdH
 }
 
 settings {
