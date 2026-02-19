@@ -13,7 +13,7 @@ public class BackendcamApplication {
 
 	public static void main(String[] args) {
 		// Enable FFmpeg logging for better error messages
-		FFmpegLogCallback.set();
+		//FFmpegLogCallback.set();
 		
 		SpringApplication.run(BackendcamApplication.class, args);
 	}

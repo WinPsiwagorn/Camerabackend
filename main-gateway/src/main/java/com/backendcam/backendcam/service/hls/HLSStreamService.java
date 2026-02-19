@@ -3,6 +3,7 @@ package com.backendcam.backendcam.service.hls;
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.bytedeco.ffmpeg.global.avutil;
 
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.FFmpegFrameRecorder;
@@ -79,6 +80,7 @@ public class HLSStreamService {
         StreamContext context = new StreamContext();
 
         Thread thread = new Thread(() -> {
+            avutil.av_log_set_level(avutil.AV_LOG_ERROR); // Reduce FFmpeg log noise - only show errors
             FFmpegFrameGrabber grabber = null;
             FFmpegFrameRecorder recorder = null;
 
@@ -104,6 +106,8 @@ public class HLSStreamService {
                 Frame frame;
                 int nullFrameCount = 0;
                 int reconnectAttempts = 0;
+                long frameCount = 0;        
+                long lastLogTime = System.currentTimeMillis();  
                 
                 // Main streaming loop with reconnection support for 24/7 operation
                 while (!Thread.currentThread().isInterrupted() && !context.shouldStop) {
@@ -147,6 +151,13 @@ public class HLSStreamService {
                         // Successfully got a frame - reset counters
                         nullFrameCount = 0;
                         reconnectAttempts = 0;
+                        frameCount++;
+
+                        long now = System.currentTimeMillis();
+                        if (now - lastLogTime >= 30_000) {
+                        logger.info("[{}] ✓ Live | Frames encoded: {}", streamName, frameCount);
+                        lastLogTime = now;
+        }
                         
                         recorder.record(frame);
                         
