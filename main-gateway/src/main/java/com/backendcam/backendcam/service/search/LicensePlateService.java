@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class GetLicensePlate {
+public class LicensePlateService {
 
     private final LicensePlateRepository licensePlateRepository;
 
@@ -20,6 +20,17 @@ public class GetLicensePlate {
     private static final int FUZZY_THRESHOLD = 60;
     // Max number of fuzzy results to return
     private static final int MAX_RESULTS = 10;
+
+    /**
+     * Get all license plate records.
+     */
+    public List<LicensePlate> getAll() {
+        try {
+            return licensePlateRepository.getAll();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to retrieve all license plates", e);
+        }
+    }
 
     /**
      * Fuzzy search: return the top 10 matching license plates.
