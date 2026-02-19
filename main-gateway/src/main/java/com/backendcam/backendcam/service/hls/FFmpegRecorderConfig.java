@@ -14,7 +14,7 @@ class FFmpegRecorderConfig {
 
     private static final int TARGET_FPS = 25;
     private static final int HLS_TIME = 1;
-    private static final int VIDEO_BITRATE = 2_000_000; // 2 Mbps for better quality
+    private static final int VIDEO_BITRATE = 800_000; // 800 Kbps - optimized for 20 concurrent streams
 
     /**
      * Configure recorder with all necessary options for HLS streaming
@@ -61,11 +61,11 @@ class FFmpegRecorderConfig {
         // Thread configuration
         // recorder.setOption("threads", "1"); //Comment if production have multiple core/thread
 
-        // Encoder performance / latency (use 'fast' for better quality than 'veryfast')
-        recorder.setOption("preset", "fast");
+        // Encoder performance / latency - ultrafast to minimize CPU for many concurrent streams
+        recorder.setOption("preset", "ultrafast");
         recorder.setOption("tune", "zerolatency");
         recorder.setOption("bf", "0");
-        recorder.setOption("refs", "2"); // More reference frames for better quality
+        recorder.setOption("refs", "1"); // Minimal reference frames for lower CPU
         recorder.setOption("vsync", "cfr");
 
         // start

@@ -21,10 +21,11 @@ import org.springframework.stereotype.Component;
         grabber.setFormat("rtsp");
         grabber.setImageMode(ImageMode.COLOR);
 
-        // Low latency settings for live streaming
-        grabber.setOption("analyzeduration", "0");
-        grabber.setOption("probesize", "32");
-        grabber.setOption("max_delay", "0");
+        // Probe settings - must be large enough to detect HEVC/H.265 resolution
+        // Too small (e.g. 32) causes "Picture size 0x0" errors on HEVC cameras
+        grabber.setOption("analyzeduration", "1000000");  // 1 second to analyze stream
+        grabber.setOption("probesize", "1000000");        // 1MB to detect codec params
+        grabber.setOption("max_delay", "500000");          // 500ms max delay
         grabber.setOption("reorder_queue_size", "0");
 
         // Flags configuration for minimum latency

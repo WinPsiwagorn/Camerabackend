@@ -22,8 +22,10 @@ public class HLSStreamService {
 
     private static final Logger logger = LoggerFactory.getLogger(HLSStreamService.class);
     private static final int MAX_RECONNECT_ATTEMPTS = 10;
-    private static final int RECONNECT_DELAY_MS = 2000;
-    private static final int MAX_NULL_FRAMES = 50; // Max consecutive null frames before reconnect
+    private static final int RECONNECT_DELAY_MS = 3000;
+    private static final int MAX_NULL_FRAMES = 100; // Max consecutive null frames before reconnect
+    private static final int MAX_DIMENSION_RETRIES = 5; // Retries for getting valid resolution
+    private static final int DIMENSION_RETRY_DELAY_MS = 1000;
 
     private final Map<String, Thread> streamThreads = new ConcurrentHashMap<>();
     private final Map<String, StreamContext> streamContexts = new ConcurrentHashMap<>();
@@ -94,8 +96,37 @@ public class HLSStreamService {
                 // Use configuration class for grabber setup
                 grabberConfig.configureGrabber(grabber);
 
+                // Retry to get valid dimensions - HEVC cameras may need time to detect resolution
                 int width = grabber.getImageWidth();
                 int height = grabber.getImageHeight();
+                
+                for (int retry = 0; retry < MAX_DIMENSION_RETRIES && (width <= 0 || height <= 0); retry++) {
+                    logger.warn("Stream {} - Got invalid dimensions {}x{}, retrying {}/{}...", 
+                        streamName, width, height, retry + 1, MAX_DIMENSION_RETRIES);
+                    
+                    // Grab a few frames to force codec detection
+                    for (int i = 0; i < 30; i++) {
+                        Frame probeFrame = grabber.grabImage();
+                        if (probeFrame != null) {
+                            probeFrame.close();
+                        }
+                    }
+                    
+                    width = grabber.getImageWidth();
+                    height = grabber.getImageHeight();
+                    
+                    if (width <= 0 || height <= 0) {
+                        Thread.sleep(DIMENSION_RETRY_DELAY_MS);
+                    }
+                }
+                
+                if (width <= 0 || height <= 0) {
+                    logger.error("Stream {} - Failed to detect valid dimensions after {} retries. Got {}x{}. Aborting.", 
+                        streamName, MAX_DIMENSION_RETRIES, width, height);
+                    return; // Exit thread - finally block will clean up
+                }
+                
+                logger.info("Stream {} - Detected resolution: {}x{}", streamName, width, height);
 
                 recorder = new FFmpegFrameRecorder(hlsOutput, width, height, 0);
                 context.recorder = recorder;
@@ -127,10 +158,15 @@ public class HLSStreamService {
                                     logger.info("Stream {} - Reconnect attempt {}/{}", 
                                         streamName, reconnectAttempts, MAX_RECONNECT_ATTEMPTS);
                                     
-                                    // Stop and restart grabber
+                                    // Stop, release, and create fresh grabber to prevent native memory leak
                                     try {
                                         grabber.stop();
+                                        grabber.release();
                                         Thread.sleep(RECONNECT_DELAY_MS);
+                                        
+                                        // Create a fresh grabber to avoid stale native state
+                                        grabber = new FFmpegFrameGrabber(RTSPUrl);
+                                        context.grabber = grabber;
                                         grabberConfig.configureGrabber(grabber);
                                         nullFrameCount = 0;
                                         logger.info("Stream {} - Reconnected successfully", streamName);
@@ -155,11 +191,12 @@ public class HLSStreamService {
 
                         long now = System.currentTimeMillis();
                         if (now - lastLogTime >= 30_000) {
-                        logger.info("[{}] ✓ Live | Frames encoded: {}", streamName, frameCount);
-                        lastLogTime = now;
-        }
+                            logger.info("[{}] ✓ Live | Frames encoded: {}", streamName, frameCount);
+                            lastLogTime = now;
+                        }
                         
                         recorder.record(frame);
+                        frame.close(); // Release native memory immediately - prevents memory leak
                         
                     } catch (Exception frameEx) {
                         logger.warn("Stream {} - Frame processing error: {}", streamName, frameEx.getMessage());
