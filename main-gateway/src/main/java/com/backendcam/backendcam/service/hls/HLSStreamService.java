@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.bytedeco.ffmpeg.global.avutil;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.FFmpegFrameRecorder;
 import org.bytedeco.javacv.Frame;
@@ -25,6 +24,7 @@ public class HLSStreamService {
     private static final int MAX_NULL_FRAMES = 100;
     private static final int MAX_FULL_RESTARTS = 3;        // Full pipeline restart attempts
     private static final long FULL_RESTART_DELAY_MS = 5000; // Delay before full restart
+    
 
     private final Map<String, Thread> streamThreads = new ConcurrentHashMap<>();
     private final Map<String, StreamContext> streamContexts = new ConcurrentHashMap<>();
@@ -77,7 +77,6 @@ public class HLSStreamService {
         StreamContext context = new StreamContext();
 
         Thread thread = new Thread(() -> {
-            avutil.av_log_set_level(avutil.AV_LOG_ERROR);
             String hlsOutput = outputDir.getAbsolutePath().replace('\\', '/') + "/stream.m3u8";
             int fullRestartCount = 0;
 
@@ -109,7 +108,7 @@ public class HLSStreamService {
 
                             if (frame == null) {
                                 nullFrameCount++;
-                                if (nullFrameCount >= MAX_NULL_FRAMES) {
+                                if (nullFrameCount == 50 || nullFrameCount == 100 ) {
                                     logger.warn("Stream {} - {} consecutive null frames, attempting reconnect...",
                                             streamName, nullFrameCount);
 

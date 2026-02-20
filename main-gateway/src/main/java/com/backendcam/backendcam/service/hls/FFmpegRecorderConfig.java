@@ -121,19 +121,19 @@ class FFmpegRecorderConfig {
         
         // HLS specific settings
         recorder.setOption("hls_time", String.valueOf(HLS_TIME)); //segment duration
-        recorder.setOption("hls_list_size", "5"); //number of segments to keep
-        recorder.setOption("hls_delete_threshold", "2"); //segment to keep before delete_segments
+        recorder.setOption("hls_list_size", "3"); //number of segments to keep
+        recorder.setOption("hls_delete_threshold", "1"); //segment to keep before delete_segments
         recorder.setOption("hls_allow_cache", "0"); //disable cache
         recorder.setOption("hls_segment_type", "mpegts"); //segment format (mpegts = legacy, compatible) / (fmp4 = modern, ll-hls)
-        recorder.setOption("hls_flags", "delete_segments+omit_endlist+temp_file+program_date_time+independent_segments+append_list");
-        recorder.setOption("hls_start_number_source", "datetime"); // Use timestamp for segment numbers to avoid conflicts
+        recorder.setOption("hls_flags", "delete_segments+omit_endlist+temp_file+program_date_time+independent_segments");
+  
 
         // Segment filename pattern - use normalized path
-        String segPath = normalizedPath + "/s%d.ts";
+        String segPath = normalizedPath + "/s%04d.ts";
         recorder.setOption("hls_segment_filename", segPath);
 
         // Thread configuration
-        // recorder.setOption("threads", "1"); //Comment if production have multiple core/thread
+        recorder.setOption("threads", "1"); //Comment if production have multiple core/thread
 
         // Encoder performance / latency - ultrafast to minimize CPU for many concurrent streams
         recorder.setOption("preset", "ultrafast");

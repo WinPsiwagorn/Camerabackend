@@ -6,6 +6,7 @@ import org.bytedeco.javacv.FrameGrabber.ImageMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.bytedeco.ffmpeg.global.avutil;
 
 /**
  * Configures FFmpeg frame grabber for RTSP stream input.
@@ -106,6 +107,8 @@ public class FFmpegGrabberConfig {
      * @throws Exception if configuration fails
      */
     private void configureGrabber(FFmpegFrameGrabber grabber) throws Exception {
+        avutil.av_log_set_level(avutil.AV_LOG_FATAL);
+
         grabber.setFormat("rtsp");
         grabber.setImageMode(ImageMode.COLOR);
 
@@ -129,6 +132,8 @@ public class FFmpegGrabberConfig {
 
         grabber.setOption("allowed_media_types", "video");
         grabber.setOption("use_wallclock_as_timestamps", "1");
+
+        grabber.setOption("err_detect", "ignore_err");
 
         grabber.start();
     }
