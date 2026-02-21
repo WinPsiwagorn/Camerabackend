@@ -8,11 +8,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.springframework.stereotype.Service;
 
 import com.backendcam.backendcam.exception.InvalidGeoPointException;
 import com.backendcam.backendcam.model.dto.PageResponse;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.backendcam.backendcam.model.dto.camera.CameraMapResponseDto;
 import com.backendcam.backendcam.model.dto.camera.CameraResponseDto;
 import com.backendcam.backendcam.model.dto.camera.CameraTotalResponseDto;
@@ -33,6 +34,7 @@ public class CameraService {
 
     private final CameraRepository cameraRepository;
     private final CategoryRepository categoryRepository;
+    private final ObjectMapper objectMapper;
 
     public CameraResponseDto createCamera(CreateCameraDto createDto) {
         try {
@@ -75,14 +77,13 @@ public class CameraService {
 
     public Optional<CameraResponseDto> updateCamera(String id, UpdateCameraDto updateDto) {
         try {
-            Map<String, Object> updates = new HashMap<>();
-            
+            Map<String, Object> updates = objectMapper.convertValue(updateDto, new TypeReference<Map<String, Object>>() {});
+
+            if (updates.containsKey("latLong"))
+                updates.put("latLong", parseGeoPoint((String) updates.get("latLong")));
+
             if (updates.isEmpty()) {
                 return getCameraById(id);
-            }
-
-            if (updateDto.getLatLong() != null && !updateDto.getLatLong().isBlank()) {
-                updates.put("latLong", parseGeoPoint(updateDto.getLatLong()));
             }
 
             Camera updatedCamera = cameraRepository.updateFields(id, updates);
