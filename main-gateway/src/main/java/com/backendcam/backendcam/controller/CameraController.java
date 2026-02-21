@@ -10,6 +10,7 @@ import com.backendcam.backendcam.model.dto.MessageResponseDTO;
 import com.backendcam.backendcam.model.dto.PageResponse;
 import com.backendcam.backendcam.model.dto.camera.CameraMapResponseDto;
 import com.backendcam.backendcam.model.dto.camera.CameraResponseDto;
+import com.backendcam.backendcam.model.dto.camera.CameraTotalResponseDto;
 import com.backendcam.backendcam.model.dto.camera.CreateCameraDto;
 import com.backendcam.backendcam.service.camera.CameraService;
 
@@ -63,5 +64,11 @@ public class CameraController {
     public ResponseEntity<List<CameraMapResponseDto>> getCamerasForMap() {
         List<CameraMapResponseDto> cameras = cameraService.getCamerasForMap();
         return ResponseEntity.ok(cameras);
+    }
+
+    @GetMapping("/total")
+    public ResponseEntity<CameraTotalResponseDto> getCameraTotal() {
+        CameraTotalResponseDto total = cameraService.getCameraTotal();
+        return ResponseEntity.ok(total);
     }
 }

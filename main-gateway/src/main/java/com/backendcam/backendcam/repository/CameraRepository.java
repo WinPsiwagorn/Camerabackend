@@ -175,4 +175,12 @@ public class CameraRepository {
         db.collection(COLLECTION).document(cameraId)
                 .update("categories", FieldValue.arrayRemove(categoryId)).get();
     }
+
+    public long countByStatus(String status) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
+                .whereEqualTo("status", status)
+                .get();
+        return future.get().size();
+    }
 }

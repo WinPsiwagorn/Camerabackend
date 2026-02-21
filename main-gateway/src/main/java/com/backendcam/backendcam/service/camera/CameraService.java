@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.backendcam.backendcam.model.dto.PageResponse;
 import com.backendcam.backendcam.model.dto.camera.CameraMapResponseDto;
 import com.backendcam.backendcam.model.dto.camera.CameraResponseDto;
+import com.backendcam.backendcam.model.dto.camera.CameraTotalResponseDto;
 import com.backendcam.backendcam.model.dto.camera.CreateCameraDto;
 import com.backendcam.backendcam.model.entity.Camera;
 import com.backendcam.backendcam.repository.CameraRepository;
@@ -124,6 +125,17 @@ public class CameraService {
                     .collect(Collectors.toList());
         } catch (Exception e) {
             throw new RuntimeException("Failed to get cameras for map", e);
+        }
+    }
+
+    public CameraTotalResponseDto getCameraTotal() {
+        try {
+            long total = cameraRepository.getTotalCount();
+            long online = cameraRepository.countByStatus("online");
+            long offline = cameraRepository.countByStatus("offline");
+            return new CameraTotalResponseDto(total, online, offline);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get camera totals", e);
         }
     }
 
