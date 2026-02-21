@@ -1,7 +1,6 @@
 package com.backendcam.backendcam.controller;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +11,7 @@ import com.backendcam.backendcam.model.dto.camera.CameraMapResponseDto;
 import com.backendcam.backendcam.model.dto.camera.CameraResponseDto;
 import com.backendcam.backendcam.model.dto.camera.CameraTotalResponseDto;
 import com.backendcam.backendcam.model.dto.camera.CreateCameraDto;
+import com.backendcam.backendcam.model.dto.camera.UpdateCameraDto;
 import com.backendcam.backendcam.service.camera.CameraService;
 
 import lombok.RequiredArgsConstructor;
@@ -46,10 +46,10 @@ public class CameraController {
 
     @PatchMapping("/{id}")
     public ResponseEntity<CameraResponseDto> updateCamera(
-        @PathVariable String id, 
-        @RequestBody Map<String, Object> updates
+        @PathVariable String id,
+        @RequestBody UpdateCameraDto updateDto
     ) {
-        return cameraService.updateCamera(id, updates)
+        return cameraService.updateCamera(id, updateDto)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
