@@ -30,6 +30,7 @@ services:
           cpus: '2'
           memory: 2G
 
+
   kafka:
     image: apache/kafka:latest
     container_name: kafka
@@ -98,3 +99,22 @@ services:
         reservations:
           cpus: '1'
           memory: 2G
+
+  flutter-web:
+    build:
+      context: ./flutter_cctv-main
+      dockerfile: Dockerfile
+    container_name: flutter-web
+    ports:
+      - "3000:80"
+    environment:
+      TZ: "Asia/Bangkok"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
