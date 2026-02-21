@@ -1,7 +1,7 @@
 package com.backendcam.backendcam.controller;
 
 import com.backendcam.backendcam.model.entity.LicensePlate;
-import com.backendcam.backendcam.service.search.GetLicensePlate;
+import com.backendcam.backendcam.service.search.LicensePlateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,16 +13,22 @@ import java.util.List;
 @RequestMapping("/license-plates")
 public class LicensePlateController {
 
-    private final GetLicensePlate getLicensePlate;
+    private final LicensePlateService licensePlateService;
 
     /**
      * GET /api/license-plates/search?licensePlate=ABC123
      * Returns the top 10 fuzzy matches sorted by score then latest dateTime.
      */
     @GetMapping("/search")
-    public ResponseEntity<?> searchLicensePlate(@RequestParam String licensePlate) {
+    public ResponseEntity<?> searchLicensePlate(@RequestParam(required = false) String licensePlate) {
         try {
-            List<LicensePlate> results = getLicensePlate.getTopMatchesByLicensePlate(licensePlate);
+            List<LicensePlate> results;
+
+            if (licensePlate == null || licensePlate.trim().isEmpty()) {
+                results = licensePlateService.getAll();
+            } else {
+                results = licensePlateService.getTopMatchesByLicensePlate(licensePlate);
+            }
 
             if (results.isEmpty()) {
                 return ResponseEntity.notFound().build();

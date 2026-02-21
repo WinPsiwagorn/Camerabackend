@@ -12,8 +12,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import jakarta.annotation.PreDestroy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 public class StreamManager {
+
+    private static final Logger logger = LoggerFactory.getLogger(StreamManager.class);
 
     @Autowired
     private HLSStreamService hlsStreamService;
@@ -23,6 +29,21 @@ public class StreamManager {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final ConcurrentHashMap<String, Long> cooldownTimers = new ConcurrentHashMap<>();
     private static final long COOLDOWN_PERIOD_MS = 30000; // 30 seconds cooldown
+
+    @PreDestroy
+    public void shutdown() {
+        logger.info("Shutting down StreamManager scheduler...");
+        scheduler.shutdown();
+        try {
+            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                scheduler.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            scheduler.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+        logger.info("StreamManager scheduler shutdown complete");
+    }
 
     public synchronized void subscribe(String cameraId, String rtspUrl) {
         streamRefCounts.putIfAbsent(cameraId, new AtomicInteger(0));

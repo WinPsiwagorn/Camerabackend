@@ -13,6 +13,7 @@ services:
       GOOGLE_APPLICATION_CREDENTIALS: "/secrets/serviceAccount.json"
       SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:19092"
       FIREBASE_CREDENTIALS_PATH: "file:/secrets/serviceAccount.json"
+      JAVA_OPTS: "-Xmx3g -Xms1g -XX:MaxDirectMemorySize=2g"
     volumes:
       - ./main-gateway/hls:/hls
       - ./main-gateway/secrets/serviceAccount.json:/secrets/serviceAccount.json:ro
@@ -20,6 +21,14 @@ services:
       - /usr/share/zoneinfo/Asia/Bangkok:/etc/timezone:ro
     restart: unless-stopped
     # network_mode: host
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 6G
+        reservations:
+          cpus: '2'
+          memory: 2G
 
   kafka:
     image: apache/kafka:latest

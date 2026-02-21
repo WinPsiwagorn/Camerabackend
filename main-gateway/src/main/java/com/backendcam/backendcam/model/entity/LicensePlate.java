@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import com.backendcam.backendcam.model.dto.LicensePlateInfo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
@@ -23,6 +24,7 @@ public class LicensePlate {
      * Parse the ISO 8601 timestamp string into a LocalDateTime.
      * Returns null if timestamp is null or unparseable.
      */
+    @JsonIgnore
     public LocalDateTime getDateTime() {
         if (timestamp == null || timestamp.isBlank()) return null;
         try {
@@ -35,6 +37,7 @@ public class LicensePlate {
     /**
      * Parse the ISO 8601 timestamp string into an OffsetDateTime (preserves timezone offset).
      */
+    @JsonIgnore
     public OffsetDateTime getOffsetDateTime() {
         if (timestamp == null || timestamp.isBlank()) return null;
         try {
@@ -45,6 +48,7 @@ public class LicensePlate {
     }
 
     /** Convenience: get the full plate string (e.g. "8กผ 8167") */
+    @JsonIgnore
     public String getFullPlate() {
         return licensePlate != null ? licensePlate.getFullPlate() : null;
     }
