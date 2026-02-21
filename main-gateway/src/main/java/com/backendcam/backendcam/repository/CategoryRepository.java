@@ -146,4 +146,34 @@ public class CategoryRepository {
         category.setName(doc.getString("name"));
         return category;
     }
+
+    /**
+     * Batch-fetch multiple categories by their IDs in a single Firestore round trip.
+     * This is the official Firestore equivalent of MongoDB's populate/$in.
+     */
+    public List<Category> getCategoriesByIds(List<String> ids) throws ExecutionException, InterruptedException {
+        if (ids == null || ids.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Firestore db = getFirestore();
+
+        // Build DocumentReferences for all IDs
+        DocumentReference[] refs = ids.stream()
+                .map(id -> db.collection(COLLECTION).document(id))
+                .toArray(DocumentReference[]::new);
+
+        // getAll() fetches all docs in ONE round trip — the official Firestore batch-get API
+        List<DocumentSnapshot> snapshots = db.getAll(refs).get();
+
+        List<Category> categories = new ArrayList<>();
+        for (DocumentSnapshot snapshot : snapshots) {
+            if (snapshot.exists()) {
+                Category category = snapshot.toObject(Category.class);
+                category.setId(snapshot.getId());
+                categories.add(category);
+            }
+        }
+        return categories;
+    }
 }

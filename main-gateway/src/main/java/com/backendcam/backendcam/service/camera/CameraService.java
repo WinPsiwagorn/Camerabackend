@@ -1,9 +1,12 @@
 package com.backendcam.backendcam.service.camera;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -15,8 +18,10 @@ import com.backendcam.backendcam.model.dto.camera.CameraResponseDto;
 import com.backendcam.backendcam.model.dto.camera.CameraTotalResponseDto;
 import com.backendcam.backendcam.model.dto.camera.CreateCameraDto;
 import com.backendcam.backendcam.model.dto.camera.UpdateCameraDto;
+import com.backendcam.backendcam.model.dto.category.CategoryResponseDTO;
 import com.backendcam.backendcam.model.entity.Camera;
 import com.backendcam.backendcam.repository.CameraRepository;
+import com.backendcam.backendcam.repository.CategoryRepository;
 import com.backendcam.backendcam.util.PaginationUtil;
 import com.google.cloud.firestore.GeoPoint;
 
@@ -27,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 public class CameraService {
 
     private final CameraRepository cameraRepository;
+    private final CategoryRepository categoryRepository;
 
     public CameraResponseDto createCamera(CreateCameraDto createDto) {
         try {
@@ -51,7 +57,8 @@ public class CameraService {
         try {
             List<Camera> cameras = cameraRepository.getCamerasByPage(page, limit);
             long totalItems = cameraRepository.getTotalCount();
-            return PaginationUtil.createPaginationResponse(cameras, totalItems, page, limit, this::toDto);
+            List<CameraResponseDto> dtos = toDtoList(cameras);
+            return PaginationUtil.createPaginationResponse(dtos, totalItems, page, limit, Function.identity());
         } catch (Exception e) {
             throw new RuntimeException("Failed to get cameras", e);
         }
@@ -98,9 +105,7 @@ public class CameraService {
     public Optional<List<CameraResponseDto>> getCamerasByCategoryId(String categoryId) {
         try {
             return cameraRepository.getCamerasByCategoryId(categoryId)
-                    .map(cameras -> cameras.stream()
-                            .map(this::toDto)
-                            .collect(Collectors.toList()));
+                    .map(this::toDtoList);
         } catch (Exception e) {
             throw new RuntimeException("Failed to get cameras by category ID: " + categoryId, e);
         }
@@ -147,8 +152,36 @@ public class CameraService {
         }
     }
 
-    private GeoPoint parseGeoPoint(String latLong) {
-        try {
+    /**
+     * Batch-optimized list mapping — O(1) Firestore round trips regardless of list size.
+     * 1. Collect all unique category IDs across all cameras  → Set<String>
+     * 2. Fetch them all in ONE getAll() call                 → Map<id, CategoryResponseDTO>
+     * 3. Map each camera using the pre-built lookup map      → no extra I/O per camera
+     */
+    private List<CameraResponseDto> toDtoList(List<Camera> cameras) {
+        // Step 1 — collect unique category IDs across all cameras
+        Set<String> uniqueCategoryIds = cameras.stream()
+                .filter(c -> c.getCategories() != null)
+                .flatMap(c -> c.getCategories().stream())
+                .collect(Collectors.toSet());
+
+        // Step 2 — ONE batch fetch for all unique IDs
+        Map<String, CategoryResponseDTO> categoryMap = new HashMap<>();
+        if (!uniqueCategoryIds.isEmpty()) {
+            try {
+                categoryRepository.getCategoriesByIds(new ArrayList<>(uniqueCategoryIds))
+                        .forEach(cat -> categoryMap.put(cat.getId(),
+                                new CategoryResponseDTO(cat.getId(), cat.getName())));
+            } catch (Exception ignored) {}
+        }
+
+        // Step 3 — map each camera using the lookup map (no I/O)
+        return cameras.stream()
+                .map(camera -> toDto(camera, categoryMap))
+                .collect(Collectors.toList());
+    }
+
+    private GeoPoint parseGeoPoint(String latLong) {        try {
             String[] coords = latLong.split(",");
             if (coords.length != 2) throw new IllegalArgumentException();
             return new GeoPoint(
@@ -161,17 +194,41 @@ public class CameraService {
     }
 
     private CameraResponseDto toDto(Camera camera) {
+        // For single-camera calls — fetch only this camera's categories
+        Map<String, CategoryResponseDTO> categoryMap = new HashMap<>();
+        List<String> ids = camera.getCategories();
+        if (ids != null && !ids.isEmpty()) {
+            try {
+                categoryRepository.getCategoriesByIds(ids)
+                        .forEach(cat -> categoryMap.put(cat.getId(),
+                                new CategoryResponseDTO(cat.getId(), cat.getName())));
+            } catch (Exception ignored) {}
+        }
+        return toDto(camera, categoryMap);
+    }
+
+    private CameraResponseDto toDto(Camera camera, Map<String, CategoryResponseDTO> categoryMap) {
         CameraResponseDto dto = new CameraResponseDto();
         dto.setId(camera.getId());
         dto.setName(camera.getName());
-        
+
         if (camera.getLatLong() != null) {
             dto.setLatLong(camera.getLatLong().getLatitude() + "," + camera.getLatLong().getLongitude());
         }
-        
+
         dto.setAddress(camera.getAddress());
         dto.setStatus(camera.getStatus());
-        dto.setCategories(camera.getCategories());
+
+        List<String> categoryIds = camera.getCategories();
+        if (categoryIds != null && !categoryIds.isEmpty()) {
+            List<CategoryResponseDTO> categories = categoryIds.stream()
+                    .map(categoryMap::get)
+                    .filter(cat -> cat != null)
+                    .collect(Collectors.toList());
+            dto.setCategories(categories);
+        } else {
+            dto.setCategories(new ArrayList<>());
+        }
 
         if (camera.getLastSeen() != null) {
             CameraResponseDto.LastSeen lastSeenDto = new CameraResponseDto.LastSeen();
