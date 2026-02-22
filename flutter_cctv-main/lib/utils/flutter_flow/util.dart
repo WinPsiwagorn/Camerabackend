@@ -11,21 +11,21 @@ import 'package:json_path/json_path.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:url_launcher/url_launcher.dart';
 
-import '../main.dart';
+import '../../main.dart';
 
-import 'lat_lng.dart';
+import '../models/lat_lng.dart';
 
-export 'lat_lng.dart';
-export 'place.dart';
-export 'uploaded_file.dart';
-export '../core/state/app_state.dart';
-export 'flutter_flow_model.dart';
+export '../models/lat_lng.dart';
+export '../models/place.dart';
+export '../models/uploaded_file.dart';
+export '../../core/state/app_state.dart';
+export 'model.dart';
 export 'dart:math' show min, max;
 export 'dart:typed_data' show Uint8List;
 export 'dart:convert' show jsonEncode, jsonDecode;
 export 'package:intl/intl.dart';
 export 'package:page_transition/page_transition.dart';
-export 'nav/nav.dart';
+export '../nav/nav.dart';
 
 T valueOrDefault<T>(T? value, T defaultValue) =>
     (value is String && value.isEmpty) || value == null ? defaultValue : value;

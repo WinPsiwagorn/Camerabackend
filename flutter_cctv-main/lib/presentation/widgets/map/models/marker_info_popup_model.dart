@@ -1,9 +1,9 @@
-import '/utils/flutter_flow_icon_button.dart';
-import '/utils/flutter_flow_theme.dart';
-import '/utils/flutter_flow_util.dart';
-import '/utils/flutter_flow_widgets.dart';
+import '/utils/flutter_flow/icon_button.dart';
+import '/utils/flutter_flow/theme.dart';
+import '/utils/flutter_flow/util.dart';
+import '/utils/flutter_flow/widgets.dart';
 import 'dart:ui';
-import 'marker_info_popup_widget.dart' show MarkerInfoPopupWidget;
+import '../views/marker_info_popup_widget.dart' show MarkerInfoPopupWidget;
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';

@@ -1,7 +1,7 @@
 import '/data/services/index.dart';
-import '/presentation/widgets/nav_bar_main_widget.dart';
-import '/utils/flutter_flow_theme.dart';
-import '/utils/flutter_flow_util.dart';
+import '/presentation/widgets/nav/views/nav_bar_main_widget.dart';
+import '/utils/flutter_flow/theme.dart';
+import '/utils/flutter_flow/util.dart';
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -126,7 +126,7 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
   // ---------------------------------------------------------------------------
 
   void _openImageViewer(BuildContext context, String imageUrl,
-      {String? plateText}) {
+      {String? plateText, String? province}) {
     showDialog(
       context: context,
       barrierColor: Colors.black87,
@@ -191,18 +191,35 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 8),
+                          horizontal: 20, vertical: 10),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(30),
                       ),
-                      child: Text(
-                        plateText,
-                        style: GoogleFonts.sarabun(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF111827),
-                        ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            plateText,
+                            style: GoogleFonts.sarabun(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF111827),
+                            ),
+                          ),
+                          if (province != null && province.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(
+                                province,
+                                style: GoogleFonts.sarabun(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF6B7280),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ],
@@ -211,7 +228,7 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                   TextButton.icon(
                     onPressed: () => Navigator.of(ctx).pop(),
                     icon: const Icon(Icons.close, color: Colors.white70),
-                    label: const Text('ปิด',
+                    label: const Text('close',
                         style: TextStyle(color: Colors.white70)),
                   ),
                 ],
@@ -246,7 +263,7 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
             decoration: BoxDecoration(
               color: FlutterFlowTheme.of(context).primary,
             ),
-            children: ['License Plate', 'Camera ID', 'Timestamp', 'Image']
+            children: ['Full License Plate', 'Camera ID', 'Timestamp', 'Image']
                 .map(
                   (col) => TableCell(
                     verticalAlignment: TableCellVerticalAlignment.middle,
@@ -382,6 +399,7 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                               context,
                               imageUrl,
                               plateText: fullPlate,
+                              province: province,
                             ),
                             child: Stack(
                               children: [

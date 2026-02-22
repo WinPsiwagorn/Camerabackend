@@ -1,7 +1,7 @@
-import '/presentation/widgets/addnewcamera_widget.dart';
-import '/presentation/widgets/nav_bar_main_widget.dart';
-import '/utils/flutter_flow_theme.dart';
-import '/utils/flutter_flow_util.dart';
+import '/presentation/widgets/camera/views/addnewcamera_widget.dart';
+import '/presentation/widgets/nav/views/nav_bar_main_widget.dart';
+import '/utils/flutter_flow/theme.dart';
+import '/utils/flutter_flow/util.dart';
 import 'dart:ui';
 import 'list_camera_page_widget.dart' show ListCameraPageWidget;
 import 'package:flutter/material.dart';

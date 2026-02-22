@@ -1,6 +1,6 @@
-import '/utils/flutter_flow_theme.dart';
-import '/utils/flutter_flow_util.dart';
-import 'addnewcamera_widget.dart' show AddnewcameraWidget;
+import '/utils/flutter_flow/theme.dart';
+import '/utils/flutter_flow/util.dart';
+import '../views/addnewcamera_widget.dart' show AddnewcameraWidget;
 import 'package:flutter/material.dart';
 
 class AddnewcameraModel extends FlutterFlowModel<AddnewcameraWidget> {

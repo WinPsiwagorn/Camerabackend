@@ -15,7 +15,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/browser_client.dart'
     if (dart.library.io) 'browser_client_stub.dart';
 
-import '/utils/uploaded_file.dart';
+import '/utils/models/uploaded_file.dart';
 
 import 'get_streamed_response.dart';
 

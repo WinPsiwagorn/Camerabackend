@@ -1,6 +1,6 @@
 import '/core/state/app_state.dart';
 import '/data/services/api_manager.dart';
-import '/utils/flutter_flow_util.dart';
+import '/utils/flutter_flow/util.dart';
 import '/core/config/api_config.dart';
 import '/data/models/camera_model.dart';
 import '/data/models/category_model.dart';
