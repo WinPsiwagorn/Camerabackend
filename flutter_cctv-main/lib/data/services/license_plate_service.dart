@@ -1,5 +1,5 @@
 import '/data/services/api_manager.dart';
-import '/utils/flutter_flow_util.dart';
+import '/utils/flutter_flow/util.dart';
 import '/core/config/api_config.dart';
 
 export '/data/services/api_manager.dart' show ApiCallResponse;

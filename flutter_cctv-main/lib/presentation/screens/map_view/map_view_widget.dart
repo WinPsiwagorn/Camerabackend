@@ -1,10 +1,10 @@
-import '/presentation/widgets/map_view_component_widget.dart';
-import '/presentation/widgets/marker_info_popup_widget.dart';
-import '/presentation/widgets/nav_bar_main_widget.dart';
-import '/presentation/widgets/preview_overlay_widget.dart';
-import '/utils/flutter_flow_theme.dart';
-import '/utils/flutter_flow_util.dart';
-import '/utils/flutter_flow_widgets.dart';
+import '/presentation/widgets/map/views/map_view_component_widget.dart';
+import '/presentation/widgets/map/views/marker_info_popup_widget.dart';
+import '/presentation/widgets/nav/views/nav_bar_main_widget.dart';
+import '/presentation/widgets/camera/views/preview_overlay_widget.dart';
+import '/utils/flutter_flow/theme.dart';
+import '/utils/flutter_flow/util.dart';
+import '/utils/flutter_flow/widgets.dart';
 import 'dart:ui';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';

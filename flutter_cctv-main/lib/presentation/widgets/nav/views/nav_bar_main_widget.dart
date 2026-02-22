@@ -1,13 +1,13 @@
-import '/utils/flutter_flow_theme.dart';
-import '/utils/flutter_flow_util.dart';
-import '/utils/flutter_flow_widgets.dart';
+import '/utils/flutter_flow/theme.dart';
+import '/utils/flutter_flow/util.dart';
+import '/utils/flutter_flow/widgets.dart';
 import 'dart:ui';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'nav_bar_main_model.dart';
-export 'nav_bar_main_model.dart';
+import '../models/nav_bar_main_model.dart';
+export '../models/nav_bar_main_model.dart';
 
 class NavBarMainWidget extends StatefulWidget {
   const NavBarMainWidget({super.key});

@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 
-import '/utils/flutter_flow_theme.dart';
-import 'utils/flutter_flow_util.dart';
+import '/utils/flutter_flow/theme.dart';
+import 'utils/flutter_flow/util.dart';
 import 'utils/nav/nav.dart';
 import 'index.dart';
 

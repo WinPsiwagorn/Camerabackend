@@ -1,8 +1,8 @@
 import '/data/services/index.dart';
-import '/utils/flutter_flow_animations.dart';
-import '/utils/flutter_flow_theme.dart';
-import '/utils/flutter_flow_util.dart';
-import '/utils/flutter_flow_widgets.dart';
+import '/utils/flutter_flow/animations.dart';
+import '/utils/flutter_flow/theme.dart';
+import '/utils/flutter_flow/util.dart';
+import '/utils/flutter_flow/widgets.dart';
 import 'dart:math';
 import 'dart:ui';
 import '/index.dart';

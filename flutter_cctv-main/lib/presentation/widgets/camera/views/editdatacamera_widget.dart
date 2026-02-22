@@ -1,14 +1,14 @@
 import '/data/services/index.dart';
-import '/utils/flutter_flow_icon_button.dart';
-import '/utils/flutter_flow_theme.dart';
-import '/utils/flutter_flow_util.dart';
-import '/utils/flutter_flow_widgets.dart';
+import '/utils/flutter_flow/icon_button.dart';
+import '/utils/flutter_flow/theme.dart';
+import '/utils/flutter_flow/util.dart';
+import '/utils/flutter_flow/widgets.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'editdatacamera_model.dart';
-export 'editdatacamera_model.dart';
+import '../models/editdatacamera_model.dart';
+export '../models/editdatacamera_model.dart';
 
 class EditdatacameraWidget extends StatefulWidget {
   const EditdatacameraWidget({

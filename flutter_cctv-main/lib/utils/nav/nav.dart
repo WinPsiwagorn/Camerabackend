@@ -8,10 +8,10 @@ import 'package:provider/provider.dart';
 import '/core/auth/base_auth_user.dart';
 
 import '/main.dart';
-import '/utils/flutter_flow_theme.dart';
-import '/utils/lat_lng.dart';
-import '/utils/place.dart';
-import '/utils/flutter_flow_util.dart';
+import '/utils/flutter_flow/theme.dart';
+import '/utils/models/lat_lng.dart';
+import '/utils/models/place.dart';
+import '/utils/flutter_flow/util.dart';
 import 'serialization_util.dart';
 
 import '/index.dart';
