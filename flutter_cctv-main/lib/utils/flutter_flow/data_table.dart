@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
-import 'flutter_flow_util.dart';
+import 'util.dart';
 
 export 'package:data_table_2/data_table_2.dart' show DataColumn2;
 

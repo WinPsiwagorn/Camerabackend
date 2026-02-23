@@ -1,14 +1,14 @@
 import '/data/services/index.dart';
-import '/utils/flutter_flow_theme.dart';
-import '/utils/flutter_flow_util.dart';
-import '/utils/flutter_flow_widgets.dart';
+import '/utils/flutter_flow/theme.dart';
+import '/utils/flutter_flow/util.dart';
+import '/utils/flutter_flow/widgets.dart';
 import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'addnewcamera_model.dart';
-export 'addnewcamera_model.dart';
+import '../models/addnewcamera_model.dart';
+export '../models/addnewcamera_model.dart';
 
 class AddnewcameraWidget extends StatefulWidget {
   const AddnewcameraWidget({super.key});
