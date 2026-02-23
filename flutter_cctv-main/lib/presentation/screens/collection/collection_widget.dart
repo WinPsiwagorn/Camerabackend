@@ -46,6 +46,60 @@ class _CollectionWidgetState extends State<CollectionWidget> {
     super.dispose();
   }
 
+  /// Fixed palette of background/text color pairs for category chips.
+  static const List<_ChipColor> _chipPalette = [
+    _ChipColor(bg: Color(0xFFEDE9FE), text: Color(0xFF5B21B6)), // violet
+    _ChipColor(bg: Color(0xFFDBEAFE), text: Color(0xFF1D4ED8)), // blue
+    _ChipColor(bg: Color(0xFFD1FAE5), text: Color(0xFF065F46)), // green
+    _ChipColor(bg: Color(0xFFFEF3C7), text: Color(0xFF92400E)), // amber
+  ];
+
+  /// Returns a consistent color for a given category name.
+  _ChipColor _colorFor(String name) {
+    final idx = name.codeUnits.fold(0, (a, b) => a + b) % _chipPalette.length;
+    return _chipPalette[idx];
+  }
+
+  Widget _buildCategoryChips(dynamic item) {
+    final cats = getJsonField(item, r'$.categories');
+    if (cats == null || (cats is List && cats.isEmpty)) {
+      return const SizedBox.shrink();
+    }
+    final list = cats is List ? cats : [cats];
+    final names = list
+        .map((c) {
+          if (c is Map) return c['name']?.toString() ?? '';
+          return c.toString();
+        })
+        .where((n) => n.isNotEmpty)
+        .toList();
+    if (names.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: names.map((name) {
+        final col = _colorFor(name);
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+          decoration: BoxDecoration(
+            color: col.bg,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            name,
+            style: TextStyle(
+              color: col.text,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -107,7 +161,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                     // Perform search using text field value
                                     if (_model.textController.text.isNotEmpty) {
                                       _model.apiResultSearch =
-                                          await CameraService().getCameras();
+                                          await CameraService().getCameras(limit: '100');
 
                                       if (_model.apiResultSearch?.succeeded ??
                                           false) {
@@ -472,7 +526,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                 onPressed: () async {
                                   if (_model.textController.text.isNotEmpty) {
                                     _model.apiResultSearch =
-                                        await CameraService().getCameras();
+                                        await CameraService().getCameras(limit: '100');
 
                                     if (_model.apiResultSearch?.succeeded ??
                                         false) {
@@ -606,7 +660,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                       return StatefulBuilder(
                                         builder: (context, setDialogState) {
                                           return FutureBuilder<ApiCallResponse>(
-                                            future: CategoryService().getCategories(),
+                                            future: CategoryService().getCategories(limit: '100'),
                                             builder: (context, snapshot) {
                                               if (!snapshot.hasData) {
                                                 return Center(
@@ -630,7 +684,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                               
                                               // Fetch all cameras once for efficient filtering
                                               return FutureBuilder<ApiCallResponse>(
-                                                future: CameraService().getCameras(),
+                                                future: CameraService().getCameras(limit: '100'),
                                                 builder: (context, allCamerasSnapshot) {
                                                   final allCameras = allCamerasSnapshot.hasData
                                                       ? (CameraService().parseDataList(
@@ -1092,122 +1146,181 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                                       await showDialog(
                                                                                         context: context,
                                                                                         builder: (addContext) {
-                                                                                          return AlertDialog(
-                                                                                            title: Text(
-                                                                                                'Add Cameras to "$categoryName"'),
-                                                                                            content: Container(
-                                                                                              width:
-                                                                                                  double.maxFinite,
-                                                                                              child:
-                                                                                                  ListView.builder(
-                                                                                                shrinkWrap: true,
-                                                                                                itemCount:
-                                                                                                    availableCameras
-                                                                                                        .length,
-                                                                                                itemBuilder:
-                                                                                                    (context,
-                                                                                                        idx) {
-                                                                                                  final camera =
-                                                                                                      availableCameras[
-                                                                                                          idx];
-                                                                                                  final cameraId =
-                                                                                                      getJsonField(
-                                                                                                              camera,
-                                                                                                              r'$.id')
-                                                                                                          .toString();
-                                                                                                  final cameraName =
-                                                                                                      getJsonField(
-                                                                                                              camera,
-                                                                                                              r'$.name')
-                                                                                                          .toString();
-                                                                                                  
-                                                                                                  return ListTile(
-                                                                                                    leading: Icon(
-                                                                                                        Icons
-                                                                                                            .videocam,
-                                                                                                        color: Color(
-                                                                                                            0xFF39D2C0)),
-                                                                                                    title: Text(
-                                                                                                        cameraName),
-                                                                                                    trailing: IconButton(
-                                                                                                      icon: Icon(
-                                                                                                          Icons
-                                                                                                              .add_circle,
-                                                                                                          color: Color(
-                                                                                                              0xFF4B39EF)),
-                                                                                                      onPressed:
-                                                                                                          () async {
-                                                                                                        Navigator.pop(
-                                                                                                            addContext);
-                                                                                                        
-                                                                                                        showDialog(
-                                                                                                          context:
-                                                                                                              context,
-                                                                                                          barrierDismissible:
-                                                                                                              false,
-                                                                                                          builder: (loadingContext) =>
-                                                                                                              Center(
-                                                                                                            child:
-                                                                                                                CircularProgressIndicator(),
+                                                                                          return StatefulBuilder(
+                                                                                            builder: (context, setSearchState) {
+                                                                                              final searchController = TextEditingController();
+                                                                                              String searchQuery = '';
+                                                                                              
+                                                                                              final filteredCameras = availableCameras.where((camera) {
+                                                                                                final cameraName = getJsonField(camera, r'$.name').toString().toLowerCase();
+                                                                                                return cameraName.contains(searchQuery.toLowerCase());
+                                                                                              }).toList();
+                                                                                              
+                                                                                              return AlertDialog(
+                                                                                                title: Text('Add Cameras to "$categoryName"'),
+                                                                                                content: Container(
+                                                                                                  width: 500,
+                                                                                                  height: 400,
+                                                                                                  child: Column(
+                                                                                                    children: [
+                                                                                                      // Search field
+                                                                                                      TextField(
+                                                                                                        controller: searchController,
+                                                                                                        decoration: InputDecoration(
+                                                                                                          prefixIcon: Icon(Icons.search),
+                                                                                                          hintText: 'Search cameras...',
+                                                                                                          border: OutlineInputBorder(
+                                                                                                            borderRadius: BorderRadius.circular(8),
                                                                                                           ),
-                                                                                                        );
+                                                                                                          contentPadding: EdgeInsets.symmetric(
+                                                                                                            horizontal: 12,
+                                                                                                            vertical: 8,
+                                                                                                          ),
+                                                                                                        ),
+                                                                                                        onChanged: (value) {
+                                                                                                          setSearchState(() {
+                                                                                                            searchQuery = value;
+                                                                                                          });
+                                                                                                        },
+                                                                                                      ),
+                                                                                                      SizedBox(height: 16),
+                                                                                                      // Results count
+                                                                                                      Align(
+                                                                                                        alignment: Alignment.centerLeft,
+                                                                                                        child: Text(
+                                                                                                          '${filteredCameras.length} camera(s) available',
+                                                                                                          style: TextStyle(
+                                                                                                            fontSize: 12,
+                                                                                                            color: Colors.grey[600],
+                                                                                                          ),
+                                                                                                        ),
+                                                                                                      ),
+                                                                                                      SizedBox(height: 8),
+                                                                                                      Divider(height: 1),
+                                                                                                      SizedBox(height: 8),
+                                                                                                      // Camera list
+                                                                                                      Expanded(
+                                                                                                        child: filteredCameras.isEmpty
+                                                                                                          ? Center(
+                                                                                                              child: Text(
+                                                                                                                'No cameras found',
+                                                                                                                style: TextStyle(color: Colors.grey),
+                                                                                                              ),
+                                                                                                            )
+                                                                                                          : ListView.builder(
+                                                                                                              itemCount: filteredCameras.length,
+                                                                                                              itemBuilder: (context, idx) {
+                                                                                                                final camera = filteredCameras[idx];
+                                                                                                                final cameraId = getJsonField(camera, r'$.id').toString();
+                                                                                                                final cameraName = getJsonField(camera, r'$.name').toString();
+                                                                                                                
+                                                                                                                return ListTile(
+                                                                                                                  leading: Icon(
+                                                                                                                    Icons.videocam,
+                                                                                                                    color: Color(0xFF39D2C0),
+                                                                                                                  ),
+                                                                                                                  title: Text(cameraName),
+                                                                                                                  trailing: IconButton(
+                                                                                                                    icon: Icon(
+                                                                                                                      Icons.add_circle,
+                                                                                                                      color: Color(0xFF4B39EF),
+                                                                                                                    ),
+                                                                                                                    onPressed: () async {
+                                                                                                        // Close the selection dialog first
+                                                                                                        Navigator.of(addContext).pop();
                                                                                                         
-                                                                                                        final addResponse =
-                                                                                                            await CameraService()
-                                                                                                                .addCategoryToCamera(
-                                                                                                          categoryId:
-                                                                                                              categoryId,
-                                                                                                          cameraId:
-                                                                                                              cameraId,
-                                                                                                        );
+                                                                                                        // Capture navigator and scaffold messenger before async
+                                                                                                        final navigator = Navigator.of(context, rootNavigator: true);
+                                                                                                        final scaffoldMessenger = ScaffoldMessenger.of(context);
                                                                                                         
-                                                                                                        Navigator.pop(
-                                                                                                            context);
-                                                                                                        
-                                                                                                        if (addResponse
-                                                                                                            .succeeded) {
-                                                                                                          ScaffoldMessenger.of(
-                                                                                                                  context)
-                                                                                                              .showSnackBar(
-                                                                                                            SnackBar(
-                                                                                                              content:
-                                                                                                                  Text('Camera added!'),
-                                                                                                              backgroundColor:
-                                                                                                                  Color(0xFF4CAF50),
-                                                                                                            ),
+                                                                                                        // Show loading
+                                                                                                        bool isLoadingShown = false;
+                                                                                                        try {
+                                                                                                          showDialog(
+                                                                                                            context: context,
+                                                                                                            barrierDismissible: false,
+                                                                                                            builder: (loadingContext) {
+                                                                                                              isLoadingShown = true;
+                                                                                                              return WillPopScope(
+                                                                                                                onWillPop: () async => false,
+                                                                                                                child: Center(
+                                                                                                                  child: CircularProgressIndicator(),
+                                                                                                                ),
+                                                                                                              );
+                                                                                                            },
                                                                                                           );
-                                                                                                          setDialogState(
-                                                                                                              () {});
-                                                                                                        } else {
-                                                                                                          ScaffoldMessenger.of(
-                                                                                                                  context)
-                                                                                                              .showSnackBar(
-                                                                                                            SnackBar(
-                                                                                                              content:
-                                                                                                                  Text('Failed to add camera'),
-                                                                                                              backgroundColor:
-                                                                                                                  Colors.red,
-                                                                                                            ),
+                                                                                                          
+                                                                                                          final addResponse = await CameraService()
+                                                                                                              .addCategoryToCamera(
+                                                                                                            categoryId: categoryId,
+                                                                                                            cameraId: cameraId,
                                                                                                           );
+                                                                                                          
+                                                                                                          // Close loading if still mounted
+                                                                                                          if (isLoadingShown) {
+                                                                                                            try {
+                                                                                                              if (navigator.canPop()) navigator.pop();
+                                                                                                            } catch (_) {}
+                                                                                                          }
+                                                                                                          
+                                                                                                          // Show result if still mounted
+                                                                                                          if (!mounted) return;
+                                                                                                          
+                                                                                                          if (addResponse.succeeded) {
+                                                                                                            scaffoldMessenger.showSnackBar(
+                                                                                                              SnackBar(
+                                                                                                                content: Text('Camera added!'),
+                                                                                                                backgroundColor: Color(0xFF4CAF50),
+                                                                                                              ),
+                                                                                                            );
+                                                                                                            setDialogState(() {});
+                                                                                                            Future.delayed(Duration(milliseconds: 100), () {
+                                                                                                              if (mounted) safeSetState(() {});
+                                                                                                            });
+                                                                                                          } else {
+                                                                                                            scaffoldMessenger.showSnackBar(
+                                                                                                              SnackBar(
+                                                                                                                content: Text('Failed to add camera'),
+                                                                                                                backgroundColor: Colors.red,
+                                                                                                              ),
+                                                                                                            );
+                                                                                                          }
+                                                                                                        } catch (e) {
+                                                                                                          // Ensure loading closes
+                                                                                                          if (isLoadingShown) {
+                                                                                                            try {
+                                                                                                              if (navigator.canPop()) navigator.pop();
+                                                                                                            } catch (_) {}
+                                                                                                          }
+                                                                                                          if (mounted) {
+                                                                                                            scaffoldMessenger.showSnackBar(
+                                                                                                              SnackBar(
+                                                                                                                content: Text('Error: ${e.toString()}'),
+                                                                                                                backgroundColor: Colors.red,
+                                                                                                              ),
+                                                                                                            );
+                                                                                                          }
                                                                                                         }
                                                                                                       },
                                                                                                     ),
                                                                                                   );
                                                                                                 },
                                                                                               ),
-                                                                                            ),
-                                                                                            actions: [
-                                                                                              TextButton(
-                                                                                                onPressed: () =>
-                                                                                                    Navigator.pop(
-                                                                                                        addContext),
-                                                                                                child:
-                                                                                                    Text('Close'),
-                                                                                              ),
-                                                                                            ],
-                                                                                          );
-                                                                                        },
-                                                                                      );
+                                                                                      ),
+                                                                                    ],
+                                                                                  ),
+                                                                                ),
+                                                                                actions: [
+                                                                                  TextButton(
+                                                                                    onPressed: () => Navigator.pop(addContext),
+                                                                                    child: Text('Close'),
+                                                                                  ),
+                                                                                ],
+                                                                              );
+                                                                            },
+                                                                          );
+                                                                        },
+                                                                      );
                                                                                     },
                                                                                     icon: Icon(Icons.add,
                                                                                         size: 16.0),
@@ -1316,59 +1429,79 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                                           },
                                                                                         );
                                                                                         
-                                                                                        if (confirmRemove ==
-                                                                                            true) {
-                                                                                          showDialog(
-                                                                                            context: context,
-                                                                                            barrierDismissible:
-                                                                                                false,
-                                                                                            builder:
-                                                                                                (loadingContext) =>
-                                                                                                    Center(
-                                                                                              child:
-                                                                                                  CircularProgressIndicator(),
-                                                                                            ),
-                                                                                          );
+                                                                                        if (confirmRemove == true) {
+                                                                                          // Capture navigator and scaffold messenger before async
+                                                                                          final navigator = Navigator.of(context, rootNavigator: true);
+                                                                                          final scaffoldMessenger = ScaffoldMessenger.of(context);
                                                                                           
-                                                                                          final removeResponse =
-                                                                                              await CameraService()
-                                                                                                  .deleteCategoryFromCamera(
-                                                                                            categoryId:
-                                                                                                categoryId,
-                                                                                            cameraId:
-                                                                                                cameraId,
-                                                                                          );
-                                                                                          
-                                                                                          Navigator.pop(
-                                                                                              context);
-                                                                                          
-                                                                                          if (removeResponse
-                                                                                              .succeeded) {
-                                                                                            ScaffoldMessenger.of(
-                                                                                                    context)
-                                                                                                .showSnackBar(
-                                                                                              SnackBar(
-                                                                                                content: Text(
-                                                                                                    'Camera removed!'),
-                                                                                                backgroundColor:
-                                                                                                    Color(
-                                                                                                        0xFF4CAF50),
-                                                                                              ),
+                                                                                          // Show loading
+                                                                                          bool isLoadingShown = false;
+                                                                                          try {
+                                                                                            showDialog(
+                                                                                              context: context,
+                                                                                              barrierDismissible: false,
+                                                                                              builder: (loadingContext) {
+                                                                                                isLoadingShown = true;
+                                                                                                return WillPopScope(
+                                                                                                  onWillPop: () async => false,
+                                                                                                  child: Center(
+                                                                                                    child: CircularProgressIndicator(),
+                                                                                                  ),
+                                                                                                );
+                                                                                              },
                                                                                             );
-                                                                                            setDialogState(
-                                                                                                () {});
-                                                                                          } else {
-                                                                                            ScaffoldMessenger.of(
-                                                                                                    context)
-                                                                                                .showSnackBar(
-                                                                                              SnackBar(
-                                                                                                content: Text(
-                                                                                                    'Failed to remove camera'),
-                                                                                                backgroundColor:
-                                                                                                    Colors
-                                                                                                        .red,
-                                                                                              ),
+                                                                                            
+                                                                                            final removeResponse =
+                                                                                                await CameraService()
+                                                                                                    .deleteCategoryFromCamera(
+                                                                                              categoryId: categoryId,
+                                                                                              cameraId: cameraId,
                                                                                             );
+                                                                                            
+                                                                                            // Close loading if still mounted
+                                                                                            if (isLoadingShown) {
+                                                                                              try {
+                                                                                                if (navigator.canPop()) navigator.pop();
+                                                                                              } catch (_) {}
+                                                                                            }
+                                                                                            
+                                                                                            // Show result if still mounted
+                                                                                            if (!mounted) return;
+                                                                                            
+                                                                                            if (removeResponse.succeeded) {
+                                                                                              scaffoldMessenger.showSnackBar(
+                                                                                                SnackBar(
+                                                                                                  content: Text('Camera removed!'),
+                                                                                                  backgroundColor: Color(0xFF4CAF50),
+                                                                                                ),
+                                                                                              );
+                                                                                              setDialogState(() {});
+                                                                                              Future.delayed(Duration(milliseconds: 100), () {
+                                                                                                if (mounted) safeSetState(() {});
+                                                                                              });
+                                                                                            } else {
+                                                                                              scaffoldMessenger.showSnackBar(
+                                                                                                SnackBar(
+                                                                                                  content: Text('Failed to remove camera'),
+                                                                                                  backgroundColor: Colors.red,
+                                                                                                ),
+                                                                                              );
+                                                                                            }
+                                                                                          } catch (e) {
+                                                                                            // Ensure loading closes
+                                                                                            if (isLoadingShown) {
+                                                                                              try {
+                                                                                                if (navigator.canPop()) navigator.pop();
+                                                                                              } catch (_) {}
+                                                                                            }
+                                                                                            if (mounted) {
+                                                                                              scaffoldMessenger.showSnackBar(
+                                                                                                SnackBar(
+                                                                                                  content: Text('Error: ${e.toString()}'),
+                                                                                                  backgroundColor: Colors.red,
+                                                                                                ),
+                                                                                              );
+                                                                                            }
                                                                                           }
                                                                                         }
                                                                                       },
@@ -1449,7 +1582,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                     // Expanded content area (no scroll)
                     Expanded(
                       child: FutureBuilder<ApiCallResponse>(
-                        future: CameraService().getCameras(),
+                        future: CameraService().getCameras(limit: '100'),
                         builder: (context, snapshot) {
                           // Customize what your widget looks like when it's loading.
                           if (!snapshot.hasData) {
@@ -1820,27 +1953,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                   .bodySmallIsCustom,
                                                         ),
                                                   ),
-                                                  Text(
-                                                    getJsonField(
-                                                      cameraItemsItem,
-                                                      r'''$.categories''',
-                                                    ).toString(),
-                                                    style: FlutterFlowTheme.of(
-                                                            context)
-                                                        .bodySmall
-                                                        .override(
-                                                          fontFamily:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmallFamily,
-                                                          fontSize: 12.0,
-                                                          letterSpacing: 0.0,
-                                                          useGoogleFonts:
-                                                              !FlutterFlowTheme
-                                                                      .of(context)
-                                                                  .bodySmallIsCustom,
-                                                        ),
-                                                  ),
+                                                  _buildCategoryChips(cameraItemsItem),
                                                 ]
                                                     .map((c) => DataCell(c))
                                                     .toList(),
@@ -1857,8 +1970,8 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                               showFirstLastButtons: false,
                                               height:
                                                   constraints.maxHeight - 48.0,
-                                              headingRowHeight: 48.0,
-                                              dataRowHeight: 52.0,
+                                              headingRowHeight: 56.0,
+                                              dataRowHeight: 64.0,
                                               columnSpacing: 16.0,
                                               headingRowColor:
                                                   FlutterFlowTheme.of(context)
@@ -1896,4 +2009,11 @@ class _CollectionWidgetState extends State<CollectionWidget> {
       ),
     );
   }
+}
+
+/// Immutable color pair used for category chips.
+class _ChipColor {
+  final Color bg;
+  final Color text;
+  const _ChipColor({required this.bg, required this.text});
 }
