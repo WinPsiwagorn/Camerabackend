@@ -124,7 +124,7 @@ class _NavBarMainWidgetState extends State<NavBarMainWidget> {
           'Central Eye',
           style: GoogleFonts.plusJakartaSans(
             color: const Color(0xFF111827),
-            fontSize: 16,
+            fontSize: AppTextStyles.navBrand,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.3,
           ),
@@ -238,7 +238,7 @@ class _NavItemWidget extends StatelessWidget {
                       : isHovered
                           ? const Color(0xFF111827)
                           : const Color(0xFF4B5563),
-                  fontSize: 13,
+                  fontSize: AppTextStyles.navItem,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                   letterSpacing: -0.1,
                 ),

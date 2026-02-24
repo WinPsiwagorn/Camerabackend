@@ -161,21 +161,21 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
       return const SizedBox.shrink();
     }
     return Wrap(
-      spacing: 4,
-      runSpacing: 4,
+      spacing: 6,
+      runSpacing: 6,
       children: names.map((name) {
         final col = _colorFor(name);
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: col.bg,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
             name,
             style: TextStyle(
               color: col.text,
-              fontSize: 11,
+              fontSize: AppTextStyles.tableStatus,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -232,7 +232,7 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
                   label,
                   style: GoogleFonts.plusJakartaSans(
                     color: const Color(0xFF606A85),
-                    fontSize: 13,
+                    fontSize: AppTextStyles.badge,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -241,7 +241,7 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
                   count.toString(),
                   style: GoogleFonts.outfit(
                     color: const Color(0xFF15161E),
-                    fontSize: 34,
+                    fontSize: AppTextStyles.statCardHero,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -289,7 +289,7 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
-                          fontSize: 13,
+                          fontSize: AppTextStyles.tableHeader,
                         ),
                       ),
                     ),
@@ -318,26 +318,26 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
                 // LatLong
                 _tableCell(
                   getJsonField(item, r'$.latLong')?.toString() ?? '-',
-                  fontSize: 12,
+                  fontSize: AppTextStyles.tableTimestamp,
                   color: const Color(0xFF6B7280),
                 ),
                 // Address
                 _tableCell(
                   getJsonField(item, r'$.address')?.toString() ?? '-',
-                  fontSize: 12,
+                  fontSize: AppTextStyles.tableTimestamp,
                 ),
                 // Status badge
                 TableCell(
                   verticalAlignment: TableCellVerticalAlignment.middle,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 10),
+                        horizontal: 12, vertical: 10),
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                            horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
                           color: isOnline
                               ? const Color(0xFFDCFCE7)
@@ -364,7 +364,7 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
                                 color: isOnline
                                     ? const Color(0xFF15803D)
                                     : const Color(0xFFDC2626),
-                                fontSize: 11,
+                                fontSize: AppTextStyles.commandSmall,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -379,7 +379,7 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
                   verticalAlignment: TableCellVerticalAlignment.middle,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 8),
+                        horizontal: 12, vertical:8),
                     child: _buildCategoryChips(item),
                   ),
                 ),
@@ -390,7 +390,8 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 4, vertical: 6),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         _actionButton(
                           icon: Icons.remove_red_eye_outlined,
@@ -405,7 +406,6 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
                             );
                           },
                         ),
-                        const SizedBox(width: 3),
                         _actionButton(
                           icon: Icons.edit_outlined,
                           tooltip: 'Edit',
@@ -425,7 +425,6 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
                             }
                           },
                         ),
-                        const SizedBox(width: 3),
                         _actionButton(
                           icon: Icons.delete_outline,
                           tooltip: 'Delete',
@@ -445,7 +444,7 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
   }
 
   TableCell _tableCell(String text,
-      {double fontSize = 13, Color? color}) {
+      {double fontSize = AppTextStyles.tableCell, Color? color}) {
     return TableCell(
       verticalAlignment: TableCellVerticalAlignment.middle,
       child: Padding(
@@ -474,13 +473,13 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
         onTap: onPressed,
         borderRadius: BorderRadius.circular(6),
         child: Container(
-          width: 28,
-          height: 28,
+          width: AppTextStyles.tableCell + 12,
+          height: AppTextStyles.tableCell + 12,
           decoration: BoxDecoration(
             color: color.withOpacity(0.12),
             borderRadius: BorderRadius.circular(6),
           ),
-          child: Icon(icon, size: 15, color: color),
+          child: Icon(icon, size: AppTextStyles.tableCell, color: color),
         ),
       ),
     );
@@ -528,7 +527,7 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
             if (p == null) {
               return const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 4),
-                child: Text('...', style: TextStyle(color: Color(0xFF6B7280), fontSize: 14)),
+                child: Text('...', style: TextStyle(color: Color(0xFF6B7280), fontSize: AppTextStyles.labelNormal)),
               );
             }
             final isActive = p == current;
@@ -559,7 +558,7 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
                       style: TextStyle(
                         color: isActive ? Colors.white : const Color(0xFF374151),
                         fontWeight: FontWeight.w600,
-                        fontSize: 13,
+                        fontSize: AppTextStyles.badge,
                       ),
                     ),
                   ),
@@ -785,7 +784,7 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
                                     hintText: 'Search cameras...',
                                     hintStyle: const TextStyle(
                                         color: Color(0xFF9CA3AF),
-                                        fontSize: 14),
+                                        fontSize: AppTextStyles.labelNormal),
                                     prefixIcon: const Icon(
                                         Icons.search,
                                         color: Color(0xFF9CA3AF),
@@ -863,7 +862,7 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
                                     borderRadius: BorderRadius.circular(8)),
                                 textStyle: const TextStyle(
                                     fontWeight: FontWeight.w600,
-                                    fontSize: 14),
+                                    fontSize: AppTextStyles.labelNormal),
                               ),
                             ),
                           ],
@@ -898,7 +897,7 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
                                             'No camera data found',
                                             style: TextStyle(
                                                 color: Colors.grey.shade500,
-                                                fontSize: 15),
+                                                fontSize: AppTextStyles.labelNormal),
                                           ),
                                         ],
                                       ),
@@ -933,7 +932,7 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
                                     '(Total ${_model.totalCameras} items)',
                                     style: const TextStyle(
                                       color: Color(0xFF6B7280),
-                                      fontSize: 13,
+                                      fontSize: AppTextStyles.labelSmall,
                                     ),
                                   ),
                                   _buildPagination(context),

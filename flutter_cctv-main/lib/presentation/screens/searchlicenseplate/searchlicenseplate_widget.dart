@@ -202,7 +202,7 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                           Text(
                             plateText,
                             style: GoogleFonts.sarabun(
-                              fontSize: 22,
+                              fontSize: AppTextStyles.tablePlate,
                               fontWeight: FontWeight.w700,
                               color: const Color(0xFF111827),
                             ),
@@ -213,7 +213,7 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                               child: Text(
                                 province,
                                 style: GoogleFonts.sarabun(
-                                  fontSize: 14,
+                                  fontSize: AppTextStyles.tableProvince,
                                   fontWeight: FontWeight.w500,
                                   color: const Color(0xFF6B7280),
                                 ),
@@ -275,7 +275,7 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
-                          fontSize: 13,
+                          fontSize: AppTextStyles.tableHeader,
                         ),
                       ),
                     ),
@@ -315,7 +315,7 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                         Text(
                           fullPlate,
                           style: GoogleFonts.sarabun(
-                            fontSize: 16,
+                            fontSize: AppTextStyles.tablePlate,
                             fontWeight: FontWeight.w700,
                             color: const Color(0xFF111827),
                           ),
@@ -324,7 +324,7 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                           Text(
                             province,
                             style: const TextStyle(
-                              fontSize: 11,
+                              fontSize: AppTextStyles.tableProvince,
                               color: Color(0xFF6B7280),
                             ),
                           ),
@@ -343,13 +343,13 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.videocam_outlined,
-                            size: 15, color: Colors.grey.shade500),
+                            size: 24, color: Colors.grey.shade500),
                         const SizedBox(width: 5),
                         Flexible(
                           child: Text(
                             cameraId,
                             style: const TextStyle(
-                              fontSize: 13,
+                              fontSize: AppTextStyles.tableCell,
                               color: Color(0xFF374151),
                             ),
                           ),
@@ -369,13 +369,13 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.access_time,
-                            size: 14, color: Colors.grey.shade400),
+                            size: 24, color: Colors.grey.shade400),
                         const SizedBox(width: 5),
                         Flexible(
                           child: Text(
                             _formatTimestamp(timestamp),
                             style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: AppTextStyles.tableTimestamp,
                               color: Color(0xFF6B7280),
                             ),
                           ),
@@ -394,74 +394,15 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                     child: imageUrl.isEmpty
                         ? const Icon(Icons.no_photography_outlined,
                             color: Color(0xFFD1D5DB), size: 28)
-                        : GestureDetector(
+                        : _HoverableImage(
+                            imageUrl: imageUrl,
+                            fullPlate: fullPlate,
+                            province: province,
                             onTap: () => _openImageViewer(
                               context,
                               imageUrl,
                               plateText: fullPlate,
                               province: province,
-                            ),
-                            child: Stack(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(6),
-                                  child: Image.network(
-                                    imageUrl,
-                                    width: 90,
-                                    height: 54,
-                                    fit: BoxFit.cover,
-                                    loadingBuilder:
-                                        (ctx, child, progress) =>
-                                            progress == null
-                                                ? child
-                                                : Container(
-                                                    width: 90,
-                                                    height: 54,
-                                                    color: const Color(
-                                                        0xFFF3F4F6),
-                                                    child: const Center(
-                                                      child: SizedBox(
-                                                        width: 18,
-                                                        height: 18,
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                    errorBuilder: (_, __, ___) => Container(
-                                      width: 90,
-                                      height: 54,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF3F4F6),
-                                        borderRadius:
-                                            BorderRadius.circular(6),
-                                      ),
-                                      child: const Icon(Icons.broken_image,
-                                          color: Color(0xFFD1D5DB),
-                                          size: 24),
-                                    ),
-                                  ),
-                                ),
-                                // Play/zoom overlay
-                                Positioned(
-                                  right: 4,
-                                  bottom: 4,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(3),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black54,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: const Icon(
-                                      Icons.zoom_in,
-                                      color: Colors.white,
-                                      size: 13,
-                                    ),
-                                  ),
-                                ),
-                              ],
                             ),
                           ),
                   ),
@@ -525,7 +466,7 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                           ? Colors.white
                           : const Color(0xFF374151),
                       fontWeight: FontWeight.w600,
-                      fontSize: 13,
+                      fontSize: AppTextStyles.badge,
                     ),
                   ),
                 ),
@@ -607,7 +548,7 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
               children: [
                 // ── Page title ───────────────────────────────────────────────
                 Text(
-                  'search license plate',
+                  'Search License Plate',
                   style: FlutterFlowTheme.of(context).headlineLarge.override(
                         fontFamily: FlutterFlowTheme.of(context)
                             .headlineLargeFamily,
@@ -641,43 +582,11 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                         // ── Toolbar ───────────────────────────────────────────
                         Row(
                           children: [
-                            // Total badge
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 7),
-                              decoration: BoxDecoration(
-                                color: FlutterFlowTheme.of(context)
-                                    .primary
-                                    .withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.directions_car,
-                                      size: 15,
-                                      color: FlutterFlowTheme.of(context)
-                                          .primary),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Total ${_model.totalItems} items',
-                                    style: TextStyle(
-                                      color: FlutterFlowTheme.of(context)
-                                          .primary,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-
-                            // Search
-                            Expanded(
-                              child: SizedBox(
-                                height: 42,
-                                child: TextField(
+                            // Search (left-aligned, fixed width)
+                            SizedBox(
+                              width: 300,
+                              height: 42,
+                              child: TextField(
                                   controller: _model.searchBarController,
                                   focusNode: _model.searchBarFocusNode,
                                   onChanged: _onSearchChanged,
@@ -685,7 +594,7 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                                     hintText: 'Search license plate, camera...',
                                     hintStyle: const TextStyle(
                                         color: Color(0xFF9CA3AF),
-                                        fontSize: 14),
+                                        fontSize: AppTextStyles.labelNormal),
                                     prefixIcon: const Icon(Icons.search,
                                         color: Color(0xFF9CA3AF), size: 20),
                                     suffixIcon: (_model.searchBarController
@@ -725,6 +634,36 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                                     ),
                                   ),
                                 ),
+                            ),
+                            const Spacer(),
+                            // Total badge (right-aligned)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 7),
+                              decoration: BoxDecoration(
+                                color: FlutterFlowTheme.of(context)
+                                    .primary
+                                    .withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.directions_car,
+                                      size: 15,
+                                      color: FlutterFlowTheme.of(context)
+                                          .primary),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Total ${_model.totalItems} items',
+                                    style: TextStyle(
+                                      color: FlutterFlowTheme.of(context)
+                                          .primary,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: AppTextStyles.badge,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -759,7 +698,7 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                                             'No license plate data found',
                                             style: TextStyle(
                                                 color: Colors.grey.shade500,
-                                                fontSize: 15),
+                                                fontSize: AppTextStyles.labelNormal),
                                           ),
                                         ],
                                       ),
@@ -796,7 +735,7 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                                     '(Total ${_model.totalItems} items)',
                                     style: const TextStyle(
                                       color: Color(0xFF6B7280),
-                                      fontSize: 13,
+                                      fontSize: AppTextStyles.labelSmall,
                                     ),
                                   ),
                                   _buildPagination(context),
@@ -805,6 +744,112 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                             ],
                           ),
                       ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Hoverable image widget with hover effect
+class _HoverableImage extends StatefulWidget {
+  final String imageUrl;
+  final String fullPlate;
+  final String province;
+  final VoidCallback onTap;
+
+  const _HoverableImage({
+    required this.imageUrl,
+    required this.fullPlate,
+    required this.province,
+    required this.onTap,
+  });
+
+  @override
+  State<_HoverableImage> createState() => _HoverableImageState();
+}
+
+class _HoverableImageState extends State<_HoverableImage> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: 90,
+          height: 54,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: _isHovering 
+                  ? FlutterFlowTheme.of(context).primary
+                  : Colors.grey.shade300,
+              width: _isHovering ? 2 : 1,
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.network(
+                  widget.imageUrl,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (ctx, child, progress) =>
+                      progress == null
+                          ? child
+                          : Container(
+                              color: const Color(0xFFF3F4F6),
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                  errorBuilder: (_, __, ___) => Container(
+                    color: const Color(0xFFF3F4F6),
+                    child: const Icon(
+                      Icons.broken_image,
+                      color: Color(0xFFD1D5DB),
+                      size: 24,
+                    ),
+                  ),
+                ),
+                // Hover overlay
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: _isHovering ? 1.0 : 0.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: FlutterFlowTheme.of(context).primary.withOpacity(0.3),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.zoom_in,
+                        color: Colors.white,
+                        size: 32,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black45,
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

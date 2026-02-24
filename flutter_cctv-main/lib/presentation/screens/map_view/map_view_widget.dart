@@ -166,7 +166,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                                         'Loading cameras...',
                                         style: TextStyle(
                                           color: Color(0xFF111827),
-                                          fontSize: 16,
+                                          fontSize: AppTextStyles.tableHeader,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -175,7 +175,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                                         'Please wait',
                                         style: TextStyle(
                                           color: Color(0xFF6B7280),
-                                          fontSize: 13,
+                                          fontSize: AppTextStyles.labelSmall,
                                         ),
                                       ),
                                     ],
@@ -222,7 +222,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                                         'Error Loading Map',
                                         style: TextStyle(
                                           color: Color(0xFF111827),
-                                          fontSize: 20,
+                                          fontSize: AppTextStyles.sectionTitle,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -234,7 +234,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
                                             color: Color(0xFF6B7280),
-                                            fontSize: 14,
+                                            fontSize: AppTextStyles.labelNormal,
                                             height: 1.5,
                                           ),
                                         ),
@@ -246,7 +246,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                                         label: Text(
                                           'Retry',
                                           style: TextStyle(
-                                            fontSize: 15,
+                                            fontSize: AppTextStyles.labelNormal,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -309,7 +309,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                                         'No Cameras Found',
                                         style: TextStyle(
                                           color: Color(0xFF111827),
-                                          fontSize: 20,
+                                          fontSize: AppTextStyles.sectionTitle,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -321,7 +321,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
                                             color: Color(0xFF6B7280),
-                                            fontSize: 14,
+                                            fontSize: AppTextStyles.labelNormal,
                                             height: 1.5,
                                           ),
                                         ),
@@ -333,7 +333,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                                         label: Text(
                                           'Refresh',
                                           style: TextStyle(
-                                            fontSize: 15,
+                                            fontSize: AppTextStyles.labelNormal,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -530,7 +530,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
           Text(
             count.toString(),
             style: TextStyle(
-              fontSize: 12,
+              fontSize: AppTextStyles.commandBody,
               fontWeight: FontWeight.bold,
               color: color,
               height: 1,

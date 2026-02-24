@@ -95,7 +95,7 @@ class _VideoTile extends StatelessWidget {
                 hasCam ? camera!.name : 'CAM ${index + 1}',
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 10,
+                  fontSize: AppTextStyles.commandSmall,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -131,7 +131,7 @@ class _VideoTile extends StatelessWidget {
         padding: const EdgeInsets.all(8),
         child: Text(
           'ERROR\n$msg',
-          style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+          style: const TextStyle(color: Colors.redAccent, fontSize: AppTextStyles.commandBody),
           textAlign: TextAlign.center,
         ),
       );
@@ -143,7 +143,7 @@ class _VideoTile extends StatelessWidget {
           'NO STREAM ${index + 1}',
           style: const TextStyle(
             color: Colors.white54,
-            fontSize: 12,
+            fontSize: AppTextStyles.commandBody,
           ),
           textAlign: TextAlign.center,
         ),
@@ -471,7 +471,7 @@ class _CommandWidgetState extends State<CommandWidget> {
                         'Moving...',
                         style: TextStyle(
                           color: Colors.blue.withOpacity(0.7),
-                          fontSize: 11,
+                          fontSize: AppTextStyles.commandSmall,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -755,7 +755,7 @@ class _CommandWidgetState extends State<CommandWidget> {
                                             : _getCategoryName(_selectedCategoryId!),
                                         style: const TextStyle(
                                           color: Colors.white,
-                                          fontSize: 11,
+                                          fontSize: AppTextStyles.commandSmall,
                                           fontWeight: FontWeight.w600,
                                           height: 1.1,
                                         ),
@@ -772,7 +772,7 @@ class _CommandWidgetState extends State<CommandWidget> {
                                         }(),
                                         style: TextStyle(
                                           color: Colors.white.withOpacity(0.6),
-                                          fontSize: 9,
+                                          fontSize: AppTextStyles.commandSmall,
                                           fontWeight: FontWeight.w500,
                                           height: 1.0,
                                         ),
@@ -811,7 +811,7 @@ class _CommandWidgetState extends State<CommandWidget> {
                                               color: _selectedCategoryId == null
                                                   ? Colors.blue
                                                   : Colors.white,
-                                              fontSize: 13,
+                                              fontSize: AppTextStyles.commandBody,
                                               fontWeight: _selectedCategoryId == null
                                                   ? FontWeight.w600
                                                   : FontWeight.normal,
@@ -823,7 +823,7 @@ class _CommandWidgetState extends State<CommandWidget> {
                                               color: _selectedCategoryId == null
                                                   ? Colors.blue.withOpacity(0.7)
                                                   : Colors.white54,
-                                              fontSize: 11,
+                                              fontSize: AppTextStyles.commandSmall,
                                             ),
                                           ),
                                         ],
@@ -859,7 +859,7 @@ class _CommandWidgetState extends State<CommandWidget> {
                                             name,
                                             style: TextStyle(
                                               color: isSelected ? Colors.blue : Colors.white,
-                                              fontSize: 13,
+                                              fontSize: AppTextStyles.commandBody,
                                               fontWeight: isSelected
                                                   ? FontWeight.w600
                                                   : FontWeight.normal,
@@ -919,7 +919,7 @@ class _CommandWidgetState extends State<CommandWidget> {
                             'Long press and drag to rearrange',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 12,
+                              fontSize: AppTextStyles.commandBody,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -976,7 +976,7 @@ class _CommandWidgetState extends State<CommandWidget> {
               label,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 12,
+                fontSize: AppTextStyles.commandBody,
                 fontWeight: FontWeight.w600,
               ),
             ),

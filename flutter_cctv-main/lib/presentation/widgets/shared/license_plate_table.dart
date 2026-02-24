@@ -143,14 +143,20 @@ class _LicensePlateTableState extends State<LicensePlateTable> {
                         child: Row(
                           children: [
                             Expanded(
-                                flex: 2, child: Text(fullPlate.toString())),
-                            Expanded(flex: 2, child: Text(cameraId.toString())),
+                                flex: 2,
+                                child: Text(fullPlate.toString(),
+                                    style: const TextStyle(fontSize: AppTextStyles.tablePlate, fontWeight: FontWeight.w700))),
+                            Expanded(
+                                flex: 2,
+                                child: Text(cameraId.toString(),
+                                    style: const TextStyle(fontSize: AppTextStyles.tableCell))),
                             Expanded(
                                 flex: 2,
                                 child: Text(
                                   timestamp != null
                                       ? _formatDate(timestamp)
                                       : '-',
+                                  style: const TextStyle(fontSize: AppTextStyles.tableTimestamp),
                                 )),
 
                             // ✅ Picture Column
@@ -240,17 +246,20 @@ class _LicensePlateTableState extends State<LicensePlateTable> {
         children: [
           Expanded(
               flex: 2,
-              child:
-                  Text('License Plate', style: TextStyle(color: Colors.white))),
+              child: Text('License Plate',
+                  style: TextStyle(color: Colors.white, fontSize: AppTextStyles.tableHeader, fontWeight: FontWeight.w700))),
           Expanded(
               flex: 2,
-              child: Text('Camera ID', style: TextStyle(color: Colors.white))),
+              child: Text('Camera ID',
+                  style: TextStyle(color: Colors.white, fontSize: AppTextStyles.tableHeader, fontWeight: FontWeight.w700))),
           Expanded(
               flex: 2,
-              child: Text('Timestamp', style: TextStyle(color: Colors.white))),
+              child: Text('Timestamp',
+                  style: TextStyle(color: Colors.white, fontSize: AppTextStyles.tableHeader, fontWeight: FontWeight.w700))),
           Expanded(
               flex: 2,
-              child: Text('Picture', style: TextStyle(color: Colors.white))),
+              child: Text('Picture',
+                  style: TextStyle(color: Colors.white, fontSize: AppTextStyles.tableHeader, fontWeight: FontWeight.w700))),
         ],
       ),
     );

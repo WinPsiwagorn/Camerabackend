@@ -91,7 +91,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
             name,
             style: TextStyle(
               color: col.text,
-              fontSize: 11,
+              fontSize: AppTextStyles.commandSmall,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -1190,7 +1190,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                                                         child: Text(
                                                                                                           '${filteredCameras.length} camera(s) available',
                                                                                                           style: TextStyle(
-                                                                                                            fontSize: 12,
+                                                                                                            fontSize: AppTextStyles.commandBody,
                                                                                                             color: Colors.grey[600],
                                                                                                           ),
                                                                                                         ),
@@ -1787,7 +1787,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                         context)
                                                                     .labelMediumFamily,
                                                             color: Colors.white,
-                                                            fontSize: 13.0,
+                                                            fontSize: AppTextStyles.tableHeader,
                                                             letterSpacing: 0.0,
                                                             useGoogleFonts:
                                                                 !FlutterFlowTheme.of(
@@ -1812,7 +1812,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                         context)
                                                                     .labelMediumFamily,
                                                             color: Colors.white,
-                                                            fontSize: 13.0,
+                                                            fontSize: AppTextStyles.tableHeader,
                                                             letterSpacing: 0.0,
                                                             useGoogleFonts:
                                                                 !FlutterFlowTheme.of(
@@ -1837,7 +1837,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                         context)
                                                                     .labelMediumFamily,
                                                             color: Colors.white,
-                                                            fontSize: 13.0,
+                                                            fontSize: AppTextStyles.tableHeader,
                                                             letterSpacing: 0.0,
                                                             useGoogleFonts:
                                                                 !FlutterFlowTheme.of(
@@ -1862,7 +1862,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                         context)
                                                                     .labelMediumFamily,
                                                             color: Colors.white,
-                                                            fontSize: 13.0,
+                                                            fontSize: AppTextStyles.tableHeader,
                                                             letterSpacing: 0.0,
                                                             useGoogleFonts:
                                                                 !FlutterFlowTheme.of(
@@ -1902,7 +1902,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                   FlutterFlowTheme.of(
                                                                           context)
                                                                       .bodySmallFamily,
-                                                              fontSize: 12.0,
+                                                              fontSize: AppTextStyles.tableCell,
                                                               letterSpacing:
                                                                   0.0,
                                                               useGoogleFonts:
@@ -1924,7 +1924,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                               FlutterFlowTheme.of(
                                                                       context)
                                                                   .bodySmallFamily,
-                                                          fontSize: 12.0,
+                                                          fontSize: AppTextStyles.tableCell,
                                                           letterSpacing: 0.0,
                                                           useGoogleFonts:
                                                               !FlutterFlowTheme
@@ -1945,7 +1945,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                               FlutterFlowTheme.of(
                                                                       context)
                                                                   .bodySmallFamily,
-                                                          fontSize: 12.0,
+                                                          fontSize: AppTextStyles.tableCell,
                                                           letterSpacing: 0.0,
                                                           useGoogleFonts:
                                                               !FlutterFlowTheme

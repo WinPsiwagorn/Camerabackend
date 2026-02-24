@@ -135,7 +135,7 @@ class _AddnewcameraWidgetState extends State<AddnewcameraWidget> {
           text: TextSpan(
             text: label,
             style: GoogleFonts.plusJakartaSans(
-              color: const Color(0xFF374151), fontSize: 12, fontWeight: FontWeight.w600,
+              color: const Color(0xFF374151), fontSize: AppTextStyles.labelSmall, fontWeight: FontWeight.w600,
             ),
             children: required
                 ? [const TextSpan(text: ' *', style: TextStyle(color: Color(0xFFEF4444)))]
@@ -150,10 +150,10 @@ class _AddnewcameraWidgetState extends State<AddnewcameraWidget> {
           keyboardType: keyboardType,
           maxLines: maxLines,
           enabled: !_model.isSubmitting,
-          style: const TextStyle(color: Color(0xFF111827), fontSize: 13),
+          style: const TextStyle(color: Color(0xFF111827), fontSize: AppTextStyles.labelNormal),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+            hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: AppTextStyles.labelNormal),
             filled: true,
             fillColor: _model.isSubmitting ? const Color(0xFFF3F4F6) : const Color(0xFFF9FAFB),
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -162,7 +162,7 @@ class _AddnewcameraWidgetState extends State<AddnewcameraWidget> {
             focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(7), borderSide: BorderSide(color: primary, width: 1.5)),
             errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(7), borderSide: const BorderSide(color: Color(0xFFEF4444))),
             focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(7), borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5)),
-            errorStyle: const TextStyle(fontSize: 11),
+            errorStyle: const TextStyle(fontSize: AppTextStyles.commandSmall),
           ),
           cursorColor: primary,
           validator: validator,
@@ -233,7 +233,7 @@ Widget build(BuildContext context) {
                       'Add New Camera',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 19,
+                        fontSize: AppTextStyles.sectionTitle,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -391,9 +391,8 @@ Widget build(BuildContext context) {
                                           'Save',
                                           style: TextStyle(
                                             color: Colors.white,
-                                            fontWeight:
-                                                FontWeight.w700,
-                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: AppTextStyles.labelNormal,
                                           ),
                                         ),
                                       ],
