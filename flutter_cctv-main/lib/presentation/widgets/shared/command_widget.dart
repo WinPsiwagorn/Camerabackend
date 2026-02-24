@@ -32,12 +32,18 @@ class CameraInfo {
   });
 
   factory CameraInfo.fromJson(Map<String, dynamic> data, {String? docId}) {
+    // Debug: Print the camera data structure
+    print('📷 Parsing camera: ${data.keys.toList()}');
+    
     return CameraInfo(
       id: docId ?? data['id']?.toString() ?? '',
       name: (data['name'] as String?)?.trim().isNotEmpty == true
           ? (data['name'] as String)
           : 'Camera',
-      rtspUrl: (data['url'] as String? ?? data['URL'] as String? ?? '').trim(),
+      rtspUrl: (data['rtspUrl'] as String? ?? 
+                data['url'] as String? ?? 
+                data['URL'] as String? ?? 
+                data['rtsp_url'] as String? ?? '').trim(),
     );
   }
 }
@@ -45,67 +51,73 @@ class CameraInfo {
 class _VideoTile extends StatelessWidget {
   final int index;
   final CameraInfo? camera;
-  final Future<String?>? hlsFuture; // <-- เพิ่ม future ของ HLS URL
+  final Future<String?>? hlsFuture;
+  final bool isEditMode;
+  final bool isSelected; // Track if this tile is selected for swapping
 
   const _VideoTile({
     Key? key,
     required this.index,
     required this.camera,
     required this.hlsFuture,
+    this.isEditMode = false,
+    this.isSelected = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final hasCam = camera != null && camera!.rtspUrl.isNotEmpty;
+    final hasCam = camera != null;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(6),
       child: Stack(
         children: [
+          // Base layer: Video player or placeholder
           Positioned.fill(
-            child: hasCam
-                ? FutureBuilder<String?>(
-                    future: hlsFuture,
-                    builder: (context, snap) {
-                      if (snap.connectionState == ConnectionState.waiting) {
-                        return _loading();
-                      }
-                      if (snap.hasError) {
-                        return _error(snap.error.toString());
-                      }
-                      final hls = snap.data;
-                      if (hls == null || hls.isEmpty) {
-                        return _error('Start HLS failed');
-                      }
-                      return HlsPlayer(hlsUrl: hls);
-                    },
-                  )
-                : _noStream(index),
+            child: isEditMode
+                // EDIT MODE: Show static placeholder instead of video
+                // This completely avoids iframe pointer event blocking
+                ? _editModePlaceholder(camera?.name ?? 'CAM ${index + 1}')
+                // NORMAL MODE: Show live video stream
+                : hasCam
+                    ? FutureBuilder<String?>(
+                        key: ValueKey(camera!.id), // Force rebuild on camera change
+                        future: hlsFuture,
+                        builder: (context, snap) {
+                          if (snap.connectionState == ConnectionState.waiting) {
+                            return _loading();
+                          }
+                          final hls = snap.data;
+                          if (hls == null || hls.isEmpty) {
+                            // No stream available (either error or no RTSP URL configured)
+                            return _error('No stream');
+                          }
+                          return HlsPlayer(
+                            key: ValueKey('${camera!.id}_$hls'), // Unique key for player
+                            hlsUrl: hls,
+                          );
+                        },
+                      )
+                    : _noStream(index, null),
           ),
+          // Camera name label
           Positioned(
             left: 4,
             top: 4,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                hasCam ? camera!.name : 'CAM ${index + 1}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-          Positioned.fill(
             child: IgnorePointer(
               child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white10, width: 1),
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  hasCam ? camera!.name : 'CAM ${index + 1}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -129,23 +141,139 @@ class _VideoTile extends StatelessWidget {
         color: Colors.black,
         alignment: Alignment.center,
         padding: const EdgeInsets.all(8),
-        child: Text(
-          'ERROR\n$msg',
-          style: const TextStyle(color: Colors.redAccent, fontSize: 12),
-          textAlign: TextAlign.center,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              color: Colors.redAccent,
+              size: 24,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'STREAM UNAVAILABLE',
+              style: const TextStyle(
+                color: Colors.redAccent,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       );
 
-  Widget _noStream(int index) => Container(
+  Widget _noStream(int index, String? cameraName) => Container(
         color: Colors.black,
         alignment: Alignment.center,
-        child: Text(
-          'NO STREAM ${index + 1}',
-          style: const TextStyle(
-            color: Colors.white54,
-            fontSize: 12,
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.video_camera_back_outlined,
+              color: Colors.white24,
+              size: 32,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'EMPTY SLOT ${index + 1}',
+              style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 10,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+
+  Widget _editModePlaceholder(String cameraName) => Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.grey[900]!,
+              Colors.grey[800]!,
+            ],
           ),
-          textAlign: TextAlign.center,
+        ),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.pause_circle_outline,
+              color: Colors.white.withOpacity(0.6),
+              size: 48,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              cameraName,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Stream paused in edit mode',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 9,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      );
+
+  Widget _dragPlaceholder(String cameraName) => Container(
+        color: Colors.black87,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.videocam,
+              color: Colors.white54,
+              size: 32,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              cameraName,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'PAUSED',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.5),
+                fontSize: 9,
+              ),
+            ),
+          ],
         ),
       );
 }
@@ -173,6 +301,7 @@ class _CommandWidgetState extends State<CommandWidget> {
   List<dynamic> _categories = [];
   bool _isLoading = true;
   bool _isLoadingCategories = true;
+  String? _errorMessage; // Add error message state
   
   // Category filtering
   String? _selectedCategoryId; // null = "All Cameras"
@@ -180,10 +309,14 @@ class _CommandWidgetState extends State<CommandWidget> {
   // Layout editing
   bool _isEditMode = false;
   Map<int, String> _gridPositions = {}; // position -> cameraId
+  int? _selectedTileIndex; // Track selected tile for swapping (null = none selected)
+  int _rebuildKey = 0; // Force rebuild after position changes
   
   @override
   void initState() {
     super.initState();
+    print('🚀 CommandWidget initialized');
+    print('API Base URL: $kApiBaseUrl');
     _fetchCategories();
     _fetchCameras();
     _loadGridLayout();
@@ -191,45 +324,87 @@ class _CommandWidgetState extends State<CommandWidget> {
 
   Future<void> _fetchCategories() async {
     try {
+      print('🔄 Fetching categories from API...');
+      print('API URL: http://se-lab.aboutblank.in.th/api/category');
       final response = await CategoryService().getCategories();
-      if (response.succeeded) {
-        final List<dynamic> jsonList = response.jsonBody is List
-            ? response.jsonBody
-            : (response.jsonBody['data'] as List? ?? []);
-        setState(() {
-          _categories = jsonList;
-          _isLoadingCategories = false;
-        });
-      } else {
-        setState(() => _isLoadingCategories = false);
-      }
-    } catch (e) {
-      setState(() => _isLoadingCategories = false);
-    }
-  }
-
-  Future<void> _fetchCameras() async {
-    setState(() => _isLoading = true);
-    try {
-      final response = _selectedCategoryId == null
-          ? await CameraService().getCameras(limit: '1000')  // Fetch up to 1000 cameras
-          : await CameraService().getCamerasByCategoryId(_selectedCategoryId!);
+      print('📡 Category Response Status: ${response.statusCode}');
+      print('📡 Category Response Body Type: ${response.jsonBody.runtimeType}');
+      print('📡 Category Response Body: ${response.jsonBody}');
       
       if (response.succeeded) {
         final List<dynamic> jsonList = response.jsonBody is List
             ? response.jsonBody
             : (response.jsonBody['data'] as List? ?? []);
+        print('✅ Categories loaded: ${jsonList.length} items');
+        print('Categories: $jsonList');
+        setState(() {
+          _categories = jsonList;
+          _isLoadingCategories = false;
+        });
+      } else {
+        print('❌ Failed to load categories');
+        print('Status Code: ${response.statusCode}');
+        print('Headers: ${response.headers}');
+        print('Body: ${response.jsonBody}');
+        print('Exception: ${response.exception}');
+        setState(() => _isLoadingCategories = false);
+      }
+    } catch (e, stackTrace) {
+      print('❌ Error fetching categories: $e');
+      print('Stack trace: $stackTrace');
+      setState(() => _isLoadingCategories = false);
+    }
+  }
+
+  Future<void> _fetchCameras() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final categoryFilter = _selectedCategoryId ?? "All";
+      print('🔄 Fetching cameras... (Category: $categoryFilter)');
+      
+      final response = _selectedCategoryId == null
+          ? await CameraService().getCameras(limit: '100')
+          : await CameraService().getCamerasByCategoryId(_selectedCategoryId!);
+      
+      print('📡 Camera Response Status: ${response.statusCode}');
+      print('📡 Camera Response Succeeded: ${response.succeeded}');
+      
+      if (response.succeeded) {
+        final List<dynamic> jsonList = response.jsonBody is List
+            ? response.jsonBody
+            : (response.jsonBody['data'] as List? ?? []);
+        print('✅ Cameras loaded: ${jsonList.length} items');
+        
         setState(() {
           _cameras = jsonList
               .map((e) => CameraInfo.fromJson(e as Map<String, dynamic>))
               .toList();
           _isLoading = false;
+          _errorMessage = jsonList.isEmpty ? 'No cameras found' : null;
         });
+        
+        print('✅ Parsed ${_cameras.length} cameras');
+        print('📺 Streams will be started using camera IDs (backend fetches RTSP)');
+        
       } else {
-        setState(() => _isLoading = false);
+        final errorMsg = 'API Error: ${response.statusCode}';
+        print('❌ Failed to load cameras: ${response.statusCode}');
+        setState(() {
+          _isLoading = false;
+          _errorMessage = errorMsg;
+        });
       }
-    } catch (e) {
-      setState(() => _isLoading = false);
+    } catch (e, stackTrace) {
+      final errorMsg = 'Error: ${e.toString()}';
+      print('❌ Error fetching cameras: $e');
+      print('Stack trace: $stackTrace');
+      setState(() {
+        _isLoading = false;
+        _errorMessage = errorMsg;
+      });
     }
   }
   
@@ -298,259 +473,261 @@ class _CommandWidgetState extends State<CommandWidget> {
     return fut;
   }
 
-  /// ยิง POST ไปเริ่ม HLS:
-  /// POST { rtspUrl, streamName }
-  /// response: {"message": "/api/hls/<stream>/stream.m3u8"} หรือ String เดี่ยว
+  /// Start HLS stream using camera ID
+  /// POST { cameraId }
+  /// Backend fetches RTSP URL from database automatically
+  /// Response: { "hlsUrl": "..." }
   Future<String?> _startHls(CameraInfo cam) async {
-    if (cam.rtspUrl.isEmpty) return null;
-
     final uri = Uri.parse('$kApiBaseUrl/api/stream/hls/start');
     try {
+      print('🎬 Starting stream for camera: ${cam.name} (ID: ${cam.id})');
+      
       final resp = await http
           .post(
             uri,
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
-              'rtspUrl': cam.rtspUrl,
-              'streamName': cam.id, // ใช้ docId เป็นชื่อ stream
+              'cameraId': cam.id, // Backend will fetch RTSP URL from database
             }),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 15));
 
       if (resp.statusCode >= 200 && resp.statusCode < 300) {
-        // พยายาม parse เป็น JSON ก่อน
-        String? path;
+        final obj = jsonDecode(resp.body);
+        
+        // Extract hlsUrl from response
+        String? hlsUrl;
+        if (obj is Map) {
+          hlsUrl = obj['hlsUrl'] as String?;
+        }
+
+        if (hlsUrl == null || hlsUrl.isEmpty) {
+          print('⚠️ No HLS URL in response for ${cam.name}');
+          return null;
+        }
+
+        // Ensure URL is absolute
+        String finalUrl = hlsUrl;
+        if (!hlsUrl.startsWith('http')) {
+          finalUrl = '$kApiBaseUrl$hlsUrl';
+          print('🔗 Converted relative to absolute URL: $finalUrl');
+        }
+
+        print('✅ Stream started successfully for ${cam.name}');
+        print('📺 HLS URL: $finalUrl');
+        return finalUrl;
+      } else if (resp.statusCode == 400) {
+        // Handle 400 errors (camera not found or no RTSP URL configured)
         try {
-          final obj = jsonDecode(resp.body);
-          if (obj is Map && obj['message'] is String) {
-            path = obj['message'] as String;
+          final errorObj = jsonDecode(resp.body);
+          final errorMsg = errorObj['error'] ?? resp.body;
+          
+          if (errorMsg.toString().contains('No RTSP URL configured')) {
+            print('⚠️ ${cam.name}: No RTSP URL configured in database');
+            return null; // Gracefully return null instead of throwing
           }
+          
+          print('❌ ${cam.name}: $errorMsg');
+          return null;
         } catch (_) {
-          // ถ้าไม่ใช่ JSON อาจเป็น string ตรง ๆ
-          final body = resp.body.trim();
-          if (body.startsWith('/')) path = body;
+          print('❌ ${cam.name}: ${resp.body}');
+          return null;
         }
-
-        if (path == null || path.isEmpty) {
-          throw Exception('Invalid response: ${resp.body}');
-        }
-
-        // ต่อให้เป็น HLS เต็ม URL
-        final hlsUrl = path.startsWith('http')
-            ? path
-            : '$kApiBaseUrl$path'; // ประกอบ base + path
-
-        return hlsUrl;
       } else {
-        throw Exception('HTTP ${resp.statusCode}: ${resp.body}');
+        // Other HTTP errors
+        print('❌ Failed to start stream for ${cam.name}: HTTP ${resp.statusCode}');
+        print('Error: ${resp.body}');
+        return null;
       }
     } catch (e) {
-      // ถ้าล้มเหลว ให้ลบ cache เพื่อให้กด refresh แล้วลองใหม่ได้
+      if (e.toString().contains('TimeoutException')) {
+        print('⏱️ Stream start timeout for ${cam.name}');
+      } else {
+        print('❌ Exception starting stream for ${cam.name}: $e');
+      }
+      // Remove from cache to allow retry
       _hlsCache.remove(cam.id);
-      rethrow;
+      return null; // Return null instead of rethrowing
     }
   }
   
-  /// Build a draggable video tile for edit mode
-  Widget _buildDraggableVideoTile({
+  /// Build a clickable video tile for edit mode (click-to-select swap)
+  Widget _buildClickableVideoTile({
     required int index,
     required CameraInfo? camera,
     required Future<String?>? hlsFuture,
   }) {
-    return DragTarget<_DragData>(
-      onAcceptWithDetails: (details) {
-        setState(() {
-          final fromIndex = details.data.fromIndex;
-          final fromCameraId = details.data.cameraId;
-          
-          // Swap positions
-          final toCameraId = _gridPositions[index];
-          
-          if (fromCameraId != null) {
-            _gridPositions[index] = fromCameraId;
-          } else {
-            _gridPositions.remove(index);
-          }
-          
-          if (toCameraId != null) {
-            _gridPositions[fromIndex] = toCameraId;
-          } else {
-            _gridPositions.remove(fromIndex);
-          }
-        });
-      },
-      builder: (context, candidateData, rejectedData) {
-        final isHovered = candidateData.isNotEmpty;
-        
-        return LongPressDraggable<_DragData>(
-          data: _DragData(
-            fromIndex: index,
-            cameraId: camera?.id,
+    final isSelected = _selectedTileIndex == index;
+    
+    return MouseRegion(
+      cursor: _isEditMode ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected 
+                ? Colors.orange // Selected tile = orange border
+                : (_isEditMode ? Colors.blue.withOpacity(0.5) : Colors.white24),
+            width: isSelected ? 3 : 1,
           ),
-          hapticFeedbackOnStart: false,
-          feedback: Material(
-            color: Colors.transparent,
-            child: Transform.scale(
-              scale: 1.1,
-              child: Container(
-                width: 250,
-                height: 140,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.blue.withOpacity(0.5),
-                      blurRadius: 20,
-                      spreadRadius: 5,
-                    ),
-                  ],
-                ),
-                child: Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.blue, width: 3),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: _VideoTile(
-                          index: index,
-                          camera: camera,
-                          hlsFuture: hlsFuture,
-                        ),
-                      ),
-                    ),
-                    // Dragging indicator overlay
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blue, width: 3),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.open_with,
-                            color: Colors.white,
-                            size: 48,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black,
-                                blurRadius: 4,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          childWhenDragging: Container(
-            decoration: BoxDecoration(
-              color: Colors.black45,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: Colors.blue.withOpacity(0.5), width: 2),
-            ),
-            child: Stack(
-              children: [
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.swap_horiz,
-                        color: Colors.blue.withOpacity(0.7),
-                        size: 32,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Moving...',
-                        style: TextStyle(
-                          color: Colors.blue.withOpacity(0.7),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+          borderRadius: BorderRadius.circular(6),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.orange.withOpacity(0.6),
+                    blurRadius: 12,
+                    spreadRadius: 3,
                   ),
-                ),
-              ],
+                ]
+              : null,
+        ),
+        child: Stack(
+          children: [
+            // Video tile
+            _VideoTile(
+              index: index,
+              camera: camera,
+              hlsFuture: hlsFuture,
+              isEditMode: _isEditMode,
+              isSelected: isSelected,
             ),
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: isHovered ? Colors.green : (_isEditMode ? Colors.blue.withOpacity(0.5) : Colors.white24),
-                width: isHovered ? 3 : 1,
-              ),
-              borderRadius: BorderRadius.circular(6),
-              boxShadow: isHovered
-                  ? [
-                      BoxShadow(
-                        color: Colors.green.withOpacity(0.5),
-                        blurRadius: 8,
-                        spreadRadius: 2,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Stack(
-              children: [
-                _VideoTile(
-                  index: index,
-                  camera: camera,
-                  hlsFuture: hlsFuture,
-                ),
-                // Edit mode indicator icon
-                if (_isEditMode && !isHovered)
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Icon(
-                        Icons.drag_indicator,
-                        color: Colors.white,
-                        size: 14,
-                      ),
+            
+            // Edit mode overlay with selection indicator
+            if (_isEditMode)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? Colors.orange.withOpacity(0.2)
+                          : Colors.blue.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(6),
                     ),
-                  ),
-                // Drop target indicator
-                if (isHovered)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.swap_calls,
-                          color: Colors.white,
-                          size: 32,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black,
-                              blurRadius: 4,
+                    child: Center(
+                      child: isSelected
+                          ? Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.check_circle,
+                                  color: Colors.orange,
+                                  size: 48,
+                                  shadows: [
+                                    Shadow(color: Colors.black, blurRadius: 4),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Text(
+                                    'SELECTED - Click another to swap',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Icon(
+                              Icons.touch_app,
+                              color: Colors.white.withOpacity(0.3),
+                              size: 32,
                             ),
-                          ],
-                        ),
+                    ),
+                  ),
+                ),
+              ),
+            
+            // Position number indicator in edit mode
+            if (_isEditMode)
+              Positioned(
+                top: 4,
+                left: 4,
+                child: IgnorePointer(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isSelected ? Colors.orange : Colors.blue.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${index + 1}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-              ],
-            ),
-          ),
-        );
-      },
+                ),
+              ),
+            
+            // CRITICAL: Transparent clickable overlay ON TOP in edit mode
+            // This captures clicks ABOVE the video iframe
+            if (_isEditMode)
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque, // Capture all taps
+                  onTap: () {
+                    if (_selectedTileIndex == null) {
+                      // First click: select this tile
+                      setState(() => _selectedTileIndex = index);
+                      print('✅ Selected tile $index for swapping');
+                    } else if (_selectedTileIndex == index) {
+                      // Click same tile: deselect
+                      setState(() => _selectedTileIndex = null);
+                      print('❌ Deselected tile $index');
+                    } else {
+                      // Second click: swap positions
+                      final fromIndex = _selectedTileIndex!;
+                      final toIndex = index;
+                      
+                      setState(() {
+                        // Get actual camera IDs at both positions
+                        final fromCameraId = _gridPositions.containsKey(fromIndex)
+                            ? _gridPositions[fromIndex]
+                            : (fromIndex < _cameras.length ? _cameras[fromIndex].id : null);
+                            
+                        final toCameraId = _gridPositions.containsKey(toIndex)
+                            ? _gridPositions[toIndex]
+                            : (toIndex < _cameras.length ? _cameras[toIndex].id : null);
+                        
+                        print('🔄 Swapping: Position $fromIndex ($fromCameraId) <-> Position $toIndex ($toCameraId)');
+                        
+                        // Perform the swap
+                        if (fromCameraId != null) {
+                          _gridPositions[toIndex] = fromCameraId;
+                        } else {
+                          _gridPositions.remove(toIndex);
+                        }
+                        
+                        if (toCameraId != null) {
+                          _gridPositions[fromIndex] = toCameraId;
+                        } else {
+                          _gridPositions.remove(fromIndex);
+                        }
+                        
+                        print('📍 New grid positions: $_gridPositions');
+                        
+                        // Clear selection and force rebuild
+                        _selectedTileIndex = null;
+                        _rebuildKey++;
+                      });
+                    }
+                  },
+                  child: Container(
+                    color: Colors.transparent, // Transparent but still catches events
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -575,18 +752,92 @@ class _CommandWidgetState extends State<CommandWidget> {
                     );
                   }
 
-                  final cams = _cameras;
-
-                  // ถ้า RTSP ของ doc ไหนเปลี่ยน -> รื้อ cache อันนั้น เพื่อยิงใหม่
-                  // (ตรงนี้ทำง่าย ๆ เวลา build)
-                  for (final cam in cams) {
-                    final cached = _hlsCache[cam.id];
-                    // ถ้าอยาก detect การเปลี่ยนจริง ๆ ให้ cache rtsp ล่าสุดด้วย
-                    // ที่นี่เอาแบบง่าย: ถ้าไม่มี future ค่อยสร้าง
-                    if (cached == null && cam.rtspUrl.isNotEmpty) {
-                      _hlsCache[cam.id] = _startHls(cam);
-                    }
+                  if (_errorMessage != null) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            color: Colors.redAccent,
+                            size: 64,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _errorMessage!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              _fetchCameras();
+                              _fetchCategories();
+                            },
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
                   }
+
+                  final cams = _cameras;
+                  print('🎨 Building grid with ${cams.length} cameras');
+
+                  if (cams.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.videocam_off,
+                            color: Colors.white54,
+                            size: 64,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'No cameras available',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Check your API connection',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.6),
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              _fetchCameras();
+                              _fetchCategories();
+                            },
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Refresh'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  // Streams are started on-demand when cameras are displayed in the grid
+                  // This avoids unnecessary 400 errors for cameras without RTSP URLs
 
                   return GridView.builder(
                     padding: const EdgeInsets.all(4.0),
@@ -610,7 +861,7 @@ class _CommandWidgetState extends State<CommandWidget> {
                           orElse: () => CameraInfo(id: '', name: '', rtspUrl: ''),
                         );
                         if (cam.id.isNotEmpty) {
-                          fut = (cam.rtspUrl.isNotEmpty) ? _ensureHls(cam) : null;
+                          fut = _ensureHls(cam);
                         } else {
                           cam = null;
                         }
@@ -622,27 +873,29 @@ class _CommandWidgetState extends State<CommandWidget> {
                           orElse: () => CameraInfo(id: '', name: '', rtspUrl: ''),
                         );
                         if (cam.id.isNotEmpty) {
-                          fut = (cam.rtspUrl.isNotEmpty) ? _ensureHls(cam) : null;
+                          fut = _ensureHls(cam);
                         } else {
                           cam = null;
                         }
                       } else if (index < cams.length) {
                         // Fill with cameras in order
                         cam = cams[index];
-                        fut = (cam.rtspUrl.isNotEmpty) ? _ensureHls(cam) : null;
+                        fut = _ensureHls(cam);
                       }
 
                       if (_isEditMode) {
-                        return _buildDraggableVideoTile(
+                        return _buildClickableVideoTile(
                           index: index,
                           camera: cam,
                           hlsFuture: fut,
                         );
                       } else {
                         return _VideoTile(
+                          key: cam != null ? ValueKey('tile_${cam.id}') : ValueKey('empty_$index'),
                           index: index,
                           camera: cam,
                           hlsFuture: fut,
+                          isEditMode: false,
                         );
                       }
                     },
@@ -650,91 +903,88 @@ class _CommandWidgetState extends State<CommandWidget> {
                 },
               ),
 
-              // Floating controls
+              // Floating controls (compact) - ALWAYS ON TOP
               Positioned(
-                top: 12,
-                left: 12,
-                right: 12,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Left side: Grid size and Edit buttons
-                    Row(
+                top: 8,
+                left: 8,
+                right: 8,
+                child: AbsorbPointer(
+                  absorbing: false, // Allow pointer events through to children
+                  child: Material(
+                    elevation: 10, // High elevation to ensure visual priority
+                    color: Colors.transparent,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Grid size toggle
-                        _buildFloatingButton(
-                          onTap: _cycleLayout,
-                          icon: Icons.grid_view_rounded,
-                          label: '${gridSize}x$gridSize',
-                        ),
-                        const SizedBox(width: 8),
-                        
-                        // Edit layout button
-                        _buildFloatingButton(
-                          onTap: () {
-                            setState(() {
-                              _isEditMode = !_isEditMode;
-                              if (!_isEditMode) {
-                                _saveGridLayout();
-                              }
-                            });
-                          },
-                          icon: _isEditMode ? Icons.save : Icons.edit,
-                          label: _isEditMode ? 'Save' : 'Edit',
-                          isActive: _isEditMode,
-                        ),
-                      ],
-                    ),
+                        // Left side: Grid size and Edit buttons
+                        Row(
+                          children: [
+                            // Grid size toggle
+                            _buildFloatingButton(
+                            onTap: _cycleLayout,
+                            icon: Icons.grid_view_rounded,
+                            label: '${gridSize}x$gridSize',
+                          ),
+                          const SizedBox(width: 6),
+                          
+                          // Edit layout button
+                          _buildFloatingButton(
+                            onTap: () {
+                              setState(() {
+                                _isEditMode = !_isEditMode;
+                                if (!_isEditMode) {
+                                  _saveGridLayout();
+                                  _selectedTileIndex = null; // Clear selection when exiting edit mode
+                                } else {
+                                  _selectedTileIndex = null; // Clear selection when entering edit mode
+                                }
+                              });
+                            },
+                            icon: _isEditMode ? Icons.check : Icons.edit,
+                            label: _isEditMode ? 'Done' : 'Edit',
+                            isActive: _isEditMode,
+                          ),
+                        ],
+                      ),
                     
-                    // Right side: Category filter
-                    _isLoadingCategories
+                    // Right side: Category filter (compact)
+                    AbsorbPointer(
+                      absorbing: false, // Let events through to children
+                      child: _isLoadingCategories
                         ? Container(
-                            height: 36,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            height: 32,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.7),
-                              borderRadius: BorderRadius.circular(20),
+                              color: Colors.black.withOpacity(0.85),
+                              borderRadius: BorderRadius.circular(16),
                               border: Border.all(color: Colors.white24, width: 1),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.3),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
                             ),
                             child: const Center(
                               child: SizedBox(
-                                width: 12,
-                                height: 12,
+                                width: 10,
+                                height: 10,
                                 child: CircularProgressIndicator(
-                                  strokeWidth: 2,
+                                  strokeWidth: 1.5,
                                   color: Colors.white,
                                 ),
                               ),
                             ),
                           )
                         : PopupMenuButton<String?>(
-                            offset: const Offset(0, 45),
+                            key: ValueKey(_selectedCategoryId),
+                            offset: const Offset(0, 38),
                             color: Colors.black.withOpacity(0.95),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                               side: const BorderSide(color: Colors.white24, width: 1),
                             ),
                             child: Container(
-                              constraints: const BoxConstraints(minHeight: 36),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              constraints: const BoxConstraints(minHeight: 32),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.7),
-                                borderRadius: BorderRadius.circular(20),
+                                color: Colors.black.withOpacity(0.85),
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(color: Colors.white24, width: 1),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -742,9 +992,9 @@ class _CommandWidgetState extends State<CommandWidget> {
                                   const Icon(
                                     Icons.filter_list_rounded,
                                     color: Colors.white,
-                                    size: 16,
+                                    size: 14,
                                   ),
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: 6),
                                   Column(
                                     mainAxisSize: MainAxisSize.min,
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -755,7 +1005,7 @@ class _CommandWidgetState extends State<CommandWidget> {
                                             : _getCategoryName(_selectedCategoryId!),
                                         style: const TextStyle(
                                           color: Colors.white,
-                                          fontSize: 11,
+                                          fontSize: 10,
                                           fontWeight: FontWeight.w600,
                                           height: 1.1,
                                         ),
@@ -791,6 +1041,19 @@ class _CommandWidgetState extends State<CommandWidget> {
                             itemBuilder: (context) => [
                               PopupMenuItem<String?>(
                                 value: null,
+                                enabled: true,
+                                onTap: () {
+                                  // Explicitly handle null selection
+                                  Future.microtask(() {
+                                    print('📂 No Filter tapped directly');
+                                    if (_selectedCategoryId != null) {
+                                      setState(() {
+                                        _selectedCategoryId = null;
+                                      });
+                                      _fetchCameras();
+                                    }
+                                  });
+                                },
                                 child: Row(
                                   children: [
                                     Icon(
@@ -818,7 +1081,7 @@ class _CommandWidgetState extends State<CommandWidget> {
                                             ),
                                           ),
                                           Text(
-                                            'Show first ${gridSize * gridSize} cameras',
+                                            'Show all cameras',
                                             style: TextStyle(
                                               color: _selectedCategoryId == null
                                                   ? Colors.blue.withOpacity(0.7)
@@ -880,46 +1143,49 @@ class _CommandWidgetState extends State<CommandWidget> {
                               ],
                             ],
                             onSelected: (value) {
-                              setState(() {
-                                _selectedCategoryId = value;
-                              });
-                              _fetchCameras();
+                              print('📂 Category filter selected: ${value ?? "No Filter (null)"}');
+                              print('📂 Previous filter was: ${_selectedCategoryId ?? "No Filter (null)"}');
+                              if (_selectedCategoryId != value) {
+                                setState(() {
+                                  _selectedCategoryId = value;
+                                });
+                                print('✅ Filter changed, fetching cameras...');
+                                _fetchCameras();
+                              } else {
+                                print('ℹ️ Same filter selected, no action needed');
+                              }
                             },
                           ),
-                  ],
+                    ), // End AbsorbPointer for category dropdown
+                    ],
+                  ),
+                ),
                 ),
               ),
 
-              // Edit mode instruction banner
+              // Edit mode instruction banner (compact)
               if (_isEditMode)
                 Positioned(
-                  bottom: 20,
+                  bottom: 12,
                   left: 0,
                   right: 0,
                   child: Center(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.blue.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.touch_app, color: Colors.white, size: 16),
-                          SizedBox(width: 8),
+                          Icon(Icons.touch_app, color: Colors.white, size: 14),
+                          SizedBox(width: 6),
                           Text(
-                            'Long press and drag to rearrange',
+                            'Drag to rearrange',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -941,59 +1207,49 @@ class _CommandWidgetState extends State<CommandWidget> {
     required String label,
     bool isActive = false,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive 
-            ? Colors.blue.withOpacity(0.9)
-            : Colors.black.withOpacity(0.7),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isActive ? Colors.blue : Colors.white24,
-            width: 1,
+    return AbsorbPointer(
+      absorbing: false, // Let events through to Listener
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Listener(
+          behavior: HitTestBehavior.opaque, // Absorb all pointer events here
+          onPointerDown: (_) => onTap(),
+          child: Container(
+          height: 32,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: isActive 
+              ? Colors.blue.withOpacity(0.95)
+              : Colors.black.withOpacity(0.85),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isActive ? Colors.blue : Colors.white24,
+              width: 1,
+            ),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: Colors.white,
-              size: 16,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: const TextStyle(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
                 color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+                size: 14,
               ),
-            ),
-          ],
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
+      ),
       ),
     );
   }
 }
 
-/// Data class for drag and drop operations
-class _DragData {
-  final int fromIndex;
-  final String? cameraId;
-
-  _DragData({
-    required this.fromIndex,
-    this.cameraId,
-  });
-}
