@@ -16,6 +16,13 @@ import 'package:provider/provider.dart';
 class MapViewModel extends FlutterFlowModel<MapViewWidget> {
   ///  Local state fields for this page.
 
+  // Loading and error states
+  bool isLoading = false;
+  String? errorMessage;
+  int totalCameras = 0;
+  int onlineCameras = 0;
+  int offlineCameras = 0;
+
   List<String> activeCctvFeeds = [];
   void addToActiveCctvFeeds(String item) => activeCctvFeeds.add(item);
   void removeFromActiveCctvFeeds(String item) => activeCctvFeeds.remove(item);
@@ -49,7 +56,7 @@ class MapViewModel extends FlutterFlowModel<MapViewWidget> {
 
   ///  State fields for stateful widgets in this page.
 
-  // Stores action output result for [Firestore Query - Query a collection] action in MapView widget.
+  // Stores action output result for API call
   List<dynamic>? cameraListFromFB;
   // Model for MapViewComponent component.
   late MapViewComponentModel mapViewComponentModel;
