@@ -201,7 +201,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                             .fontStyle,
                                       ),
                                       color: Color(0xFF101213),
-                                      fontSize: 36.0,
+                                      fontSize: AppTextStyles.displayLarge,
                                       letterSpacing: 0.0,
                                       fontWeight: FontWeight.w600,
                                       fontStyle: FlutterFlowTheme.of(context)
@@ -226,7 +226,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                                   .fontStyle,
                                         ),
                                         color: Color(0xFF57636C),
-                                        fontSize: 14.0,
+                                      fontSize: AppTextStyles.labelNormal,
                                         letterSpacing: 0.0,
                                         fontWeight: FontWeight.w500,
                                         fontStyle: FlutterFlowTheme.of(context)
@@ -270,7 +270,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                                       .fontStyle,
                                             ),
                                             color: Color(0xFF57636C),
-                                            fontSize: 16.0,
+                                            fontSize: AppTextStyles.navBrand,
                                             letterSpacing: 0.0,
                                             fontWeight: FontWeight.w500,
                                             fontStyle:
@@ -324,7 +324,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                                     .fontStyle,
                                           ),
                                           color: Color(0xFF101213),
-                                          fontSize: 16.0,
+                                          fontSize: AppTextStyles.tableHeader,
                                           letterSpacing: 0.0,
                                           fontWeight: FontWeight.w500,
                                           fontStyle:
@@ -363,7 +363,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                                       .fontStyle,
                                             ),
                                             color: Color(0xFF57636C),
-                                            fontSize: 16.0,
+                                            fontSize: AppTextStyles.tableHeader,
                                             letterSpacing: 0.0,
                                             fontWeight: FontWeight.w500,
                                             fontStyle:
@@ -433,7 +433,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                                     .fontStyle,
                                           ),
                                           color: Color(0xFF101213),
-                                          fontSize: 16.0,
+                                          fontSize: AppTextStyles.tableHeader,
                                           letterSpacing: 0.0,
                                           fontWeight: FontWeight.w500,
                                           fontStyle:
@@ -527,7 +527,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                                     .fontStyle,
                                           ),
                                           color: Colors.white,
-                                          fontSize: 16.0,
+                                          fontSize: AppTextStyles.tableHeader,
                                           letterSpacing: 0.0,
                                           fontWeight: FontWeight.w500,
                                           fontStyle:

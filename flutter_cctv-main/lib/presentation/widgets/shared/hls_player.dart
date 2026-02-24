@@ -267,7 +267,7 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
         alignment: Alignment.center,
         child: Text(
           '❌ $_error',
-          style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+          style: const TextStyle(color: Colors.redAccent, fontSize: AppTextStyles.commandBody),
           textAlign: TextAlign.center,
         ),
       );

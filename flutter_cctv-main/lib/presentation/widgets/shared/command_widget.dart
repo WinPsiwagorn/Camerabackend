@@ -1022,7 +1022,7 @@ class _CommandWidgetState extends State<CommandWidget> {
                                         }(),
                                         style: TextStyle(
                                           color: Colors.white.withOpacity(0.6),
-                                          fontSize: 9,
+                                          fontSize: AppTextStyles.commandSmall,
                                           fontWeight: FontWeight.w500,
                                           height: 1.0,
                                         ),
@@ -1074,7 +1074,7 @@ class _CommandWidgetState extends State<CommandWidget> {
                                               color: _selectedCategoryId == null
                                                   ? Colors.blue
                                                   : Colors.white,
-                                              fontSize: 13,
+                                              fontSize: AppTextStyles.commandBody,
                                               fontWeight: _selectedCategoryId == null
                                                   ? FontWeight.w600
                                                   : FontWeight.normal,
@@ -1086,7 +1086,7 @@ class _CommandWidgetState extends State<CommandWidget> {
                                               color: _selectedCategoryId == null
                                                   ? Colors.blue.withOpacity(0.7)
                                                   : Colors.white54,
-                                              fontSize: 11,
+                                              fontSize: AppTextStyles.commandSmall,
                                             ),
                                           ),
                                         ],
@@ -1122,7 +1122,7 @@ class _CommandWidgetState extends State<CommandWidget> {
                                             name,
                                             style: TextStyle(
                                               color: isSelected ? Colors.blue : Colors.white,
-                                              fontSize: 13,
+                                              fontSize: AppTextStyles.commandBody,
                                               fontWeight: isSelected
                                                   ? FontWeight.w600
                                                   : FontWeight.normal,

@@ -150,7 +150,7 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
                                           ),
                                           style: TextStyle(
                                             color: Colors.white,
-                                            fontSize: 20,
+                                            fontSize: AppTextStyles.sectionTitle,
                                             fontWeight: FontWeight.bold,
                                             letterSpacing: -0.5,
                                             height: 1.2,
@@ -164,7 +164,7 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
                                             'ID: $cameraId',
                                             style: TextStyle(
                                               color: Colors.white.withOpacity(0.8),
-                                              fontSize: 12,
+                                              fontSize: AppTextStyles.commandBody,
                                               fontWeight: FontWeight.w500,
                                               letterSpacing: 0.5,
                                             ),
@@ -239,7 +239,7 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
                                     statusText.toUpperCase(),
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 11,
+                                      fontSize: AppTextStyles.commandSmall,
                                       fontWeight: FontWeight.bold,
                                       letterSpacing: 0.8,
                                     ),
@@ -274,7 +274,7 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
                                         categoryName,
                                         style: TextStyle(
                                           color: Colors.white,
-                                          fontSize: 11,
+                                          fontSize: AppTextStyles.commandSmall,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -299,7 +299,7 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
                           Text(
                             'CAMERA DETAILS',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: AppTextStyles.commandSmall,
                               fontWeight: FontWeight.bold,
                               color: Colors.grey.shade500,
                               letterSpacing: 1.2,
@@ -409,7 +409,7 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
                                         Text(
                                           isOnline ? 'View Live Feed' : 'Camera Offline',
                                           style: TextStyle(
-                                            fontSize: 15,
+                                            fontSize: AppTextStyles.labelNormal,
                                             fontWeight: FontWeight.bold,
                                             letterSpacing: 0.3,
                                           ),
@@ -449,7 +449,7 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
                                         'This camera is currently offline and unavailable for viewing',
                                         style: TextStyle(
                                           color: Color(0xFFDC2626),
-                                          fontSize: 12,
+                                          fontSize: AppTextStyles.commandBody,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
@@ -514,7 +514,7 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
                 Text(
                   label.toUpperCase(),
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: AppTextStyles.commandSmall,
                     fontWeight: FontWeight.bold,
                     color: Colors.grey.shade500,
                     letterSpacing: 0.8,
@@ -527,7 +527,7 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
                       child: Text(
                         value,
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: AppTextStyles.labelNormal,
                           color: Colors.grey.shade800,
                           fontWeight: FontWeight.w600,
                           fontFamily: isMonospace ? 'monospace' : null,
