@@ -3,6 +3,7 @@ import '/presentation/widgets/camera/views/addnewcamera_widget.dart';
 import '/presentation/widgets/camera/views/detailscamera_widget.dart';
 import '/presentation/widgets/camera/views/editdatacamera_widget.dart';
 import '/presentation/widgets/nav/views/nav_bar_main_widget.dart';
+import '/presentation/widgets/shared/category_chip.dart';
 import '/utils/flutter_flow/icon_button.dart';
 import '/utils/flutter_flow/theme.dart';
 import '/utils/flutter_flow/util.dart';
@@ -145,44 +146,32 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
   }
 
   Widget _buildCategoryChips(dynamic item) {
-    final cats = getJsonField(item, r'$.categories');
-    if (cats == null || (cats is List && cats.isEmpty)) {
-      return const SizedBox.shrink();
-    }
-    final list = cats is List ? cats : [cats];
-    final names = list
-        .map((c) {
-          if (c is Map) return c['name']?.toString() ?? '';
-          return c.toString();
-        })
-        .where((n) => n.isNotEmpty)
-        .toList();
-    if (names.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: names.map((name) {
-        final col = _colorFor(name);
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: col.bg,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Text(
-            name,
-            style: TextStyle(
-              color: col.text,
-              fontSize: AppTextStyles.tableStatus,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        );
-      }).toList(),
-    );
+  final cats = getJsonField(item, r'$.categories');
+  if (cats == null || (cats is List && cats.isEmpty)) {
+    return const SizedBox.shrink();
   }
+  final list = cats is List ? cats : [cats];
+  final names = list
+      .map((c) {
+        if (c is Map) return c['name']?.toString() ?? '';
+        return c.toString();
+      })
+      .where((n) => n.isNotEmpty)
+      .toList();
+  if (names.isEmpty) {
+    return const SizedBox.shrink();
+  }
+  return Wrap(
+    spacing: 6,
+    runSpacing: 6,
+    children: names.map((name) {
+      return CategoryChip(
+        name: name,
+        fontSize: AppTextStyles.tableStatus, // หรือ 14
+      );
+    }).toList(),
+  );
+}
 
   // ---------------------------------------------------------------------------
   // UI builders
@@ -617,23 +606,23 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
   }
 
   Future<void> _confirmDelete(BuildContext context, dynamic item) async {
-    final name = getJsonField(item, r'$.name')?.toString() ?? 'กล้องนี้';
+    final name = getJsonField(item, r'$.name')?.toString() ?? 'this camera';
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('ยืนยันการลบ'),
-        content: Text('คุณต้องการลบ "$name" ใช่หรือไม่?'),
+        title: const Text('Confirm Deletion'),
+        content: Text('Are you sure you want to delete "$name"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('ยกเลิก'),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             style:
                 ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
             onPressed: () => Navigator.pop(ctx, true),
             child:
-                const Text('ลบ', style: TextStyle(color: Colors.white)),
+                const Text('Delete', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -648,7 +637,7 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
         if (response.succeeded) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('ลบ "$name" เรียบร้อยแล้ว'),
+              content: Text('Deleted "$name" successfully'),
               backgroundColor: const Color(0xFF16A34A),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -657,7 +646,7 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('ลบไม่สำเร็จ: ${response.statusCode}'),
+              content: Text('Failed to delete: ${response.statusCode}'),
               backgroundColor: const Color(0xFFEF4444),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

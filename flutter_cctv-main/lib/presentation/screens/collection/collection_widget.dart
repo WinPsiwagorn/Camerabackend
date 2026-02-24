@@ -1,5 +1,6 @@
 import '/data/services/index.dart';
 import '/presentation/widgets/nav_bar_main_widget.dart';
+import '/presentation/widgets/shared/category_chip.dart';
 import '/utils/flutter_flow_data_table.dart';
 import '/utils/flutter_flow_icon_button.dart';
 import '/utils/flutter_flow_theme.dart';
@@ -268,44 +269,32 @@ class _CollectionWidgetState extends State<CollectionWidget> {
   }
 
   Widget _buildCategoryChips(dynamic item) {
-    final cats = getJsonField(item, r'$.categories');
-    if (cats == null || (cats is List && cats.isEmpty)) {
-      return const SizedBox.shrink();
-    }
-    final list = cats is List ? cats : [cats];
-    final names = list
-        .map((c) {
-          if (c is Map) return c['name']?.toString() ?? '';
-          return c.toString();
-        })
-        .where((n) => n.isNotEmpty)
-        .toList();
-    if (names.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Wrap(
-      spacing: 4,
-      runSpacing: 4,
-      children: names.map((name) {
-        final col = _colorFor(name);
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-          decoration: BoxDecoration(
-            color: col.bg,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            name,
-            style: TextStyle(
-              color: col.text,
-              fontSize: AppTextStyles.commandSmall,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        );
-      }).toList(),
-    );
+  final cats = getJsonField(item, r'$.categories');
+  if (cats == null || (cats is List && cats.isEmpty)) {
+    return const SizedBox.shrink();
   }
+  final list = cats is List ? cats : [cats];
+  final names = list
+      .map((c) {
+        if (c is Map) return c['name']?.toString() ?? '';
+        return c.toString();
+      })
+      .where((n) => n.isNotEmpty)
+      .toList();
+  if (names.isEmpty) {
+    return const SizedBox.shrink();
+  }
+  return Wrap(
+    spacing: 6,
+    runSpacing: 6,
+    children: names.map((name) {
+      return CategoryChip(
+        name: name,
+        fontSize: AppTextStyles.tableStatus, // หรือ 14
+      );
+    }).toList(),
+  );
+}
 
   /// Builds a status badge with colored background and dot indicator
   Widget _buildStatusBadge(String status) {
