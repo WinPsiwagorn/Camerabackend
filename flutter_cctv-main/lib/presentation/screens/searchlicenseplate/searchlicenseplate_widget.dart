@@ -584,56 +584,53 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
                           children: [
                             // Search (left-aligned, fixed width)
                             SizedBox(
-                              width: 300,
-                              height: 42,
+                              width: MediaQuery.of(context).size.width * 0.5,
+                              height: 48,
                               child: TextField(
-                                  controller: _model.searchBarController,
-                                  focusNode: _model.searchBarFocusNode,
-                                  onChanged: _onSearchChanged,
-                                  decoration: InputDecoration(
-                                    hintText: 'Search license plate, camera...',
-                                    hintStyle: const TextStyle(
-                                        color: Color(0xFF9CA3AF),
-                                        fontSize: AppTextStyles.labelNormal),
-                                    prefixIcon: const Icon(Icons.search,
-                                        color: Color(0xFF9CA3AF), size: 20),
-                                    suffixIcon: (_model.searchBarController
-                                                    .text
-                                                    .isNotEmpty)
-                                        ? IconButton(
-                                            icon: const Icon(Icons.close,
-                                                size: 18,
-                                                color: Color(0xFF9CA3AF)),
-                                            onPressed: () {
-                                              _model.searchBarController
-                                                  .clear();
-                                              _fetchPlates(page: 1);
-                                            },
-                                          )
-                                        : null,
-                                    filled: true,
-                                    fillColor: const Color(0xFFF9FAFB),
-                                    contentPadding:
-                                        const EdgeInsets.symmetric(
-                                            horizontal: 14, vertical: 10),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: const BorderSide(
-                                          color: Color(0xFFE5E7EB)),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: const BorderSide(
-                                          color: Color(0xFFE5E7EB)),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(
-                                          color: FlutterFlowTheme.of(context)
-                                              .primary),
-                                    ),
+                                controller: _model.searchBarController,
+                                focusNode: _model.searchBarFocusNode,
+                                onChanged: _onSearchChanged,
+                                decoration: InputDecoration(
+                                  hintText: 'Search license plate, camera...',
+                                  hintStyle: const TextStyle(
+                                      color: Color(0xFF9CA3AF),
+                                      fontSize: AppTextStyles.labelNormal),
+                                  prefixIcon: const Icon(Icons.search,
+                                      color: Color(0xFF9CA3AF), size: 22),
+                                  suffixIcon: (_model.searchBarController.text.isNotEmpty)
+                                      ? IconButton(
+                                          icon: const Icon(Icons.close,
+                                              size: 20,
+                                              color: Color(0xFF9CA3AF)),
+                                          onPressed: () {
+                                            _model.searchBarController.clear();
+                                            _fetchPlates(page: 1);
+                                          },
+                                        )
+                                      : null,
+                                  filled: true,
+                                  fillColor: const Color(0xFFF9FAFB),
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 14),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(
+                                        color: Color(0xFFE5E7EB)),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(
+                                        color: Color(0xFFE5E7EB)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                        color: FlutterFlowTheme.of(context)
+                                            .primary),
                                   ),
                                 ),
+                              ),
                             ),
                             const Spacer(),
                             // Total badge (right-aligned)
