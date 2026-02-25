@@ -48,7 +48,6 @@ public class User {
         user.setUsername((String) data.get("username"));
         user.setPassword((String) data.get("password"));
 
-        @SuppressWarnings("unchecked")
         List<String> rolesList = (List<String>) data.get("roles");
         user.setRoles(rolesList != null ? rolesList : Arrays.asList("USER"));
 

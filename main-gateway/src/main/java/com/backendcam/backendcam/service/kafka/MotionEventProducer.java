@@ -1,6 +1,6 @@
 package com.backendcam.backendcam.service.kafka;
 
-import com.backendcam.backendcam.model.dto.MotionEvent;
+import com.backendcam.backendcam.model.dto.motion.MotionEvent;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
