@@ -1,21 +1,17 @@
 meta {
-  name: searchLicensePlate
+  name: GET License plate
   type: http
   seq: 1
 }
 
 get {
-  url: {{dev_env}}/license-plates/search?licensePlate=8167
+  url: {{base_url}}/license-plates/search?licensePlate=8167
   body: none
   auth: inherit
 }
 
 params:query {
   licensePlate: 8167
-}
-
-vars:pre-request {
-  dev_env: http://localhost:8080/api
 }
 
 settings {
