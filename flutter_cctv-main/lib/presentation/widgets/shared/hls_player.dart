@@ -109,12 +109,14 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
       container.style.width = '100%';
       container.style.height = '100%';
       container.style.overflow = 'hidden';
+      container.style.pointerEvents = 'none'; // Allow clicks to pass through to Flutter
       
       final iframe = web.HTMLIFrameElement();
       iframe.width = '100%';
       iframe.height = '100%';
       iframe.style.border = 'none';
       iframe.style.display = 'block';
+      iframe.style.pointerEvents = 'none'; // Allow clicks to pass through to Flutter
       iframe.allow = 'autoplay; fullscreen';
       iframe.setAttribute('allowfullscreen', '');
 

@@ -908,17 +908,17 @@ class _CommandWidgetState extends State<CommandWidget> {
                 top: 8,
                 left: 8,
                 right: 8,
-                child: AbsorbPointer(
-                  absorbing: false, // Allow pointer events through to children
+                child: IgnorePointer(
+                  ignoring: false, // This widget and children receive pointer events
                   child: Material(
                     elevation: 10, // High elevation to ensure visual priority
                     color: Colors.transparent,
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Left side: Grid size and Edit buttons
-                        Row(
-                          children: [
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Left side: Grid size and Edit buttons
+                          Row(
+                            children: [
                             // Grid size toggle
                             _buildFloatingButton(
                             onTap: _cycleLayout,
@@ -948,8 +948,8 @@ class _CommandWidgetState extends State<CommandWidget> {
                       ),
                     
                     // Right side: Category filter (compact)
-                    AbsorbPointer(
-                      absorbing: false, // Let events through to children
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
                       child: _isLoadingCategories
                         ? Container(
                             height: 32,
@@ -1156,12 +1156,12 @@ class _CommandWidgetState extends State<CommandWidget> {
                               }
                             },
                           ),
-                    ), // End AbsorbPointer for category dropdown
+                    ), // End MouseRegion
                     ],
-                  ),
-                ),
-                ),
-              ),
+                  ), // End Row (Material child)
+                ), // End Material
+            ), // End IgnorePointer
+          ), // End Positioned
 
               // Edit mode instruction banner (compact)
               if (_isEditMode)
@@ -1207,14 +1207,12 @@ class _CommandWidgetState extends State<CommandWidget> {
     required String label,
     bool isActive = false,
   }) {
-    return AbsorbPointer(
-      absorbing: false, // Let events through to Listener
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: Listener(
-          behavior: HitTestBehavior.opaque, // Absorb all pointer events here
-          onPointerDown: (_) => onTap(),
-          child: Container(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
           height: 32,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
@@ -1247,7 +1245,6 @@ class _CommandWidgetState extends State<CommandWidget> {
             ],
           ),
         ),
-      ),
       ),
     );
   }
