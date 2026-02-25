@@ -904,16 +904,42 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
                                       ),
                                     ),
                                   )
-                                : SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                          minWidth: MediaQuery.of(context)
-                                                  .size
-                                                  .width -
-                                              88),
-                                      child: _buildDataTable(context),
-                                    ),
+                                : LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      // Calculate if we need to scale or scroll
+                                      final availableWidth = constraints.maxWidth;
+                                      // Minimum comfortable width for the table
+                                      const double tableMinWidth = 1100;
+                                      
+                                      // If screen is large enough, show table directly
+                                      if (availableWidth >= tableMinWidth) {
+                                        return _buildDataTable(context);
+                                      }
+                                      
+                                      // For medium screens, scale down to fit
+                                      else if (availableWidth >= 800) {
+                                        final scale = availableWidth / tableMinWidth;
+                                        return Transform.scale(
+                                          scale: scale,
+                                          alignment: Alignment.topLeft,
+                                          child: SizedBox(
+                                            width: tableMinWidth,
+                                            child: _buildDataTable(context),
+                                          ),
+                                        );
+                                      }
+                                      
+                                      // For small screens, use horizontal scroll
+                                      else {
+                                        return SingleChildScrollView(
+                                          scrollDirection: Axis.horizontal,
+                                          child: SizedBox(
+                                            width: tableMinWidth,
+                                            child: _buildDataTable(context),
+                                          ),
+                                        );
+                                      }
+                                    },
                                   ),
 
                         const SizedBox(height: 20),
