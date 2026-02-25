@@ -30,12 +30,13 @@ public class FFmpegGrabberConfig {
      *
      * @param rtspUrl    RTSP source URL
      * @param streamName for logging
-     * @param context    stream context (checked for shouldStop, grabber reference stored here)
+     * @param context    stream context (checked for shouldStop, grabber reference
+     *                   stored here)
      * @return a started FFmpegFrameGrabber with valid width/height
      * @throws Exception if all retries exhausted or interrupted
      */
     public FFmpegFrameGrabber startGrabberWithRetry(String rtspUrl, String streamName,
-                                                     StreamContext context) throws Exception {
+            StreamContext context) throws Exception {
         Exception lastException = null;
 
         for (int attempt = 1; attempt <= MAX_INIT_RETRIES; attempt++) {
@@ -58,12 +59,14 @@ public class FFmpegGrabberConfig {
                             streamName, width, height, dr + 1, MAX_DIMENSION_RETRIES);
                     for (int i = 0; i < 30; i++) {
                         Frame probeFrame = grabber.grabImage();
-                        if (probeFrame != null) probeFrame.close();
+                        if (probeFrame != null)
+                            probeFrame.close();
                         Thread.sleep(100); // small delay between grabs to allow stream to stabilize
                     }
                     width = grabber.getImageWidth();
                     height = grabber.getImageHeight();
-                    if (width <= 0 || height <= 0) Thread.sleep(DIMENSION_RETRY_DELAY_MS);
+                    if (width <= 0 || height <= 0)
+                        Thread.sleep(DIMENSION_RETRY_DELAY_MS);
                 }
 
                 if (width <= 0 || height <= 0) {
@@ -83,7 +86,8 @@ public class FFmpegGrabberConfig {
                         streamName, attempt, MAX_INIT_RETRIES, e.getMessage());
                 safeClose(grabber);
                 context.grabber = null;
-                if (attempt < MAX_INIT_RETRIES) Thread.sleep(INIT_RETRY_DELAY_MS);
+                if (attempt < MAX_INIT_RETRIES)
+                    Thread.sleep(INIT_RETRY_DELAY_MS);
             }
         }
         throw new RuntimeException("Grabber init failed after " + MAX_INIT_RETRIES + " attempts", lastException);
@@ -93,16 +97,24 @@ public class FFmpegGrabberConfig {
      * Safely stop and release a grabber, ignoring errors.
      */
     public void safeClose(FFmpegFrameGrabber grabber) {
-        if (grabber == null) return;
-        try { grabber.stop(); } catch (Exception ignored) {}
-        try { grabber.release(); } catch (Exception ignored) {}
+        if (grabber == null)
+            return;
+        try {
+            grabber.stop();
+        } catch (Exception ignored) {
+        }
+        try {
+            grabber.release();
+        } catch (Exception ignored) {
+        }
     }
 
     // ─── Internal: configure options ──────────────────────────────────
 
     /**
      * Configure grabber for LIVE STREAMING (low latency, optimized for HLS output)
-     * Use this for real-time streaming where latency matters more than frame quality
+     * Use this for real-time streaming where latency matters more than frame
+     * quality
      * 
      * @param grabber The FFmpegFrameGrabber to configure
      * @throws Exception if configuration fails
@@ -115,9 +127,9 @@ public class FFmpegGrabberConfig {
 
         // Probe settings - must be large enough to detect HEVC/H.265 resolution
         // Too small (e.g. 32) causes "Picture size 0x0" errors on HEVC cameras
-        grabber.setOption("analyzeduration", "1000000");  // 1 second to analyze stream
-        grabber.setOption("probesize", "1000000");        // 1MB to detect codec params
-        grabber.setOption("max_delay", "500000");          // 500ms max delay
+        grabber.setOption("analyzeduration", "1000000"); // 1 second to analyze stream
+        grabber.setOption("probesize", "1000000"); // 1MB to detect codec params
+        grabber.setOption("max_delay", "500000"); // 500ms max delay
         grabber.setOption("reorder_queue_size", "0");
 
         // Flags configuration for minimum latency
@@ -128,10 +140,10 @@ public class FFmpegGrabberConfig {
         grabber.setOption("rtsp_transport", "tcp");
         grabber.setOption("rtsp_flags", "prefer_tcp");
 
-        grabber.setOption("stimeout", "5000000"); //socket timeout 5 secs
-        grabber.setOption("rw_timeout", "5000000"); //read write timeout 5 secs
+        grabber.setOption("stimeout", "5000000"); // socket timeout 5 secs
+        grabber.setOption("rw_timeout", "5000000"); // read write timeout 5 secs
 
-        grabber.setOption("allowed_media_types", "video+audio");
+        grabber.setOption("allowed_media_types", "video");
         grabber.setOption("use_wallclock_as_timestamps", "1");
 
         grabber.setOption("err_detect", "ignore_err");
@@ -140,7 +152,8 @@ public class FFmpegGrabberConfig {
     }
 
     /**
-     * Configure grabber for MOTION DETECTION (proper frame quality for image saving)
+     * Configure grabber for MOTION DETECTION (proper frame quality for image
+     * saving)
      * Use this when you need to save/upload frames with correct colors.
      * NOTE: This does NOT have retry logic — add if needed.
      * 
@@ -150,18 +163,18 @@ public class FFmpegGrabberConfig {
     public void configureGrabberForMotionDetection(FFmpegFrameGrabber grabber) throws Exception {
         grabber.setFormat("rtsp");
         grabber.setImageMode(ImageMode.COLOR);
-        
+
         // Set pixel format to ensure proper color conversion
         grabber.setPixelFormat(org.bytedeco.ffmpeg.global.avutil.AV_PIX_FMT_BGR24);
 
         // Sufficient values for proper codec detection and frame quality
-        grabber.setOption("analyzeduration", "2000000");  // 2 seconds to analyze stream format
-        grabber.setOption("probesize", "5000000");        // 5MB to detect codec parameters
-        grabber.setOption("max_delay", "500000");         // 500ms max delay
-        
+        grabber.setOption("analyzeduration", "2000000"); // 2 seconds to analyze stream format
+        grabber.setOption("probesize", "5000000"); // 5MB to detect codec parameters
+        grabber.setOption("max_delay", "500000"); // 500ms max delay
+
         // Request keyframe at start for proper H.264 decoding
-        grabber.setOption("skip_frame", "nokey");         // Don't skip keyframes
-        grabber.setOption("skip_loop_filter", "all");     // Skip loop filter for speed
+        grabber.setOption("skip_frame", "nokey"); // Don't skip keyframes
+        grabber.setOption("skip_loop_filter", "all"); // Skip loop filter for speed
 
         // Flags - keep frames intact for proper decoding
         grabber.setOption("fflags", "+genpts");
@@ -171,8 +184,8 @@ public class FFmpegGrabberConfig {
         grabber.setOption("rtsp_transport", "tcp");
         grabber.setOption("rtsp_flags", "prefer_tcp");
 
-        grabber.setOption("stimeout", "5000000"); //socket timeout 5 secs
-        grabber.setOption("rw_timeout", "5000000"); //read write timeout 5 secs
+        grabber.setOption("stimeout", "5000000"); // socket timeout 5 secs
+        grabber.setOption("rw_timeout", "5000000"); // read write timeout 5 secs
 
         grabber.setOption("allowed_media_types", "video");
         grabber.setOption("use_wallclock_as_timestamps", "1");

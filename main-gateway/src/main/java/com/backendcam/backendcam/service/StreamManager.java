@@ -1,6 +1,6 @@
 package com.backendcam.backendcam.service;
 
-import com.backendcam.backendcam.model.CameraStreamState;
+import com.backendcam.backendcam.model.entity.CameraStreamState;
 import com.backendcam.backendcam.service.hls.HLSStreamService;
 
 import java.util.concurrent.ConcurrentHashMap;

@@ -1,0 +1,24 @@
+meta {
+  name: GET License plate
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/license-plates/search
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~fullPlate: 8ก
+  ~cameraId: 
+  ~text: 
+  ~number: 
+  ~province: 
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

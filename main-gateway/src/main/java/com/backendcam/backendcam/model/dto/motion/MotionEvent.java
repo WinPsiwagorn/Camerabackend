@@ -1,4 +1,4 @@
-package com.backendcam.backendcam.model.dto;
+package com.backendcam.backendcam.model.dto.motion;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -6,9 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-//For kafka motion event messages
 @Getter
-@Setter 
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -16,5 +15,5 @@ public class MotionEvent {
     private String cameraId;
     private long timestamp;
     private String imageUrl;
-    private String metadata; 
+    private String metadata;
 }
