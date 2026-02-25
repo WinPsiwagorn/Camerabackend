@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.backendcam.backendcam.exception.DuplicateResourceException;
 import com.backendcam.backendcam.model.dto.PageResponse;
 import com.backendcam.backendcam.model.dto.category.CategoryCreateDTO;
 import com.backendcam.backendcam.model.dto.category.CategoryResponseDTO;
@@ -23,12 +24,20 @@ public class CategoryService {
 
     public CategoryResponseDTO createCategory(CategoryCreateDTO categoryDto) {
         try {
+            Category existing = categoryRepository.findByName(categoryDto.getName());
+            if (existing != null) {
+                throw new DuplicateResourceException(
+                        "Category with name '" + categoryDto.getName() + "' already exists");
+            }
+
             Category category = new Category();
             category.setName(categoryDto.getName());
 
             String id = categoryRepository.createCategory(category);
             category.setId(id);
             return toDto(category);
+        } catch (DuplicateResourceException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to create category", e);
         }
