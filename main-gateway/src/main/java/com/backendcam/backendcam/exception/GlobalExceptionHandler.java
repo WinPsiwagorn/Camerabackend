@@ -31,6 +31,17 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    @ExceptionHandler(ResourceInUseException.class)
+    public ResponseEntity<Map<String, Object>> handleResourceInUse(ResourceInUseException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "status", 409,
+                "error", "Conflict",
+                "message", ex.getMessage(),
+                "hint", "Use ?force=true to remove the category from all cameras and delete it",
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalState(IllegalStateException ex) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(
