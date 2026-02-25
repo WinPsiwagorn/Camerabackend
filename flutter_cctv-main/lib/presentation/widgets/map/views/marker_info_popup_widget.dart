@@ -99,20 +99,12 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Premium Header with gradient and glass effect
+                  // Premium Header with formal gray color
                   Container(
                     width: double.infinity,
                     padding: EdgeInsets.all(24.0),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Color(0xFF1E40AF),
-                          Color(0xFF3B82F6),
-                          Color(0xFF60A5FA),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      color: Color(0xFF4B5563),
                       borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(20),
                         topRight: Radius.circular(20),
@@ -375,16 +367,12 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
                                 child: Container(
                                   height: 50,
                                   decoration: BoxDecoration(
-                                    gradient: isOnline
-                                        ? LinearGradient(
-                                            colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
-                                          )
-                                        : null,
+                                    color: isOnline ? Color(0xFF6B7280) : null,
                                     borderRadius: BorderRadius.circular(12),
                                     boxShadow: isOnline
                                         ? [
                                             BoxShadow(
-                                              color: Color(0xFF3B82F6).withOpacity(0.3),
+                                              color: Color(0xFF6B7280).withOpacity(0.3),
                                               blurRadius: 12,
                                               offset: Offset(0, 4),
                                             ),

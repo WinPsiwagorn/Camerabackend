@@ -33,13 +33,21 @@ class CollectionModel extends FlutterFlowModel<CollectionWidget> {
   void updateSelectedCamerasAtIndex(int index, Function(String) updateFn) =>
       selectedCameras[index] = updateFn(selectedCameras[index]);
 
+  // Pagination state
+  List<dynamic> listOfCameras = [];
+  int currentPage = 1;
+  int totalPages = 1;
+  int totalCameras = 0;
+  static const int pageSize = 10;
+  bool isLoading = false;
+  String searchQuery = '';
+
   ///  State fields for stateful widgets in this page.
 
   // State field(s) for TextField widget.
   FocusNode? textFieldFocusNode;
   TextEditingController? textController;
   String? Function(BuildContext, String?)? textControllerValidator;
-  List<dynamic> simpleSearchResults = [];
   // Stores action output result for [Backend Call - API (Get Camera)] action in search.
   ApiCallResponse? apiResultSearch;
   // Stores action output result for [Backend Call - API (Add Category to Camera)] action in Button widget.
