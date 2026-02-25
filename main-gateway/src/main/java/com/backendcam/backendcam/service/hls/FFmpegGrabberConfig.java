@@ -1,12 +1,12 @@
 package com.backendcam.backendcam.service.hls;
 
+import org.bytedeco.ffmpeg.global.avutil;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameGrabber.ImageMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.bytedeco.ffmpeg.global.avutil;
 
 /**
  * Configures FFmpeg frame grabber for RTSP stream input.
@@ -59,6 +59,7 @@ public class FFmpegGrabberConfig {
                     for (int i = 0; i < 30; i++) {
                         Frame probeFrame = grabber.grabImage();
                         if (probeFrame != null) probeFrame.close();
+                        Thread.sleep(100); // small delay between grabs to allow stream to stabilize
                     }
                     width = grabber.getImageWidth();
                     height = grabber.getImageHeight();

@@ -22,9 +22,8 @@ public class HLSStreamService {
     private static final int MAX_RECONNECT_ATTEMPTS = 10;
     private static final int RECONNECT_DELAY_MS = 3000;
     private static final int MAX_NULL_FRAMES = 100;
-    private static final int MAX_FULL_RESTARTS = 3;        // Full pipeline restart attempts
+    private static final int MAX_FULL_RESTARTS = 3; // Full pipeline restart attempts
     private static final long FULL_RESTART_DELAY_MS = 5000; // Delay before full restart
-    
 
     private final Map<String, Thread> streamThreads = new ConcurrentHashMap<>();
     private final Map<String, StreamContext> streamContexts = new ConcurrentHashMap<>();
@@ -94,8 +93,21 @@ public class HLSStreamService {
                     int height = grabber.getImageHeight();
 
                     // Phase 2 — Init recorder (with retries)
-                    recorder = recorderConfig.startRecorderWithRetry(hlsOutput, outputDir, width, height, streamName, context);
+                    recorder = recorderConfig.startRecorderWithRetry(hlsOutput, outputDir, width, height, streamName,
+                            context);
 
+                    logger.info("Stream {} - Flushing stale grabber buffer...", streamName);
+                    int flushed = 0;
+                    for (int i = 0; i < 50; i++) {
+                        if (Thread.currentThread().isInterrupted() || context.shouldStop)
+                            break;
+                        Frame stale = grabber.grabImage();
+                        if (stale == null)
+                            break;
+                        stale.close();
+                        flushed++;
+                    }
+                    logger.info("Stream {} - Flushed {} stale frames", streamName, flushed);
                     // Phase 3 — Frame streaming loop
                     int nullFrameCount = 0;
                     int reconnectAttempts = 0;
@@ -108,7 +120,7 @@ public class HLSStreamService {
 
                             if (frame == null) {
                                 nullFrameCount++;
-                                if (nullFrameCount == 50 || nullFrameCount == 100 ) {
+                                if (nullFrameCount == 50 || nullFrameCount == 100) {
                                     logger.warn("Stream {} - {} consecutive null frames, attempting reconnect...",
                                             streamName, nullFrameCount);
 
@@ -157,8 +169,20 @@ public class HLSStreamService {
                                     streamName, recEx.getMessage());
                             break;
                         } catch (Exception frameEx) {
-                            logger.warn("Stream {} - Frame error: {}", streamName, frameEx.getMessage());
-                            nullFrameCount++;
+                            String msg = frameEx.getMessage() != null ? frameEx.getMessage() : "";
+                            if (msg.contains("AVFormatContext") || msg.contains("Could not grab")) {
+                                logger.error("Stream {} - Grabber lost context, triggering full restart", streamName);
+                                break; // breaks inner loop → goes to finally → full pipeline restart
+                            } else {
+                                logger.warn("Stream {} - Frame error: {}", streamName, msg);
+                                nullFrameCount++;
+                                try {
+                                    Thread.sleep(200);
+                                } catch (InterruptedException ie) {
+                                    Thread.currentThread().interrupt();
+                                    break;
+                                }
+                            }
                         }
                     }
 
