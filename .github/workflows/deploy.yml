@@ -1,4 +1,4 @@
-name: Deploy by SSH
+name: Deploy to server via Cloudflare SSH
 
 on:
   push:
@@ -11,47 +11,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # - name: Checkout (optional)
-      #   uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Install cloudflared
-        run: |
-          sudo wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
-          sudo mv cloudflared-linux-amd64 /usr/local/bin/cloudflared
-          sudo chmod +x /usr/local/bin/cloudflared
-
-      # - name: Setup SSH
-      #   run: |
-      #     mkdir -p ~/.ssh
-      #     echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
-      #     chmod 600 ~/.ssh/id_ed25519
-
-      - name: Setup SSH config
-        run: |
-          mkdir -p ~/.ssh
-          cat > ~/.ssh/config << EOF
-          Host server
-            HostName ${{ secrets.HOST }}
-            User se-lab
-            IdentityFile ~/.ssh/id_ed25519
-            ProxyCommand env CF_ACCESS_CLIENT_ID=${{ secrets.CLOUDFLARE_CLIENT_ID }} CF_ACCESS_CLIENT_SECRET=${{ secrets.CLOUDFLARE_CLIENT_SECRET }} cloudflared access ssh --hostname %h
-          EOF
-      
-          chmod 600 ~/.ssh/config
-
-      - name: Test SSH
-        run: |
-          ssh -o StrictHostKeyChecking=no server "hostname"
-
-      # Deploy
-      # - name: SSH Deploy
-      #   run: |
-      #     export CF_ACCESS_CLIENT_ID=${{ secrets.CLOUDFLARE_CLIENT_ID }}
-      #     export CF_ACCESS_CLIENT_SECRET=${{ secrets.CLOUDFLARE_CLIENT_SECRET }}
+      - name: Run commands on remote via Cloudflare Tunnel
+        uses: and-fm/cloudflared-ssh-action@v3
+        with:
+          host: ${{ secrets.HOST }}           # Cloudflare Tunnel hostname
+          username: ${{ secrets.USER }}   # SSH user
+          private_key_filename: ${{ secrets.SSH_PRIVATE_KEY_FILENAME }}
+          private_key_value: ${{ secrets.SSH_KEY }}
           
-      #     cloudflared access ssh \
-      #       --hostname ${{ secrets.HOST }} \
-      #       -- \
-      #       "cd Github/CCTVbackend/Camera && \
-      #        git pull origin main && \
-      #        docker compose up -d --build"
+          # ถ้ามึงมี policy ให้เซ็ตด้วย
+          service_token_id: ${{ secrets.CLOUDFLARE_CLIENT_ID }}
+          service_token_secret: ${{ secrets.CLOUDFLARE_CLIENT_SECRET }}
+
+          # คำสั่งที่มึงจะรันบน remote
+          commands: |
+            whoami
+            pwd
+            # git pull origin main
+            # docker compose down
+            # docker compose up -d
