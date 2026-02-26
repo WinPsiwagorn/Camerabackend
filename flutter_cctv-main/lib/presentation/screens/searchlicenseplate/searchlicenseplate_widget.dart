@@ -61,6 +61,7 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
         licensePlate: search.isNotEmpty ? search : null,
       );
 
+
       if (response.succeeded) {
         final body = response.jsonBody;
         if (body is List) {
@@ -82,6 +83,21 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
             _model.listOfPlates = [];
           }
         }
+
+        _model.listOfPlates = _model.listOfPlates
+          ..sort((a, b) {
+            final plateA = (a['licensePlate']?['fullPlate'] ?? '').toString().toLowerCase();
+            final plateB = (b['licensePlate']?['fullPlate'] ?? '').toString().toLowerCase();
+            final searchLower = search.toLowerCase();
+            final aStartsWith = plateA.startsWith(searchLower);
+            final bStartsWith = plateB.startsWith(searchLower);
+            if (aStartsWith && !bStartsWith) return -1;
+            if (!aStartsWith && bStartsWith) return 1;
+            final timeA = a['timestamp'] ?? '';
+            final timeB = b['timestamp'] ?? '';
+            return timeB.compareTo(timeA);
+          });
+
         _model.totalItems = _model.listOfPlates.length;
         _model.totalPages = (_model.totalItems / ListPlatePageModel.pageSize).ceil().clamp(1, 9999);
       } else {
