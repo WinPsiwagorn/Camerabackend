@@ -3,8 +3,6 @@ name: Deploy to server via Cloudflare SSH
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
   deploy:
@@ -24,8 +22,9 @@ jobs:
 
           # คำสั่งที่มึงจะรันบน remote
           commands: |
-            cd Github/CCTVbackend/Camera
-            git branch
+            set -e
+            cd ~/Github/CCTVbackend/Camera
+            pwd
             # git pull origin main
             # docker compose down
             # docker compose up -d
