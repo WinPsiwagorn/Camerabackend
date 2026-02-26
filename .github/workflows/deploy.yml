@@ -21,10 +21,6 @@ jobs:
           username: ${{ secrets.USER }}   # SSH user
           private_key_filename: "id_rsa"
           private_key_value: ${{ secrets.SSH_KEY }}
-          
-          # ถ้ามึงมี policy ให้เซ็ตด้วย
-          service_token_id: ${{ secrets.CLOUDFLARE_CLIENT_ID }}
-          service_token_secret: ${{ secrets.CLOUDFLARE_CLIENT_SECRET }}
 
           # คำสั่งที่มึงจะรันบน remote
           commands: |
