@@ -14,18 +14,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Run commands on remote via Cloudflare Tunnel
-        uses: and-fm/cloudflared-ssh-action@v3
+      - name: Run commands on remote via SSH
+        uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.HOST }}           # Cloudflare Tunnel hostname
-          username: ${{ secrets.USER }}   # SSH user
-          private_key_filename: "id_rsa"
-          private_key_value: ${{ secrets.SSH_KEY }}
-
-          # คำสั่งที่มึงจะรันบน remote
-          commands: |
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          script: |
             whoami
+            ls -al
             pwd
-            # git pull origin main
-            # docker compose down
-            # docker compose up -d
