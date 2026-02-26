@@ -23,13 +23,20 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
   late ListPlatePageModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
+  String? _initialFullPlate;
+
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => ListPlatePageModel());
 
+
     SchedulerBinding.instance.addPostFrameCallback((_) async {
-      await _fetchPlates(page: 1);
+      // ดึง query param fullPlate จาก URL
+      final uri = Uri.base;
+      final fullPlate = uri.queryParameters['fullPlate'];
+      _initialFullPlate = fullPlate;
+      await _fetchPlates(page: 1, search: fullPlate ?? '');
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
