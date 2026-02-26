@@ -24,7 +24,7 @@ jobs:
 
           # คำสั่งที่มึงจะรันบน remote
           commands: |
-            whoami
+            cd Github
             pwd
             # git pull origin main
             # docker compose down
