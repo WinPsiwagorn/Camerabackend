@@ -34,15 +34,12 @@ jobs:
             HostName ${{ secrets.HOST }}
             User se-lab
             IdentityFile ~/.ssh/id_ed25519
-            ProxyCommand cloudflared access ssh --hostname %h
+            ProxyCommand env CF_ACCESS_CLIENT_ID=${{ secrets.CLOUDFLARE_CLIENT_ID }} CF_ACCESS_CLIENT_SECRET=${{ secrets.CLOUDFLARE_CLIENT_SECRET }} cloudflared access ssh --hostname %h
           EOF
       
           chmod 600 ~/.ssh/config
 
       - name: Test SSH
-        env:
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CLOUDFLARE_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CLOUDFLARE_CLIENT_SECRET }}
         run: |
           ssh -o StrictHostKeyChecking=no server "hostname"
 
