@@ -1,0 +1,6 @@
+/pycache
+__pycache__
+/test_image
+/secrets
+.env
+*.log
