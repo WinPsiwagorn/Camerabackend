@@ -1,0 +1,37 @@
+name: Deploy by SSH
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # - name: Checkout (optional)
+      #   uses: actions/checkout@v4
+
+      - name: Install cloudflared
+        run: |
+          sudo wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+          sudo mv cloudflared-linux-amd64 /usr/local/bin/cloudflared
+          sudo chmod +x /usr/local/bin/cloudflared
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+      # Deploy
+      - name: SSH Deploy
+        run: |
+          cloudflared access ssh \
+            --hostname ${{ secrets.HOST }} \
+            -- \
+            "cd Github/CCTVbackend/Camera && \
+             git pull origin main && \
+             docker compose up -d --build"
