@@ -20,21 +20,34 @@ jobs:
           sudo mv cloudflared-linux-amd64 /usr/local/bin/cloudflared
           sudo chmod +x /usr/local/bin/cloudflared
 
-      - name: Setup SSH
+      # - name: Setup SSH
+      #   run: |
+      #     mkdir -p ~/.ssh
+      #     echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
+      #     chmod 600 ~/.ssh/id_ed25519
+
+      - name: Setup SSH config
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
+          cat > ~/.ssh/config << EOF
+          Host server
+            HostName ${{ secrets.HOST }}
+            User se-lab
+            IdentityFile ~/.ssh/id_ed25519
+            ProxyCommand cloudflared access ssh --hostname %h
+          EOF
+      
+          chmod 600 ~/.ssh/config
 
       # Deploy
-      - name: SSH Deploy
-        run: |
-          export CF_ACCESS_CLIENT_ID=${{ secrets.CLOUDFLARE_CLIENT_ID }}
-          export CF_ACCESS_CLIENT_SECRET=${{ secrets.CLOUDFLARE_CLIENT_SECRET }}
+      # - name: SSH Deploy
+      #   run: |
+      #     export CF_ACCESS_CLIENT_ID=${{ secrets.CLOUDFLARE_CLIENT_ID }}
+      #     export CF_ACCESS_CLIENT_SECRET=${{ secrets.CLOUDFLARE_CLIENT_SECRET }}
           
-          cloudflared access ssh \
-            --hostname ${{ secrets.HOST }} \
-            -- \
-            "cd Github/CCTVbackend/Camera && \
-             git pull origin main && \
-             docker compose up -d --build"
+      #     cloudflared access ssh \
+      #       --hostname ${{ secrets.HOST }} \
+      #       -- \
+      #       "cd Github/CCTVbackend/Camera && \
+      #        git pull origin main && \
+      #        docker compose up -d --build"
