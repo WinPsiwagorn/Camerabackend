@@ -29,6 +29,9 @@ jobs:
       # Deploy
       - name: SSH Deploy
         run: |
+          export CF_ACCESS_CLIENT_ID=${{ secrets.CLOUDFLARE_CLIENT_ID }}
+          export CF_ACCESS_CLIENT_SECRET=${{ secrets.CLOUDFLARE_CLIENT_SECRET }}
+          
           cloudflared access ssh \
             --hostname ${{ secrets.HOST }} \
             -- \
