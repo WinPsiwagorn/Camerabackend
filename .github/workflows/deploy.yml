@@ -23,8 +23,25 @@ jobs:
           # คำสั่งที่มึงจะรันบน remote
           commands: |
             set -e
-            cd ~/Github/CCTVbackend/Camera
-            pwd
-            # git pull origin main
-            # docker compose down
-            # docker compose up -d
+
+            APP_DIR=/home/se-lab/Github/CCTVbackend/cctv-prod/Chiang-rai-cctv
+            
+            echo "== Go to project =="
+            cd $APP_DIR
+            
+            echo "== Reset repo =="
+            git checkout main
+            git fetch origin
+            git reset --hard origin/main
+            git clean -fd
+            
+            echo "== Pull latest images (if any) =="
+            docker compose pull || true
+            
+            echo "== Deploy containers =="
+            docker compose up -d --build --remove-orphans
+            
+            echo "== Cleanup old images =="
+            docker image prune -f
+            
+            echo "== Done =="
