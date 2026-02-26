@@ -24,8 +24,8 @@ jobs:
 
           # คำสั่งที่มึงจะรันบน remote
           commands: |
-            cd Github
-            pwd
+            cd Github/CCTVbackend/Camera
+            git branch
             # git pull origin main
             # docker compose down
             # docker compose up -d
