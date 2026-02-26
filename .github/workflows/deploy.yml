@@ -39,6 +39,13 @@ jobs:
       
           chmod 600 ~/.ssh/config
 
+      - name: Test SSH
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CLOUDFLARE_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CLOUDFLARE_CLIENT_SECRET }}
+        run: |
+          ssh -o StrictHostKeyChecking=no server "hostname"
+
       # Deploy
       # - name: SSH Deploy
       #   run: |
