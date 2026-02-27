@@ -1,0 +1,8 @@
+aiokafka
+aiohttp
+firebase-admin
+transformers
+torch
+Pillow
+pydantic
+python-dotenv
