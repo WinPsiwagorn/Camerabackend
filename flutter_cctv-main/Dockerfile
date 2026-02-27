@@ -15,8 +15,5 @@ COPY . .
 
 RUN flutter build web --release
 
-# Stage 2: Serve with nginx
-FROM nginx:alpine
-COPY --from=build /app/build/web /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+# keep container alive (so volume stays)
+CMD ["sh", "-c", "cp -r /app/build/web/* /output && sleep infinity"]
