@@ -125,7 +125,7 @@ Widget build(BuildContext context) {
                       'Edit Camera',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 19,
+                        fontSize: AppTextStyles.sectionTitle,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -309,7 +309,7 @@ Widget build(BuildContext context) {
             text: label,
             style: GoogleFonts.plusJakartaSans(
               color: const Color(0xFF374151),
-              fontSize: 13,
+              fontSize: AppTextStyles.labelSmall,
               fontWeight: FontWeight.w600,
             ),
             children: required
@@ -322,10 +322,10 @@ Widget build(BuildContext context) {
           controller: ctrl,
           focusNode: fn,
           maxLines: maxLines,
-          style: const TextStyle(color: Color(0xFF111827), fontSize: 14),
+          style: const TextStyle(color: Color(0xFF111827), fontSize: AppTextStyles.labelNormal),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+            hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: AppTextStyles.labelNormal),
             filled: true,
             fillColor: const Color(0xFFF9FAFB),
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

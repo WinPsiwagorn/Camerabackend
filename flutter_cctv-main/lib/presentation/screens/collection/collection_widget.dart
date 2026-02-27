@@ -1,5 +1,6 @@
 import '/data/services/index.dart';
 import '/presentation/widgets/nav_bar_main_widget.dart';
+import '/presentation/widgets/shared/category_chip.dart';
 import '/utils/flutter_flow_data_table.dart';
 import '/utils/flutter_flow_icon_button.dart';
 import '/utils/flutter_flow_theme.dart';
@@ -7,9 +8,11 @@ import '/utils/flutter_flow_util.dart';
 import '/utils/flutter_flow_widgets.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:text_search/text_search.dart';
+import 'package:easy_debounce/easy_debounce.dart';
 import 'collection_model.dart';
 export 'collection_model.dart';
 
@@ -35,6 +38,13 @@ class _CollectionWidgetState extends State<CollectionWidget> {
 
     _model.textController ??= TextEditingController();
     _model.textFieldFocusNode ??= FocusNode();
+    
+    // Rebuild when search text changes (so X button shows/hides)
+    _model.textController?.addListener(() => safeSetState(() {}));
+
+    SchedulerBinding.instance.addPostFrameCallback((_) async {
+      await _fetchCameras(page: 1);
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
@@ -46,12 +56,210 @@ class _CollectionWidgetState extends State<CollectionWidget> {
     super.dispose();
   }
 
+  // ---------------------------------------------------------------------------
+  // Data fetching
+  // ---------------------------------------------------------------------------
+
+  /// Fetch a page of cameras from the API.
+  Future<void> _fetchCameras({required int page, String search = ''}) async {
+    if (!mounted) return;
+    safeSetState(() => _model.isLoading = true);
+
+    try {
+      final response = await CameraService().getCameras(
+        page: page.toString(),
+        limit: CollectionModel.pageSize.toString(),
+        search: search.isNotEmpty ? search : null,
+      );
+
+      if (response.succeeded) {
+        final dataList = CameraService().parseDataList(response.jsonBody) ?? [];
+        _model.listOfCameras = dataList;
+
+        // Parse meta from API response
+        final meta = getJsonField(response.jsonBody, r'$.meta');
+        if (meta != null && meta is Map<String, dynamic>) {
+          _model.totalCameras = (meta['totalItems'] as int?) ?? dataList.length;
+          _model.totalPages = (meta['totalPages'] as int?) ?? 1;
+        } else {
+          _model.totalCameras = dataList.length;
+          _model.totalPages = 1;
+        }
+      } else {
+        debugPrint('API error: ${response.statusCode}');
+        _model.listOfCameras = [];
+      }
+
+      _model.currentPage = page;
+      _model.searchQuery = search;
+    } catch (e) {
+      debugPrint('Error fetching cameras: $e');
+    } finally {
+      if (mounted) safeSetState(() => _model.isLoading = false);
+    }
+  }
+
+  void _onSearchChanged(String value) {
+    EasyDebounce.debounce(
+      'camera_search',
+      const Duration(milliseconds: 500),
+      () => _fetchCameras(page: 1, search: value),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Pagination UI
+  // ---------------------------------------------------------------------------
+
+  Widget _buildPagination(BuildContext context) {
+    final total = _model.totalPages;
+    final current = _model.currentPage;
+
+    // Build visible page numbers with ellipsis logic
+    final List<int?> pageNums = []; // null = ellipsis
+    if (total <= 7) {
+      for (int p = 1; p <= total; p++) pageNums.add(p);
+    } else {
+      pageNums.add(1);
+      if (current > 3) pageNums.add(null); // ...
+      final start = (current - 1).clamp(2, total - 1);
+      final end = (current + 1).clamp(2, total - 1);
+      for (int p = start; p <= end; p++) pageNums.add(p);
+      if (current < total - 2) pageNums.add(null); // ...
+      pageNums.add(total);
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // First
+        _pageNavButton(
+          icon: Icons.first_page,
+          enabled: current > 1,
+          onTap: () => _fetchCameras(page: 1, search: _model.searchQuery),
+        ),
+        const SizedBox(width: 2),
+        // Prev
+        _pageNavButton(
+          icon: Icons.chevron_left,
+          enabled: current > 1,
+          onTap: () => _fetchCameras(
+              page: current - 1, search: _model.searchQuery),
+        ),
+        const SizedBox(width: 4),
+        // Page buttons
+        ...pageNums.map(
+          (p) {
+            if (p == null) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: Text('...', style: TextStyle(color: Color(0xFF6B7280), fontSize: 14)),
+              );
+            }
+            final isActive = p == current;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 3),
+              child: InkWell(
+                onTap: isActive
+                    ? null
+                    : () => _fetchCameras(page: p, search: _model.searchQuery),
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? FlutterFlowTheme.of(context).primary
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: isActive
+                          ? FlutterFlowTheme.of(context).primary
+                          : const Color(0xFFD1D5DB),
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$p',
+                      style: TextStyle(
+                        color: isActive ? Colors.white : const Color(0xFF374151),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: 4),
+        // Next
+        _pageNavButton(
+          icon: Icons.chevron_right,
+          enabled: current < total,
+          onTap: () => _fetchCameras(
+              page: current + 1, search: _model.searchQuery),
+        ),
+        const SizedBox(width: 2),
+        // Last
+        _pageNavButton(
+          icon: Icons.last_page,
+          enabled: current < total,
+          onTap: () => _fetchCameras(page: total, search: _model.searchQuery),
+        ),
+      ],
+    );
+  }
+
+  Widget _pageNavButton({
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: enabled
+                ? const Color(0xFFD1D5DB)
+                : const Color(0xFFE5E7EB),
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color: enabled
+              ? const Color(0xFF374151)
+              : const Color(0xFFD1D5DB),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // UI helpers
+  // ---------------------------------------------------------------------------
+
   /// Fixed palette of background/text color pairs for category chips.
   static const List<_ChipColor> _chipPalette = [
     _ChipColor(bg: Color(0xFFEDE9FE), text: Color(0xFF5B21B6)), // violet
     _ChipColor(bg: Color(0xFFDBEAFE), text: Color(0xFF1D4ED8)), // blue
     _ChipColor(bg: Color(0xFFD1FAE5), text: Color(0xFF065F46)), // green
     _ChipColor(bg: Color(0xFFFEF3C7), text: Color(0xFF92400E)), // amber
+    _ChipColor(bg: Color(0xFFFCE7F3), text: Color(0xFF9F1239)), // rose
+    _ChipColor(bg: Color(0xFFCCFBF1), text: Color(0xFF115E59)), // teal
+    _ChipColor(bg: Color(0xFFE0E7FF), text: Color(0xFF3730A3)), // indigo
+    _ChipColor(bg: Color(0xFFFFEDD5), text: Color(0xFF9A3412)), // orange
+    _ChipColor(bg: Color(0xFFF3E8FF), text: Color(0xFF6B21A8)), // purple
+    _ChipColor(bg: Color(0xFFD1FAE5), text: Color(0xFF047857)), // emerald
+    _ChipColor(bg: Color(0xFFE0F2FE), text: Color(0xFF075985)), // sky
+    _ChipColor(bg: Color(0xFFFEE2E2), text: Color(0xFFB91C1C)), // red
   ];
 
   /// Returns a consistent color for a given category name.
@@ -61,42 +269,64 @@ class _CollectionWidgetState extends State<CollectionWidget> {
   }
 
   Widget _buildCategoryChips(dynamic item) {
-    final cats = getJsonField(item, r'$.categories');
-    if (cats == null || (cats is List && cats.isEmpty)) {
-      return const SizedBox.shrink();
-    }
-    final list = cats is List ? cats : [cats];
-    final names = list
-        .map((c) {
-          if (c is Map) return c['name']?.toString() ?? '';
-          return c.toString();
-        })
-        .where((n) => n.isNotEmpty)
-        .toList();
-    if (names.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Wrap(
-      spacing: 4,
-      runSpacing: 4,
-      children: names.map((name) {
-        final col = _colorFor(name);
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-          decoration: BoxDecoration(
-            color: col.bg,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            name,
-            style: TextStyle(
-              color: col.text,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+  final cats = getJsonField(item, r'$.categories');
+  if (cats == null || (cats is List && cats.isEmpty)) {
+    return const SizedBox.shrink();
+  }
+  final list = cats is List ? cats : [cats];
+  final names = list
+      .map((c) {
+        if (c is Map) return c['name']?.toString() ?? '';
+        return c.toString();
+      })
+      .where((n) => n.isNotEmpty)
+      .toList();
+  if (names.isEmpty) {
+    return const SizedBox.shrink();
+  }
+  return Wrap(
+    spacing: 6,
+    runSpacing: 6,
+    children: names.map((name) {
+      return CategoryChip(
+        name: name,
+        fontSize: AppTextStyles.tableStatus, // หรือ 14
+      );
+    }).toList(),
+  );
+}
+
+  /// Builds a status badge with colored background and dot indicator
+  Widget _buildStatusBadge(String status) {
+    final isOnline = status.toLowerCase() == 'online';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: isOnline ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: isOnline ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+              shape: BoxShape.circle,
             ),
           ),
-        );
-      }).toList(),
+          const SizedBox(width: 6),
+          Text(
+            isOnline ? 'Online' : 'Offline',
+            style: TextStyle(
+              color: isOnline ? const Color(0xFF15803D) : const Color(0xFFDC2626),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -109,7 +339,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF3F4F6),
         body: NestedScrollView(
           floatHeaderSlivers: true,
           physics: NeverScrollableScrollPhysics(),
@@ -117,7 +347,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
             SliverAppBar(
               pinned: true,
               floating: true,
-              backgroundColor: Colors.white,
+              backgroundColor: const Color(0xFFF3F4F6),
               iconTheme: IconThemeData(color: Color(0xFFD6C6C6)),
               automaticallyImplyLeading: false,
               title: wrapWithModel(
@@ -134,186 +364,117 @@ class _CollectionWidgetState extends State<CollectionWidget> {
             builder: (context) {
               return SafeArea(
                 top: false,
-                child: Column(
-                  mainAxisSize: MainAxisSize.max,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Search bar and action buttons row
-                    Center(
-                      child: Container(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.max,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Page title
+                      Text(
+                        'Category Management',
+                        style: FlutterFlowTheme.of(context).headlineLarge.override(
+                              fontFamily:
+                                  FlutterFlowTheme.of(context).headlineLargeFamily,
+                              color: const Color(0xFF111827),
+                              letterSpacing: 0,
+                              useGoogleFonts: !FlutterFlowTheme.of(context)
+                                  .headlineLargeIsCustom,
+                            ),
+                      ),
+                      const SizedBox(height: 20),
+                      // Container with search, buttons, table, and pagination
+                      Expanded(
+                        child: Container(
                         width: double.infinity,
-                        constraints: BoxConstraints(maxWidth: 1680.0),
-                        padding: EdgeInsetsDirectional.fromSTEB(
-                            60.0, 8.0, 60.0, 8.0),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Padding(
-                                padding: EdgeInsetsDirectional.fromSTEB(
-                                    0.0, 0.0, 20.0, 0.0),
-                                child: TextFormField(
-                                  controller: _model.textController,
-                                  focusNode: _model.textFieldFocusNode,
-                                  onFieldSubmitted: (_) async {
-                                    // Perform search using text field value
-                                    if (_model.textController.text.isNotEmpty) {
-                                      _model.apiResultSearch =
-                                          await CameraService().getCameras(limit: '100');
-
-                                      if (_model.apiResultSearch?.succeeded ??
-                                          false) {
-                                        final allCameras = CameraService()
-                                            .parseDataList(_model
-                                                .apiResultSearch!.jsonBody);
-                                        final searchTerm = _model
-                                            .textController.text
-                                            .toLowerCase();
-
-                                        _model.simpleSearchResults = allCameras
-                                                ?.where((camera) {
-                                              final name = getJsonField(
-                                                      camera, r'$.name')
-                                                  .toString()
-                                                  .toLowerCase();
-                                              final address = getJsonField(
-                                                      camera, r'$.address')
-                                                  .toString()
-                                                  .toLowerCase();
-                                              final status = getJsonField(
-                                                      camera, r'$.status')
-                                                  .toString()
-                                                  .toLowerCase();
-                                              final categories = getJsonField(
-                                                      camera, r'$.categories')
-                                                  .toString()
-                                                  .toLowerCase();
-                                              return name
-                                                      .contains(searchTerm) ||
-                                                  address
-                                                      .contains(searchTerm) ||
-                                                  status.contains(searchTerm) ||
-                                                  categories
-                                                      .contains(searchTerm);
-                                            }).toList() ??
-                                            [];
-
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          SnackBar(
-                                            content: Row(
-                                              children: [
-                                                Icon(Icons.check_circle,
-                                                    color: Colors.white),
-                                                SizedBox(width: 8.0),
-                                                Text(
-                                                    'Found ${_model.simpleSearchResults.length} camera(s)'),
-                                              ],
-                                            ),
-                                            duration:
-                                                Duration(milliseconds: 2000),
-                                            backgroundColor: Color(0xFF39D2C0),
-                                            behavior: SnackBarBehavior.floating,
-                                          ),
-                                        );
-                                      } else {
-                                        safeSetState(() {
-                                          _model.simpleSearchResults = [];
-                                        });
-                                      }
-                                    } else {
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.max,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Search bar and action buttons row
+                              Row(
+                                mainAxisSize: MainAxisSize.max,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 44,
+                                    child: TextField(
+                                    controller: _model.textController,
+                                    focusNode: _model.textFieldFocusNode,
+                                    onChanged: (value) {
                                       safeSetState(() {
-                                        _model.simpleSearchResults = [];
+                                        _model.searchQuery = value;
                                       });
-                                    }
-                                  },
-                                  autofocus: false,
-                                  enabled: true,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    isDense: true,
-                                    labelStyle: FlutterFlowTheme.of(context)
-                                        .labelMedium
-                                        .override(
-                                          fontFamily:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelMediumFamily,
-                                          letterSpacing: 0.0,
-                                          useGoogleFonts:
-                                              !FlutterFlowTheme.of(context)
-                                                  .labelMediumIsCustom,
-                                        ),
-                                    hintText:
-                                        'Search cameras by name, address, status, or categories...',
-                                    hintStyle: FlutterFlowTheme.of(context)
-                                        .labelMedium
-                                        .override(
-                                          fontFamily:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelMediumFamily,
-                                          letterSpacing: 0.0,
-                                          useGoogleFonts:
-                                              !FlutterFlowTheme.of(context)
-                                                  .labelMediumIsCustom,
-                                        ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Colors.black,
-                                        width: 1.0,
+                                      _onSearchChanged(value);
+                                    },
+                                    decoration: InputDecoration(
+                                      hintText: 'Search cameras...',
+                                      hintStyle: const TextStyle(
+                                          color: Color(0xFF9CA3AF),
+                                          fontSize: 14),
+                                      prefixIcon: const Icon(
+                                          Icons.search,
+                                          color: Color(0xFF9CA3AF),
+                                          size: 20),
+                                      suffixIcon: (_model.textController?.text.isNotEmpty ?? false)
+                                          ? IconButton(
+                                              icon: const Icon(Icons.close,
+                                                  size: 18,
+                                                  color: Color(0xFF9CA3AF)),
+                                              onPressed: () {
+                                                _model.textController?.clear();
+                                                safeSetState(() {
+                                                  _model.searchQuery = '';
+                                                });
+                                                _fetchCameras(page: 1, search: '');
+                                              },
+                                            )
+                                          : null,
+                                      filled: true,
+                                      fillColor: const Color(0xFFF9FAFB),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 14, vertical: 10),
+                                      border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                        borderSide: const BorderSide(
+                                            color: Color(0xFFE5E7EB)),
                                       ),
-                                      borderRadius: BorderRadius.circular(8.0),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                        borderSide: const BorderSide(
+                                            color: Color(0xFFE5E7EB)),
                                       ),
-                                      borderRadius: BorderRadius.circular(8.0),
-                                    ),
-                                    errorBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color:
-                                            FlutterFlowTheme.of(context).error,
-                                        width: 1.0,
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                        borderSide: BorderSide(
+                                            color: FlutterFlowTheme.of(context)
+                                                .primary),
                                       ),
-                                      borderRadius: BorderRadius.circular(8.0),
                                     ),
-                                    focusedErrorBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color:
-                                            FlutterFlowTheme.of(context).error,
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8.0),
-                                    ),
-                                    filled: true,
-                                    fillColor: FlutterFlowTheme.of(context)
-                                        .secondaryBackground,
                                   ),
-                                  style: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .override(
-                                        fontFamily: FlutterFlowTheme.of(context)
-                                            .bodyMediumFamily,
-                                        letterSpacing: 0.0,
-                                        useGoogleFonts:
-                                            !FlutterFlowTheme.of(context)
-                                                .bodyMediumIsCustom,
-                                      ),
-                                  cursorColor:
-                                      FlutterFlowTheme.of(context).primaryText,
-                                  enableInteractiveSelection: true,
-                                  validator: _model.textControllerValidator
-                                      .asValidator(context),
                                 ),
                               ),
-                            ),
-                            Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
-                                  0.0, 0.0, 12.0, 0.0),
-                              child: FlutterFlowIconButton(
+                              const SizedBox(width: 16),
+                              FlutterFlowIconButton(
                                 borderColor: Color(0xFF4B39EF),
                                 borderRadius: 12.0,
                                 borderWidth: 2.0,
@@ -508,122 +669,29 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                   );
                                 },
                               ),
-                            ),
-                            Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
-                                  0.0, 0.0, 12.0, 0.0),
-                              child: FlutterFlowIconButton(
-                                borderColor: Color(0xFF39D2C0),
+                            const SizedBox(width: 16),
+                            FlutterFlowIconButton(
+                              borderColor: Color(0xFFDC2626),
                                 borderRadius: 12.0,
                                 borderWidth: 2.0,
                                 buttonSize: 50.0,
-                                fillColor: Color(0xFFE0F2F1),
+                                fillColor: Colors.transparent,
                                 icon: Icon(
-                                  Icons.search_rounded,
-                                  color: Color(0xFF39D2C0),
-                                  size: 26.0,
-                                ),
-                                onPressed: () async {
-                                  if (_model.textController.text.isNotEmpty) {
-                                    _model.apiResultSearch =
-                                        await CameraService().getCameras(limit: '100');
-
-                                    if (_model.apiResultSearch?.succeeded ??
-                                        false) {
-                                      final allCameras = CameraService()
-                                          .parseDataList(
-                                              _model.apiResultSearch!.jsonBody);
-                                      final searchTerm = _model
-                                          .textController.text
-                                          .toLowerCase();
-
-                                      _model.simpleSearchResults = allCameras
-                                              ?.where((camera) {
-                                            final name =
-                                                getJsonField(camera, r'$.name')
-                                                    .toString()
-                                                    .toLowerCase();
-                                            final address = getJsonField(
-                                                    camera, r'$.address')
-                                                .toString()
-                                                .toLowerCase();
-                                            final status = getJsonField(
-                                                    camera, r'$.status')
-                                                .toString()
-                                                .toLowerCase();
-                                            final categories = getJsonField(
-                                                    camera, r'$.categories')
-                                                .toString()
-                                                .toLowerCase();
-                                            return name.contains(searchTerm) ||
-                                                address.contains(searchTerm) ||
-                                                status.contains(searchTerm) ||
-                                                categories.contains(searchTerm);
-                                          }).toList() ??
-                                          [];
-
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Row(
-                                            children: [
-                                              Icon(Icons.check_circle,
-                                                  color: Colors.white),
-                                              SizedBox(width: 8.0),
-                                              Text(
-                                                  'Found ${_model.simpleSearchResults.length} camera(s)'),
-                                            ],
-                                          ),
-                                          duration:
-                                              Duration(milliseconds: 2500),
-                                          backgroundColor: Color(0xFF39D2C0),
-                                          behavior: SnackBarBehavior.floating,
-                                        ),
-                                      );
-                                    } else {
-                                      _model.simpleSearchResults = [];
-                                    }
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Row(
-                                          children: [
-                                            Icon(Icons.info_outline,
-                                                color: Colors.white),
-                                            SizedBox(width: 8.0),
-                                            Text('Please enter a search term'),
-                                          ],
-                                        ),
-                                        duration: Duration(milliseconds: 2000),
-                                        backgroundColor: Color(0xFFFF5963),
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                  }
-                                  safeSetState(() {});
-                                },
-                              ),
-                            ),
-                            Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
-                                  0.0, 0.0, 12.0, 0.0),
-                              child: FlutterFlowIconButton(
-                                borderColor: Color(0xFFFF5963),
-                                borderRadius: 12.0,
-                                borderWidth: 2.0,
-                                buttonSize: 50.0,
-                                fillColor: Color(0xFFFFEBEE),
-                                icon: Icon(
-                                  Icons.clear_all_rounded,
-                                  color: Color(0xFFFF5963),
+                                  Icons.refresh,
+                                  color: Color(0xFFDC2626),
                                   size: 26.0,
                                 ),
                                 onPressed: () async {
                                   // Clear search and reset to show all cameras
                                   safeSetState(() {
                                     _model.textController?.clear();
-                                    _model.simpleSearchResults = [];
+                                    _model.searchQuery = '';
+                                    _model.filterAssignedCategory = false;
+                                    _model.filterUnassignedCategory = false;
                                   });
+                                  
+                                  // Fetch first page with no search
+                                  _fetchCameras(page: 1, search: '');
 
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
@@ -643,12 +711,9 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                   );
                                 },
                               ),
-                            ),
-                            Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
-                                  0.0, 0.0, 12.0, 0.0),
-                              child: FFButtonWidget(
-                                onPressed: () async {
+                            const SizedBox(width: 16),
+                            FFButtonWidget(
+                              onPressed: () async {
                                   // Show comprehensive category management dialog
                                   showDialog(
                                     context: context,
@@ -835,6 +900,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                             final categoryId = getJsonField(category, r'$.id').toString();
                                                             final categoryName = getJsonField(category, r'$.name').toString();
                                                             final isExpanded = expandedMap[categoryId] ?? false;
+                                                            final categoryColor = _colorFor(categoryName);
                                                             
                                                             return Card(
                                                               margin: EdgeInsets.symmetric(vertical: 4.0),
@@ -843,7 +909,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                 children: [
                                                                   ListTile(
                                                                     leading: CircleAvatar(
-                                                                      backgroundColor: Color(0xFF4B39EF),
+                                                                      backgroundColor: categoryColor.text,
                                                                       child: Icon(
                                                                         Icons.folder,
                                                                         color: Colors.white,
@@ -867,7 +933,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                             isExpanded 
                                                                                 ? Icons.expand_less 
                                                                                 : Icons.expand_more,
-                                                                            color: Color(0xFF4B39EF),
+                                                                            color: categoryColor.text,
                                                                           ),
                                                                           tooltip: isExpanded ? 'Collapse' : 'Expand',
                                                                           onPressed: () {
@@ -879,7 +945,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                         IconButton(
                                                                           icon: Icon(
                                                                             Icons.edit,
-                                                                            color: Color(0xFF4B39EF),
+                                                                            color: categoryColor.text,
                                                                             size: 20.0,
                                                                           ),
                                                                           tooltip: 'Edit Name',
@@ -1190,7 +1256,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                                                         child: Text(
                                                                                                           '${filteredCameras.length} camera(s) available',
                                                                                                           style: TextStyle(
-                                                                                                            fontSize: 12,
+                                                                                                            fontSize: AppTextStyles.commandBody,
                                                                                                             color: Colors.grey[600],
                                                                                                           ),
                                                                                                         ),
@@ -1550,13 +1616,13 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                       20.0, 0.0, 20.0, 0.0),
                                   iconPadding: EdgeInsetsDirectional.fromSTEB(
                                       0.0, 0.0, 0.0, 0.0),
-                                  color: Color(0xFF05FFFF),
+                                  color: Color(0xFF10B981),
                                   textStyle: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
                                         fontFamily: FlutterFlowTheme.of(context)
                                             .titleSmallFamily,
-                                        color: Colors.black,
+                                        color: Colors.white,
                                         letterSpacing: 0.0,
                                         useGoogleFonts:
                                             !FlutterFlowTheme.of(context)
@@ -1564,122 +1630,34 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                       ),
                                   elevation: 0.0,
                                   borderSide: BorderSide(
-                                    color: Color(0xFF05FFFF),
+                                    color: Color(0xFF10B981),
                                   ),
                                   borderRadius: BorderRadius.circular(10.0),
-                                  hoverColor: Color(0xFF00E5E5),
+                                  hoverColor: Color(0xFF059669),
                                   hoverBorderSide: BorderSide(
-                                    color: Color(0xFF05FFFF),
+                                    color: Color(0xFF10B981),
                                   ),
-                                  hoverTextColor: Colors.black,
+                                  hoverTextColor: Colors.white,
                                 ),
                               ),
-                            ),
                           ],
                         ),
-                      ),
-                    ),
-                    // Expanded content area (no scroll)
-                    Expanded(
-                      child: FutureBuilder<ApiCallResponse>(
-                        future: CameraService().getCameras(limit: '100'),
-                        builder: (context, snapshot) {
-                          // Customize what your widget looks like when it's loading.
-                          if (!snapshot.hasData) {
-                            return Center(
-                              child: SizedBox(
-                                width: 50.0,
-                                height: 50.0,
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    FlutterFlowTheme.of(context).primary,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-                          final columnGetCameraResponse = snapshot.data!;
-
-                          // Handle API errors
-                          if (!columnGetCameraResponse.succeeded) {
-                            return Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(50.0),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.error_outline,
-                                      size: 60.0,
-                                      color: FlutterFlowTheme.of(context).error,
-                                    ),
-                                    SizedBox(height: 16.0),
-                                    Text(
-                                      'Failed to load cameras',
-                                      style: FlutterFlowTheme.of(context)
-                                          .headlineSmall,
-                                    ),
-                                    SizedBox(height: 8.0),
-                                    Text(
-                                      'Status Code: ${columnGetCameraResponse.statusCode}',
-                                      style: FlutterFlowTheme.of(context)
-                                          .bodyMedium
-                                          .override(
-                                            fontFamily: 'Readex Pro',
-                                            color: FlutterFlowTheme.of(context)
-                                                .error,
-                                            fontWeight: FontWeight.w600,
+                        const SizedBox(height: 16),
+                        // Table area
+                        Expanded(
+                          child: Builder(
+                          builder: (context) {
+                                    if (_model.isLoading) {
+                                      return Center(
+                                          child: CircularProgressIndicator(
+                                            valueColor: AlwaysStoppedAnimation<Color>(
+                                              FlutterFlowTheme.of(context).primary,
+                                            ),
                                           ),
-                                    ),
-                                    SizedBox(height: 8.0),
-                                    Text(
-                                      columnGetCameraResponse
-                                              .exceptionMessage.isNotEmpty
-                                          ? 'Error: ${columnGetCameraResponse.exceptionMessage}'
-                                          : 'Response: ${columnGetCameraResponse.bodyText}',
-                                      style: FlutterFlowTheme.of(context)
-                                          .bodySmall,
-                                      textAlign: TextAlign.center,
-                                      maxLines: 5,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    SizedBox(height: 8.0),
-                                    Text(
-                                      'Please check your connection and try again',
-                                      style: FlutterFlowTheme.of(context)
-                                          .bodyMedium,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }
-
-                          return LayoutBuilder(
-                            builder: (context, constraints) {
-                              return Center(
-                                child: Container(
-                                  width: double.infinity,
-                                  constraints: BoxConstraints(
-                                    maxWidth: 1680.0,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.transparent,
-                                  ),
-                                  child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
-                                        60.0, 16.0, 60.0, 32.0),
-                                    child: Builder(
-                                      builder: (context) {
-                                        // Use search results if available, otherwise use all cameras
-                                        var cameraItems = _model
-                                                .simpleSearchResults.isNotEmpty
-                                            ? _model.simpleSearchResults
-                                            : getJsonField(
-                                                columnGetCameraResponse
-                                                    .jsonBody,
-                                                r'''$.data''',
-                                              ).toList();
+                                      );
+                                    }
+                                    // Start with paginated camera list
+                                    var cameraItems = _model.listOfCameras;
                                         
                                         // Apply category filters
                                         if (_model.filterAssignedCategory) {
@@ -1748,25 +1726,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                           );
                                         }
 
-                                        return Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius:
-                                                BorderRadius.circular(12.0),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                blurRadius: 8.0,
-                                                color: Color(0x1A000000),
-                                                offset: Offset(0.0, 2.0),
-                                                spreadRadius: 0.0,
-                                              ),
-                                            ],
-                                          ),
-                                          child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(12.0),
-                                            child:
-                                                FlutterFlowDataTable<dynamic>(
+                                        return FlutterFlowDataTable<dynamic>(
                                               controller: _model
                                                   .paginatedDataTableController,
                                               data: cameraItems,
@@ -1787,7 +1747,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                         context)
                                                                     .labelMediumFamily,
                                                             color: Colors.white,
-                                                            fontSize: 13.0,
+                                                            fontSize: AppTextStyles.tableHeader,
                                                             letterSpacing: 0.0,
                                                             useGoogleFonts:
                                                                 !FlutterFlowTheme.of(
@@ -1812,7 +1772,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                         context)
                                                                     .labelMediumFamily,
                                                             color: Colors.white,
-                                                            fontSize: 13.0,
+                                                            fontSize: AppTextStyles.tableHeader,
                                                             letterSpacing: 0.0,
                                                             useGoogleFonts:
                                                                 !FlutterFlowTheme.of(
@@ -1837,7 +1797,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                         context)
                                                                     .labelMediumFamily,
                                                             color: Colors.white,
-                                                            fontSize: 13.0,
+                                                            fontSize: AppTextStyles.tableHeader,
                                                             letterSpacing: 0.0,
                                                             useGoogleFonts:
                                                                 !FlutterFlowTheme.of(
@@ -1862,7 +1822,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                         context)
                                                                     .labelMediumFamily,
                                                             color: Colors.white,
-                                                            fontSize: 13.0,
+                                                            fontSize: AppTextStyles.tableHeader,
                                                             letterSpacing: 0.0,
                                                             useGoogleFonts:
                                                                 !FlutterFlowTheme.of(
@@ -1902,7 +1862,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                   FlutterFlowTheme.of(
                                                                           context)
                                                                       .bodySmallFamily,
-                                                              fontSize: 12.0,
+                                                              fontSize: AppTextStyles.tableCell,
                                                               letterSpacing:
                                                                   0.0,
                                                               useGoogleFonts:
@@ -1924,7 +1884,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                               FlutterFlowTheme.of(
                                                                       context)
                                                                   .bodySmallFamily,
-                                                          fontSize: 12.0,
+                                                          fontSize: AppTextStyles.tableCell,
                                                           letterSpacing: 0.0,
                                                           useGoogleFonts:
                                                               !FlutterFlowTheme
@@ -1932,26 +1892,11 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                   .bodySmallIsCustom,
                                                         ),
                                                   ),
-                                                  Text(
+                                                  _buildStatusBadge(
                                                     getJsonField(
                                                       cameraItemsItem,
                                                       r'''$.status''',
                                                     ).toString(),
-                                                    style: FlutterFlowTheme.of(
-                                                            context)
-                                                        .bodySmall
-                                                        .override(
-                                                          fontFamily:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmallFamily,
-                                                          fontSize: 12.0,
-                                                          letterSpacing: 0.0,
-                                                          useGoogleFonts:
-                                                              !FlutterFlowTheme
-                                                                      .of(context)
-                                                                  .bodySmallIsCustom,
-                                                        ),
                                                   ),
                                                   _buildCategoryChips(cameraItemsItem),
                                                 ]
@@ -1964,14 +1909,11 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                   fit: BoxFit.contain,
                                                 ),
                                               ),
-                                              paginated: true,
+                                              paginated: false,
                                               selectable: false,
-                                              hidePaginator: false,
-                                              showFirstLastButtons: false,
-                                              height:
-                                                  constraints.maxHeight - 48.0,
-                                              headingRowHeight: 56.0,
-                                              dataRowHeight: 64.0,
+                                              hidePaginator: true,
+                                              headingRowHeight: 44.0,
+                                              dataRowHeight: 48.0,
                                               columnSpacing: 16.0,
                                               headingRowColor:
                                                   FlutterFlowTheme.of(context)
@@ -1987,20 +1929,41 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                       .secondaryBackground,
                                               horizontalDividerThickness: 1.0,
                                               addVerticalDivider: false,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
+                                            );
+                                    },
                                   ),
                                 ),
-                              );
-                            },
-                          );
-                        },
+                                const SizedBox(height: 20),
+                        // Pagination controls
+                        if (!_model.isLoading)
+                          Column(
+                            children: [
+                              const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Page ${_model.currentPage} of ${_model.totalPages}  '
+                                    '(Total ${_model.totalCameras} items)',
+                                    style: const TextStyle(
+                                      color: Color(0xFF6B7280),
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  _buildPagination(context),
+                                ],
+                              ),
+                            ],
+                          ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
               );
             },

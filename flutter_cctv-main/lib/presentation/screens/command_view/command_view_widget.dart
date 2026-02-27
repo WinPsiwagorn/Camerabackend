@@ -42,15 +42,10 @@ class _CommandViewWidgetState extends State<CommandViewWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: Colors.white,
-        body: NestedScrollView(
+    return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: Colors.white,
+      body: NestedScrollView(
           floatHeaderSlivers: false,
           headerSliverBuilder: (context, _) => [
             SliverAppBar(
@@ -84,7 +79,6 @@ class _CommandViewWidgetState extends State<CommandViewWidget> {
             },
           ),
         ),
-      ),
     );
   }
 }

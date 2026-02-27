@@ -122,7 +122,7 @@ Widget build(BuildContext context) {
                       name,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 19,
+                        fontSize: AppTextStyles.sectionTitle,
                         fontWeight: FontWeight.w700,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -156,7 +156,7 @@ Widget build(BuildContext context) {
                           isOnline ? 'Online' : 'Offline',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 12,
+                            fontSize: AppTextStyles.tableStatus,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -193,7 +193,7 @@ Widget build(BuildContext context) {
                     if (cats != null && cats is List && cats.isNotEmpty)
                       _categoryChips(cats)
                     else
-                      const Text('-', style: TextStyle(color: Color(0xFF6B7280), fontSize: 14)),
+                      const Text('-', style: TextStyle(color: Color(0xFF6B7280), fontSize: AppTextStyles.labelNormal)),
 
                     const SizedBox(height: 30),
 
@@ -240,7 +240,7 @@ Widget build(BuildContext context) {
             label,
             style: GoogleFonts.plusJakartaSans(
               color: const Color(0xFF6B7280),
-              fontSize: 11,
+              fontSize: AppTextStyles.commandSmall,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.5,
             ),
@@ -258,7 +258,7 @@ Widget build(BuildContext context) {
               value,
               style: const TextStyle(
                 color: Color(0xFF111827),
-                fontSize: 14,
+                fontSize: AppTextStyles.labelNormal,
               ),
             ),
           ),
@@ -272,7 +272,7 @@ Widget build(BuildContext context) {
       text,
       style: GoogleFonts.plusJakartaSans(
         color: const Color(0xFF6B7280),
-        fontSize: 11,
+        fontSize: AppTextStyles.commandSmall,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.5,
       ),
@@ -303,7 +303,7 @@ Widget build(BuildContext context) {
             name,
             style: TextStyle(
               color: _catPalette[idx][1],
-              fontSize: 12,
+              fontSize: AppTextStyles.commandBody,
               fontWeight: FontWeight.w600,
             ),
           ),
