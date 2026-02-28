@@ -78,17 +78,23 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
       'rtspUrl': rtspUrl,
     });
 
+    debugPrint('[HlsPlayer] POST $uri');
+    debugPrint('[HlsPlayer] body: $body');
+
     final resp = await http
         .post(uri, headers: {'Content-Type': 'application/json'}, body: body)
         .timeout(const Duration(seconds: 10));
+
+    debugPrint('[HlsPlayer] response ${resp.statusCode}: ${resp.body}');
 
     if (resp.statusCode >= 200 && resp.statusCode < 300) {
       try {
         final obj = jsonDecode(resp.body);
         final path = obj['message'] ?? obj['url'] ?? obj['hls'] ?? resp.body;
         if (path is String && path.isNotEmpty) {
-          if (path.startsWith('http')) return path;
-          return '$kApiBaseUrl$path';
+          final resolved = path.startsWith('http') ? path : '$kApiBaseUrl$path';
+          debugPrint('[HlsPlayer] resolved HLS URL: $resolved');
+          return resolved;
         }
       } catch (_) {
         final bodyText = resp.body.trim();
@@ -158,19 +164,27 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
       }
 
       if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-        console.log('Loading HLS stream:', "$finalUrl");
+        const debugInfo = document.createElement('div');
+        debugInfo.style.cssText = 'position:absolute;top:4px;left:4px;right:4px;font-family:monospace;font-size:9px;color:rgba(255,255,255,0.6);word-break:break-all;z-index:10;pointer-events:none;';
+        debugInfo.textContent = '🔗 ' + "$finalUrl";
+        document.querySelector('.wrap').appendChild(debugInfo);
+
+        console.log('[HLS] Loading stream:', "$finalUrl");
         
         // First, check if manifest exists and is valid
-        fetch("$finalUrl")
+        fetch("$finalUrl", { headers: { "ngrok-skip-browser-warning": "anyvalue" } })
           .then(response => {
-            console.log('Manifest response status:', response.status);
+            console.log('[HLS] Manifest status:', response.status, response.url);
+            if (!response.ok) {
+              throw new Error('HTTP ' + response.status + ' ' + response.statusText + ' — ' + response.url);
+            }
             return response.text();
           })
           .then(text => {
-            console.log('Manifest content:', text.substring(0, 500));
+            console.log('[HLS] Manifest preview:', text.substring(0, 300));
             if (!text.includes('#EXTM3U')) {
-              console.error('Invalid HLS manifest - missing #EXTM3U header');
-              document.body.innerHTML = '<p style="color:orange;text-align:center;padding:16px;">Invalid HLS stream format</p>';
+              const preview = text.substring(0, 200).replace(/</g,'&lt;');
+              document.body.innerHTML = '<div style="color:orange;text-align:center;padding:16px;font-family:monospace;font-size:11px;">❌ Invalid HLS manifest<br><small>' + preview + '</small></div>';
               return;
             }
             
@@ -216,22 +230,21 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
             });
             
             hls.on(Hls.Events.ERROR, function (event, data) {
-              console.error('HLS Error:', data.type, data.details, data.fatal);
+              console.error('[HLS] type=' + data.type + ' details=' + data.details + ' fatal=' + data.fatal + ' url=' + (data.url || data.frag?.relurl || '-'));
               
-              // Auto-recover from network errors
               if (data.fatal) {
+                const msg = data.type + ': ' + data.details + (data.url ? '<br><small>' + data.url + '</small>' : '');
                 switch (data.type) {
                   case Hls.ErrorTypes.NETWORK_ERROR:
-                    console.log('Network error, attempting to recover...');
+                    console.log('[HLS] Network error, retrying...');
                     hls.startLoad();
                     break;
                   case Hls.ErrorTypes.MEDIA_ERROR:
-                    console.log('Media error, attempting to recover...');
+                    console.log('[HLS] Media error, recovering...');
                     hls.recoverMediaError();
                     break;
                   default:
-                    console.error('Fatal error, unable to recover');
-                    document.body.innerHTML = '<p style="color:orange;text-align:center;padding:16px;">Stream Error: ' + data.details + '</p>';
+                    document.body.innerHTML = '<div style="color:orange;text-align:center;padding:16px;font-family:monospace;font-size:12px;">❌ ' + msg + '</div>';
                     hls.destroy();
                     break;
                 }
@@ -239,8 +252,8 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
             });
           })
           .catch(err => {
-            console.error('Failed to fetch manifest:', err);
-            document.body.innerHTML = '<p style="color:red;text-align:center;padding:16px;">Failed to load stream</p>';
+            console.error('[HLS] Fetch failed:', err.message || err);
+            document.body.innerHTML = '<div style="color:red;text-align:center;padding:16px;font-family:monospace;font-size:11px;">❌ ' + (err.message || err) + '<br><small style="color:#aaa;word-break:break-all;">' + "$finalUrl" + '</small></div>';
           });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = "$finalUrl";
@@ -265,10 +278,20 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
       return Container(
         color: Colors.black,
         alignment: Alignment.center,
-        child: Text(
-          '❌ $_error',
-          style: const TextStyle(color: Colors.redAccent, fontSize: AppTextStyles.commandBody),
-          textAlign: TextAlign.center,
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.redAccent, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              _error!,
+              style: const TextStyle(color: Colors.redAccent, fontSize: 11),
+              textAlign: TextAlign.center,
+              maxLines: 5,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       );
     }

@@ -77,7 +77,9 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
             padding: EdgeInsets.all(24.0),
             child: Container(
               width: 520.0,
-              constraints: BoxConstraints(maxHeight: 600),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.85,
+              ),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
@@ -250,7 +252,20 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
                             // Category tags
                             if (categories != null && categories.isNotEmpty)
                               ...categories.take(3).map((category) {
-                                final categoryName = category.toString();
+                                // category may be a plain String, a Map with 'name',
+                                // or an object with a .name property — handle all cases
+                                String categoryName;
+                                try {
+                                  if (category is String) {
+                                    categoryName = category;
+                                  } else if (category is Map) {
+                                    categoryName = category['name']?.toString() ?? category.toString();
+                                  } else {
+                                    categoryName = (category as dynamic).name?.toString() ?? category.toString();
+                                  }
+                                } catch (_) {
+                                  categoryName = category?.toString() ?? '';
+                                }
                                 return Container(
                                   padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
