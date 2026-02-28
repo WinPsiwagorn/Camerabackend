@@ -21,5 +21,5 @@ class FirestoreRepository:
             "imageUrl": image_url,
             "cameraId": camera_id,
         }
-        self.db.collection("accident").document(timestamp).set(data)
+        self.db.collection("accidents").document(timestamp).set(data)
         logger.info(f"Saved to Firebase: {data}")
