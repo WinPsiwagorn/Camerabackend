@@ -33,6 +33,9 @@ class LoginPageModel extends FlutterFlowModel<LoginPageWidget> {
   // Loading state for login button.
   bool isLoading = false;
 
+  // Form key for validation.
+  final formKey = GlobalKey<FormState>();
+
   @override
   void initState(BuildContext context) {
     passwordVisibility = false;
