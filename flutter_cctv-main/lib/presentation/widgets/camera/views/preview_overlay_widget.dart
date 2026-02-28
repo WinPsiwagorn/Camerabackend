@@ -51,162 +51,154 @@ class _PreviewOverlayWidgetState extends State<PreviewOverlayWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Column(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            Container(
-              width: MediaQuery.sizeOf(context).width * 0.3,
-              height: MediaQuery.sizeOf(context).height * 1.0,
-              decoration: BoxDecoration(
-                color: Colors.white,
-              ),
+    return SizedBox.expand(
+      child: Stack(
+        children: [
+          // Side panel — 30% width, full height of parent
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: MediaQuery.sizeOf(context).width * 0.3,
+            child: ColoredBox(
+              color: Colors.white,
               child: Stack(
                 children: [
+                  // Camera list
                   Builder(
                     builder: (context) {
                       final feeditem =
-                          widget!.cameraList!.toList().take(3).toList();
-
+                          widget.cameraList!.toList().take(3).toList();
                       return ListView.builder(
-                        padding: EdgeInsets.fromLTRB(
-                          0,
-                          80.0,
-                          0,
-                          0,
-                        ),
-                        shrinkWrap: true,
+                        padding: const EdgeInsets.fromLTRB(0, 80, 0, 0),
+                        shrinkWrap: false,
                         scrollDirection: Axis.vertical,
                         itemCount: feeditem.length,
                         itemBuilder: (context, feeditemIndex) {
                           final feeditemItem = feeditem[feeditemIndex];
+                          final itemName =
+                              feeditemItem['name']?.toString() ?? '';
+                          final itemUrl =
+                              feeditemItem['rtspUrl']?.toString() ?? '';
+                          final itemId =
+                              feeditemItem['id']?.toString() ?? '';
+                          // Debug: log what we got
+                          debugPrint('[PreviewOverlay] name=$itemName id=$itemId rtspUrl=$itemUrl');
+                          final panelWidth = MediaQuery.sizeOf(context).width * 0.3;
                           return Column(
-                            mainAxisSize: MainAxisSize.max,
+                            mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Padding(
-                                padding: EdgeInsetsDirectional.fromSTEB(
-                                    0.0, 0.0, 5.0, 0.0),
+                                padding: const EdgeInsetsDirectional.fromSTEB(
+                                    0, 0, 5, 0),
                                 child: Row(
-                                  mainAxisSize: MainAxisSize.max,
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    Padding(
-                                      padding: EdgeInsetsDirectional.fromSTEB(
-                                          5.0, 0.0, 0.0, 0.0),
-                                      child: Text(
-                                        feeditemItem.name,
-                                        textAlign: TextAlign.start,
-                                        style: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .override(
-                                              fontFamily:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodyMediumFamily,
-                                              letterSpacing: 0.0,
-                                              useGoogleFonts:
-                                                  !FlutterFlowTheme.of(context)
-                                                      .bodyMediumIsCustom,
-                                            ),
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsetsDirectional
+                                            .fromSTEB(5, 0, 0, 0),
+                                        child: Text(
+                                          itemName,
+                                          textAlign: TextAlign.start,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: FlutterFlowTheme.of(context)
+                                              .bodyMedium
+                                              .override(
+                                                fontFamily:
+                                                    FlutterFlowTheme.of(context)
+                                                        .bodyMediumFamily,
+                                                letterSpacing: 0.0,
+                                                useGoogleFonts: !FlutterFlowTheme
+                                                        .of(context)
+                                                    .bodyMediumIsCustom,
+                                              ),
+                                        ),
                                       ),
                                     ),
-                                    Align(
-                                      alignment: AlignmentDirectional(1.0, 0.0),
-                                      child: InkWell(
-                                        splashColor: Colors.transparent,
-                                        focusColor: Colors.transparent,
-                                        hoverColor: Colors.transparent,
-                                        highlightColor: Colors.transparent,
-                                        onTap: () async {
-                                          await widget.onRemoveTapped?.call(
-                                            feeditemItem,
-                                          );
-                                        },
-                                        child: Icon(
-                                          Icons.delete_outline,
-                                          color: Color(0xFFFF0000),
-                                          size: 28.0,
-                                        ),
+                                    InkWell(
+                                      splashColor: Colors.transparent,
+                                      focusColor: Colors.transparent,
+                                      hoverColor: Colors.transparent,
+                                      highlightColor: Colors.transparent,
+                                      onTap: () async {
+                                        await widget.onRemoveTapped
+                                            ?.call(feeditemItem);
+                                      },
+                                      child: const Icon(
+                                        Icons.delete_outline,
+                                        color: Color(0xFFFF0000),
+                                        size: 28.0,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              Row(
-                                mainAxisSize: MainAxisSize.max,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  if (feeditemItem.url != null &&
-                                      feeditemItem.url != '')
-                                    Container(
-                                      width: MediaQuery.sizeOf(context).width *
-                                          0.3,
-                                      height: 210.0,
-                                      child: custom_widgets.HlsPlayer(
-                                        width:
-                                            MediaQuery.sizeOf(context).width *
-                                                0.3,
+                              // Video player area — always 210px tall
+                              SizedBox(
+                                width: panelWidth,
+                                height: 210.0,
+                                child: itemUrl.isNotEmpty
+                                    ? custom_widgets.HlsPlayer(
+                                        key: ValueKey('hls-$itemId'),
+                                        width: panelWidth,
                                         height: 210.0,
-                                        hlsUrl: feeditemItem.url,
-                                        streamName: feeditemItem.reference.id,
+                                        hlsUrl: itemUrl,
+                                        streamName: itemId,
+                                      )
+                                    : Container(
+                                        color: Colors.black,
+                                        alignment: Alignment.center,
+                                        child: const Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.videocam_off,
+                                                color: Colors.white54,
+                                                size: 32),
+                                            SizedBox(height: 8),
+                                            Text('No stream URL',
+                                                style: TextStyle(
+                                                    color: Colors.white54,
+                                                    fontSize: 12)),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                ],
                               ),
+                              const Divider(height: 1, color: Color(0xFFE5E7EB)),
                             ],
                           );
                         },
                       );
                     },
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      Wrap(
-                        spacing: 0.0,
-                        runSpacing: 0.0,
-                        alignment: WrapAlignment.start,
-                        crossAxisAlignment: WrapCrossAlignment.start,
-                        direction: Axis.horizontal,
-                        runAlignment: WrapAlignment.start,
-                        verticalDirection: VerticalDirection.down,
-                        clipBehavior: Clip.none,
-                        children: [
-                          Align(
-                            alignment: AlignmentDirectional(1.0, -1.0),
-                            child: Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
-                                  20.0, 20.0, 0.0, 0.0),
-                              child: InkWell(
-                                splashColor: Colors.transparent,
-                                focusColor: Colors.transparent,
-                                hoverColor: Colors.transparent,
-                                highlightColor: Colors.transparent,
-                                onTap: () async {
-                                  await widget.onClose?.call();
-                                },
-                                child: Icon(
-                                  Icons.arrow_back,
-                                  color:
-                                      FlutterFlowTheme.of(context).primaryText,
-                                  size: 34.0,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                  // Close / back button pinned to top
+                  Positioned(
+                    top: 20,
+                    left: 20,
+                    child: InkWell(
+                      splashColor: Colors.transparent,
+                      focusColor: Colors.transparent,
+                      hoverColor: Colors.transparent,
+                      highlightColor: Colors.transparent,
+                      onTap: () async {
+                        await widget.onClose?.call();
+                      },
+                      child: Icon(
+                        Icons.arrow_back,
+                        color: FlutterFlowTheme.of(context).primaryText,
+                        size: 34.0,
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }

@@ -27,23 +27,24 @@ class MapViewWidget extends StatefulWidget {
 
 class _MapViewWidgetState extends State<MapViewWidget> {
   late MapViewModel _model;
-
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => MapViewModel());
-
-    // On page load action - Load cameras from repository
     SchedulerBinding.instance.addPostFrameCallback((_) async {
       await _loadCameras();
     });
-
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
 
-  /// Load cameras from repository
+  @override
+  void dispose() {
+    _model.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadCameras() async {
     safeSetState(() {
       _model.isLoading = true;
@@ -52,48 +53,293 @@ class _MapViewWidgetState extends State<MapViewWidget> {
 
     try {
       final cameras = await CameraRepository().getCamerasForMap();
-      
-      // Calculate statistics
+
       _model.totalCameras = cameras.length;
       _model.onlineCameras = cameras.where((c) => c.status == 'online').length;
       _model.offlineCameras = cameras.where((c) => c.status == 'offline').length;
-      
-      // Convert CameraModel to dynamic for compatibility with existing widgets
-      _model.cameraDocuments = cameras.map((camera) => {
-        'id': camera.id,
-        'name': camera.name,
-        'latLong': camera.latLong,
-        'address': camera.address,
-        'rtspUrl': camera.rtspUrl,
-        'status': camera.status,
-        'categories': camera.categories,
-      }).toList();
-      
+
+      _model.cameraDocuments = cameras.map((camera) => <String, dynamic>{
+            'id': camera.id,
+            'name': camera.name,
+            'latLong': camera.latLong,
+            'address': camera.address,
+            'rtspUrl': camera.rtspUrl,
+            'status': camera.status,
+            'categories': camera.categories,
+          }).toList();
+
       safeSetState(() {
         _model.isLoading = false;
       });
     } catch (e) {
       safeSetState(() {
         _model.isLoading = false;
-        _model.errorMessage = 'Failed to load cameras: ${e.toString()}';
+        _model.errorMessage = 'Failed to load cameras: $e';
       });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error loading cameras: ${e.toString()}'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 5),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading cameras: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
   }
 
-  @override
-  void dispose() {
-    _model.dispose();
+  // ── helpers ──────────────────────────────────────────────────────────────
 
-    super.dispose();
-  }
+  Widget _stateOverlay({required Widget child}) => Container(
+        color: Colors.black.withOpacity(0.7),
+        alignment: Alignment.center,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(32),
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: child,
+          ),
+        ),
+      );
+
+  ButtonStyle get _btnStyle => ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF3B82F6),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      );
+
+  // ── states ────────────────────────────────────────────────────────────────
+
+  Widget _loadingState() => _stateOverlay(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
+              strokeWidth: 3,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Loading cameras...',
+              style: TextStyle(
+                color: const Color(0xFF111827),
+                fontSize: AppTextStyles.tableHeader,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Please wait',
+              style: TextStyle(
+                color: const Color(0xFF6B7280),
+                fontSize: AppTextStyles.labelSmall,
+              ),
+            ),
+          ],
+        ),
+      );
+
+  Widget _errorState() => _stateOverlay(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFEE2E2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.error_outline,
+                  color: Color(0xFFDC2626), size: 48),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Error Loading Map',
+              style: TextStyle(
+                color: const Color(0xFF111827),
+                fontSize: AppTextStyles.sectionTitle,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Text(
+                _model.errorMessage ?? '',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: const Color(0xFF6B7280),
+                  fontSize: AppTextStyles.labelNormal,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _loadCameras,
+              icon: const Icon(Icons.refresh, size: 20),
+              label: Text('Retry',
+                  style: TextStyle(
+                      fontSize: AppTextStyles.labelNormal,
+                      fontWeight: FontWeight.w600)),
+              style: _btnStyle,
+            ),
+          ],
+        ),
+      );
+
+  Widget _emptyState() => _stateOverlay(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF3F4F6),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.videocam_off_outlined,
+                  color: Color(0xFF6B7280), size: 48),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'No Cameras Found',
+              style: TextStyle(
+                color: const Color(0xFF111827),
+                fontSize: AppTextStyles.sectionTitle,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Text(
+                'There are no cameras configured yet. Add cameras to see them on the map.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: const Color(0xFF6B7280),
+                  fontSize: AppTextStyles.labelNormal,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _loadCameras,
+              icon: const Icon(Icons.refresh, size: 20),
+              label: Text('Refresh',
+                  style: TextStyle(
+                      fontSize: AppTextStyles.labelNormal,
+                      fontWeight: FontWeight.w600)),
+              style: _btnStyle,
+            ),
+          ],
+        ),
+      );
+
+  Widget _mapView() => Stack(
+        children: [
+          // Full-size map
+          Align(
+            alignment: Alignment.center,
+            child: wrapWithModel(
+              model: _model.mapViewComponentModel,
+              updateCallback: () => safeSetState(() {}),
+              child: MapViewComponentWidget(
+                initialLatitude: 19.9105,
+                initialLongitude: 99.8406,
+                initialZoom: 13.0,
+                componentCameraDocs: _model.cameraDocuments,
+                onMarkerTappedCallback: (tappedCamera) async {
+                  await showModalBottomSheet(
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    enableDrag: false,
+                    context: context,
+                    builder: (ctx) => GestureDetector(
+                      onTap: () {
+                        FocusScope.of(ctx).unfocus();
+                        FocusManager.instance.primaryFocus?.unfocus();
+                      },
+                      child: Padding(
+                        padding: MediaQuery.viewInsetsOf(ctx),
+                        child: MarkerInfoPopupWidget(
+                          cameraData: tappedCamera,
+                          onCloseTapped: () async => Navigator.pop(ctx),
+                          onLiveFeedTapped: (streamUrl, cameraDoc) async {
+                            _model.addToPreviewList(cameraDoc);
+                            safeSetState(() {});
+                          },
+                        ),
+                      ),
+                    ),
+                  );
+                  safeSetState(() {});
+                },
+              ),
+            ),
+          ),
+          // Preview panel
+          if (_model.previewList.isNotEmpty)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: wrapWithModel(
+                model: _model.previewOverlayModel,
+                updateCallback: () => safeSetState(() {}),
+                child: PreviewOverlayWidget(
+                  cameraList: _model.previewList,
+                  onClose: () async {
+                    _model.previewList = [];
+                    safeSetState(() {});
+                  },
+                  onRemoveTapped: (cameraToRemove) async {
+                    _model.removeFromPreviewList(cameraToRemove);
+                    safeSetState(() {});
+                  },
+                ),
+              ),
+            ),
+        ],
+      );
+
+  Widget _miniBadge(IconData icon, int count, Color color) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 3),
+            Text(
+              '$count',
+              style: TextStyle(
+                fontSize: AppTextStyles.commandBody,
+                fontWeight: FontWeight.bold,
+                color: color,
+                height: 1,
+              ),
+            ),
+          ],
+        ),
+      );
+
+  // ── build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -116,427 +362,95 @@ class _MapViewWidgetState extends State<MapViewWidget> {
               updateCallback: () => safeSetState(() {}),
               child: NavBarMainWidget(),
             ),
-            actions: [],
+            actions: const [],
             centerTitle: false,
             elevation: 2.0,
           ),
         ),
         body: SafeArea(
           top: true,
-          child: Stack(
-            children: [
-              // Map Container
-              Container(
-                width: MediaQuery.sizeOf(context).width * 1.0,
-                height: MediaQuery.sizeOf(context).height * 1.0,
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                ),
-                child: Stack(
-                  children: [
-                    // Loading State
-                    if (_model.isLoading)
-                      Container(
-                        color: Colors.black.withOpacity(0.7),
-                        child: Center(
-                          child: Container(
-                            padding: EdgeInsets.all(32),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
-                                        blurRadius: 20,
-                                        offset: Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      CircularProgressIndicator(
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          Color(0xFF3B82F6),
-                                        ),
-                                        strokeWidth: 3,
-                                      ),
-                                      SizedBox(height: 20),
-                                      Text(
-                                        'Loading cameras...',
-                                        style: TextStyle(
-                                          color: Color(0xFF111827),
-                                          fontSize: AppTextStyles.tableHeader,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      SizedBox(height: 8),
-                                      Text(
-                                        'Please wait',
-                                        style: TextStyle(
-                                          color: Color(0xFF6B7280),
-                                          fontSize: AppTextStyles.labelSmall,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          // Error State
-                          if (!_model.isLoading && _model.errorMessage != null)
-                            Container(
-                              color: Colors.black.withOpacity(0.7),
-                              child: Center(
-                                child: Container(
-                                  margin: EdgeInsets.all(32),
-                                  padding: EdgeInsets.all(32),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
-                                        blurRadius: 20,
-                                        offset: Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        padding: EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          color: Color(0xFFFEE2E2),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          Icons.error_outline,
-                                          color: Color(0xFFDC2626),
-                                          size: 48,
-                                        ),
-                                      ),
-                                      SizedBox(height: 20),
-                                      Text(
-                                        'Error Loading Map',
-                                        style: TextStyle(
-                                          color: Color(0xFF111827),
-                                          fontSize: AppTextStyles.sectionTitle,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      SizedBox(height: 12),
-                                      Container(
-                                        constraints: BoxConstraints(maxWidth: 400),
-                                        child: Text(
-                                          _model.errorMessage!,
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            color: Color(0xFF6B7280),
-                                            fontSize: AppTextStyles.labelNormal,
-                                            height: 1.5,
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(height: 24),
-                                      ElevatedButton.icon(
-                                        onPressed: _loadCameras,
-                                        icon: Icon(Icons.refresh, size: 20),
-                                        label: Text(
-                                          'Retry',
-                                          style: TextStyle(
-                                            fontSize: AppTextStyles.labelNormal,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Color(0xFF3B82F6),
-                                          foregroundColor: Colors.white,
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 32,
-                                            vertical: 16,
-                                          ),
-                                          elevation: 2,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          // Empty State
-                          if (!_model.isLoading && 
-                              _model.errorMessage == null && 
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Stack(
+                children: [
+                  // ── map area (bounded) ──
+                  SizedBox(
+                    width: constraints.maxWidth,
+                    height: constraints.maxHeight,
+                    child: ColoredBox(
+                      color: Colors.black,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          if (_model.isLoading) _loadingState(),
+                          if (!_model.isLoading &&
+                              _model.errorMessage != null)
+                            _errorState(),
+                          if (!_model.isLoading &&
+                              _model.errorMessage == null &&
                               _model.cameraDocuments.isEmpty)
-                            Container(
-                              color: Colors.black.withOpacity(0.7),
-                              child: Center(
-                                child: Container(
-                                  margin: EdgeInsets.all(32),
-                                  padding: EdgeInsets.all(32),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
-                                        blurRadius: 20,
-                                        offset: Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        padding: EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          color: Color(0xFFF3F4F6),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          Icons.videocam_off_outlined,
-                                          color: Color(0xFF6B7280),
-                                          size: 48,
-                                        ),
-                                      ),
-                                      SizedBox(height: 20),
-                                      Text(
-                                        'No Cameras Found',
-                                        style: TextStyle(
-                                          color: Color(0xFF111827),
-                                          fontSize: AppTextStyles.sectionTitle,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      SizedBox(height: 12),
-                                      Container(
-                                        constraints: BoxConstraints(maxWidth: 400),
-                                        child: Text(
-                                          'There are no cameras configured yet. Add cameras to see them on the map.',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            color: Color(0xFF6B7280),
-                                            fontSize: AppTextStyles.labelNormal,
-                                            height: 1.5,
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(height: 24),
-                                      ElevatedButton.icon(
-                                        onPressed: _loadCameras,
-                                        icon: Icon(Icons.refresh, size: 20),
-                                        label: Text(
-                                          'Refresh',
-                                          style: TextStyle(
-                                            fontSize: AppTextStyles.labelNormal,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Color(0xFF3B82F6),
-                                          foregroundColor: Colors.white,
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 32,
-                                            vertical: 16,
-                                          ),
-                                          elevation: 2,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          // Map View
-                          if (!_model.isLoading && 
-                              _model.errorMessage == null && 
+                            _emptyState(),
+                          if (!_model.isLoading &&
+                              _model.errorMessage == null &&
                               _model.cameraDocuments.isNotEmpty)
-                            Stack(
-                              children: [
-                                Align(
-                                  alignment: AlignmentDirectional(0.0, 0.0),
-                                  child: wrapWithModel(
-                                  model: _model.mapViewComponentModel,
-                                  updateCallback: () => safeSetState(() {}),
-                                  child: MapViewComponentWidget(
-                                    initialLatitude: 19.9105, // Chiang Rai, Thailand
-                                    initialLongitude: 99.8406,
-                                    initialZoom: 13.0, // Wider view to see more of Chiang Rai
-                                    componentCameraDocs: _model.cameraDocuments,
-                                    onMarkerTappedCallback:
-                                        (tappedCamera) async {
-                                      showModalBottomSheet(
-                                        isScrollControlled: true,
-                                        backgroundColor: Colors.transparent,
-                                        enableDrag: false,
-                                        context: context,
-                                        builder: (context) {
-                                          return GestureDetector(
-                                            onTap: () {
-                                              FocusScope.of(context).unfocus();
-                                              FocusManager.instance.primaryFocus
-                                                  ?.unfocus();
-                                            },
-                                            child: Padding(
-                                              padding: MediaQuery.viewInsetsOf(
-                                                  context),
-                                              child: MarkerInfoPopupWidget(
-                                                cameraData: tappedCamera,
-                                                onCloseTapped: () async {
-                                                  Navigator.pop(context);
-                                                },
-                                                onLiveFeedTapped: (streamUrl,
-                                                    cameraDoc) async {
-                                                  _model.addToPreviewList(
-                                                      cameraDoc);
-                                                  safeSetState(() {});
-                                                },
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ).then((value) => safeSetState(() {}));
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if ((_model.previewList.isNotEmpty) == true)
-                            Align(
-                              alignment: AlignmentDirectional(-1.0, 0.0),
-                              child: wrapWithModel(
-                                model: _model.previewOverlayModel,
-                                updateCallback: () => safeSetState(() {}),
-                                child: PreviewOverlayWidget(
-                                  cameraList: _model.previewList,
-                                  onClose: () async {
-                                    _model.previewList = [];
-                                    safeSetState(() {});
-                                  },
-                                  onRemoveTapped: (cameraToRemove) async {
-                                    _model
-                                        .removeFromPreviewList(cameraToRemove);
-                                    safeSetState(() {});
-                                  },
-                                ),
-                              ),
-                            ),
-                  ],
-                ),
-              ),
-              // Floating Dashboard - Compact Design
-              if (!_model.isLoading && _model.errorMessage == null)
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 16,
-                          offset: Offset(0, 4),
-                          spreadRadius: 0,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Total
-                        _buildMiniBadge(
-                          icon: Icons.camera_alt,
-                          count: _model.totalCameras,
-                          color: Color(0xFF3B82F6),
-                        ),
-                        SizedBox(width: 6),
-                        // Online
-                        _buildMiniBadge(
-                          icon: Icons.check_circle,
-                          count: _model.onlineCameras,
-                          color: Color(0xFF10B981),
-                        ),
-                        SizedBox(width: 6),
-                        // Offline
-                        _buildMiniBadge(
-                          icon: Icons.cancel,
-                          count: _model.offlineCameras,
-                          color: Color(0xFFEF4444),
-                        ),
-                        SizedBox(width: 8),
-                        Container(
-                          width: 1,
-                          height: 20,
-                          color: Color(0xFFE5E7EB),
-                        ),
-                        SizedBox(width: 8),
-                        // Refresh button
-                        InkWell(
-                          onTap: _loadCameras,
-                          borderRadius: BorderRadius.circular(6),
-                          child: Padding(
-                            padding: EdgeInsets.all(4),
-                            child: Icon(
-                              Icons.refresh,
-                              size: 18,
-                              color: Color(0xFF3B82F6),
-                            ),
-                          ),
-                        ),
-                      ],
+                            _mapView(),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-            ],
+                  // ── floating dashboard ──
+                  if (!_model.isLoading && _model.errorMessage == null)
+                    Positioned(
+                      top: 12,
+                      left: 12,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _miniBadge(Icons.camera_alt, _model.totalCameras,
+                                const Color(0xFF3B82F6)),
+                            const SizedBox(width: 6),
+                            _miniBadge(Icons.check_circle,
+                                _model.onlineCameras, const Color(0xFF10B981)),
+                            const SizedBox(width: 6),
+                            _miniBadge(Icons.cancel, _model.offlineCameras,
+                                const Color(0xFFEF4444)),
+                            const SizedBox(width: 8),
+                            Container(
+                                width: 1,
+                                height: 20,
+                                color: const Color(0xFFE5E7EB)),
+                            const SizedBox(width: 8),
+                            InkWell(
+                              onTap: _loadCameras,
+                              borderRadius: BorderRadius.circular(6),
+                              child: const Padding(
+                                padding: EdgeInsets.all(4),
+                                child: Icon(Icons.refresh,
+                                    size: 18, color: Color(0xFF3B82F6)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ),
-      ),
-    );
-  }
-
-  /// Build mini badge for stats
-  Widget _buildMiniBadge({
-    required IconData icon,
-    required int count,
-    required Color color,
-  }) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 14,
-            color: color,
-          ),
-          SizedBox(width: 3),
-          Text(
-            count.toString(),
-            style: TextStyle(
-              fontSize: AppTextStyles.commandBody,
-              fontWeight: FontWeight.bold,
-              color: color,
-              height: 1,
-            ),
-          ),
-        ],
       ),
     );
   }
