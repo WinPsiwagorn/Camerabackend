@@ -22,7 +22,7 @@ const String kApiBaseUrl = String.fromEnvironment(
 class HlsPlayer extends StatefulWidget {
   /// ตอนนี้ parameter นี้รับได้ทั้ง HLS URL หรือ RTSP URL
   final String hlsUrl;
-  final String? streamName; // สำหรับกรณี RTSP ต้องใช้ docId
+  final String? streamName;
   final double? width;
   final double? height;
 
@@ -56,7 +56,7 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
       final url = widget.hlsUrl.trim();
       if (url.startsWith('rtsp://')) {
         if (widget.streamName == null) {
-          setState(() => _error = 'Missing streamName for RTSP source');
+          setState(() => _error = 'missing_stream_name');
           return;
         }
 
@@ -73,13 +73,9 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
 
   Future<String> _requestHlsUrl(String rtspUrl, String streamName) async {
     final uri = Uri.parse('$kApiBaseUrl/api/stream/hls/start');
-    final body = jsonEncode({
-      'streamName': streamName,
-      'rtspUrl': rtspUrl,
-    });
+    final body = jsonEncode({'streamName': streamName, 'rtspUrl': rtspUrl});
 
-    debugPrint('[HlsPlayer] POST $uri');
-    debugPrint('[HlsPlayer] body: $body');
+    debugPrint('[HlsPlayer] POST $uri body=$body');
 
     final resp = await http
         .post(uri, headers: {'Content-Type': 'application/json'}, body: body)
@@ -93,208 +89,178 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
         final path = obj['message'] ?? obj['url'] ?? obj['hls'] ?? resp.body;
         if (path is String && path.isNotEmpty) {
           final resolved = path.startsWith('http') ? path : '$kApiBaseUrl$path';
-          debugPrint('[HlsPlayer] resolved HLS URL: $resolved');
+          debugPrint('[HlsPlayer] resolved: $resolved');
           return resolved;
         }
       } catch (_) {
         final bodyText = resp.body.trim();
         if (bodyText.startsWith('/')) return '$kApiBaseUrl$bodyText';
       }
-      throw Exception('Invalid response format: ${resp.body}');
+      throw Exception('Invalid response: ${resp.body}');
     } else {
-      throw Exception('HTTP ${resp.statusCode}: ${resp.body}');
+      throw Exception('HTTP ${resp.statusCode}');
     }
   }
 
   void _registerView(String finalUrl) {
     if (!kIsWeb) return;
 
+    // Build the srcdoc HTML — use single quotes inside to avoid Dart string conflicts
+    final html = '''<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <style>
+    html,body{margin:0;padding:0;height:100%;background:#111;overflow:hidden}
+    .wrap{position:relative;width:100%;height:100%}
+    video{width:100%;height:100%;background:#000;display:block}
+    video::-webkit-media-controls{display:none!important}
+    video::-webkit-media-controls-enclosure{display:none!important}
+    .unavailable{display:flex;flex-direction:column;align-items:center;
+      justify-content:center;height:100%;background:#111;color:#888;
+      font-family:sans-serif;gap:8px;font-size:13px;font-weight:500}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <video id="video" autoplay muted playsinline></video>
+  </div>
+  <script>
+    var video = document.getElementById('video');
+    video.muted = true;
+
+    function tryPlay() {
+      var p = video.play();
+      if (p && typeof p.catch === 'function') {
+        p.catch(function(e) { console.warn('Autoplay prevented:', e); });
+      }
+    }
+
+    function showUnavailable(reason) {
+      document.body.innerHTML =
+        '<div class="unavailable">' +
+        '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.5">' +
+        '<path d="M15 10l4.553-2.069A1 1 0 0121 8.845v6.31a1 1 0 01-1.447.894L15 14' +
+        'M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>' +
+        '<line x1="2" y1="2" x2="22" y2="22" stroke="#ef4444" stroke-width="1.5"/>' +
+        '</svg>' +
+        '<span>Stream Unavailable</span>' +
+        '</div>';
+      console.warn('[HLS] Unavailable:', reason);
+    }
+
+    if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+      fetch('$finalUrl', { headers: { 'ngrok-skip-browser-warning': 'anyvalue' } })
+        .then(function(response) {
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+          return response.text();
+        })
+        .then(function(text) {
+          if (text.indexOf('#EXTM3U') === -1) {
+            showUnavailable('invalid manifest');
+            return;
+          }
+          var hls = new Hls({
+            debug: false,
+            enableWorker: true,
+            lowLatencyMode: true,
+            backBufferLength: 90,
+            maxBufferLength: 30,
+            maxMaxBufferLength: 600,
+            maxBufferSize: 60000000,
+            maxBufferHole: 0.5,
+            manifestLoadingTimeOut: 10000,
+            manifestLoadingMaxRetry: 3,
+            manifestLoadingRetryDelay: 1000,
+            levelLoadingTimeOut: 10000,
+            levelLoadingMaxRetry: 4,
+            fragLoadingTimeOut: 20000,
+            fragLoadingMaxRetry: 6,
+            fragLoadingRetryDelay: 1000,
+            xhrSetup: function(xhr, url) {
+              xhr.setRequestHeader('ngrok-skip-browser-warning', 'anyvalue');
+            }
+          });
+          hls.loadSource('$finalUrl');
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, function() { tryPlay(); });
+          hls.on(Hls.Events.LEVEL_LOADED, function() { if (video.paused) tryPlay(); });
+          hls.on(Hls.Events.ERROR, function(event, data) {
+            if (data.fatal) {
+              if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                hls.startLoad();
+              } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                hls.recoverMediaError();
+              } else {
+                showUnavailable(data.details);
+                hls.destroy();
+              }
+            }
+          });
+        })
+        .catch(function(err) { showUnavailable(err.message || String(err)); });
+
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = '$finalUrl';
+      tryPlay();
+    } else {
+      showUnavailable('HLS not supported');
+    }
+  </script>
+</body>
+</html>''';
+
     ui_web.platformViewRegistry.registerViewFactory(_viewType, (int viewId) {
-      // Create container div with explicit dimensions
-      final container = web.document.createElement('div') as web.HTMLDivElement;
+      final container =
+          web.document.createElement('div') as web.HTMLDivElement;
       container.style.width = '100%';
       container.style.height = '100%';
       container.style.overflow = 'hidden';
-      container.style.pointerEvents = 'none'; // Allow clicks to pass through to Flutter
-      
+      container.style.pointerEvents = 'none';
+
       final iframe = web.HTMLIFrameElement();
       iframe.width = '100%';
       iframe.height = '100%';
       iframe.style.border = 'none';
       iframe.style.display = 'block';
-      iframe.style.pointerEvents = 'none'; // Allow clicks to pass through to Flutter
+      iframe.style.pointerEvents = 'none';
       iframe.allow = 'autoplay; fullscreen';
       iframe.setAttribute('allowfullscreen', '');
-
-      iframe.srcdoc = '''
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <style>
-      html, body { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; }
-      .wrap { position: relative; width: 100%; height: 100%; }
-      video { width: 100%; height: 100%; background: #000; display: block; }
-      //#fsBtn {
-        //position: absolute; right: 12px; bottom: 12px;
-        //padding: 10px 12px; border-radius: 10px; border: none;
-        //background: rgba(255,255,255,0.12); color: #fff; font-size: 18px; line-height: 1;
-        //cursor: pointer; backdrop-filter: blur(4px);
-      //}
-      //#fsBtn:hover { background: rgba(255,255,255,0.2); }
-      //#fsBtn:active { background: rgba(255,255,255,0.28); }
-      video::-webkit-media-controls { display: none !important; }
-      video::-webkit-media-controls-enclosure { display: none !important; }
-    </style>
-  </head>
-  <body>
-    <div class="wrap">
-      <video id="video" autoplay muted playsinline></video>
-    </div>
-    <script>
-      const video = document.getElementById('video');
-      video.muted = true;
-
-      function tryPlay() {
-        const p = video.play();
-        if (p && typeof p.catch === 'function') {
-          p.catch((e) => console.warn('Autoplay prevented:', e));
-        }
-      }
-
-      if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-        const debugInfo = document.createElement('div');
-        debugInfo.style.cssText = 'position:absolute;top:4px;left:4px;right:4px;font-family:monospace;font-size:9px;color:rgba(255,255,255,0.6);word-break:break-all;z-index:10;pointer-events:none;';
-        debugInfo.textContent = '🔗 ' + "$finalUrl";
-        document.querySelector('.wrap').appendChild(debugInfo);
-
-        console.log('[HLS] Loading stream:', "$finalUrl");
-        
-        // First, check if manifest exists and is valid
-        fetch("$finalUrl", { headers: { "ngrok-skip-browser-warning": "anyvalue" } })
-          .then(response => {
-            console.log('[HLS] Manifest status:', response.status, response.url);
-            if (!response.ok) {
-              throw new Error('HTTP ' + response.status + ' ' + response.statusText + ' — ' + response.url);
-            }
-            return response.text();
-          })
-          .then(text => {
-            console.log('[HLS] Manifest preview:', text.substring(0, 300));
-            if (!text.includes('#EXTM3U')) {
-              const preview = text.substring(0, 200).replace(/</g,'&lt;');
-              document.body.innerHTML = '<div style="color:orange;text-align:center;padding:16px;font-family:monospace;font-size:11px;">❌ Invalid HLS manifest<br><small>' + preview + '</small></div>';
-              return;
-            }
-            
-            // If valid, initialize HLS.js with optimized config
-            const hls = new Hls({
-              debug: false,
-              enableWorker: true,
-              lowLatencyMode: true,
-              backBufferLength: 90,
-              
-              // Improved buffering settings
-              maxBufferLength: 30,
-              maxMaxBufferLength: 600,
-              maxBufferSize: 60 * 1000 * 1000,
-              maxBufferHole: 0.5,
-              
-              // Network settings
-              manifestLoadingTimeOut: 10000,
-              manifestLoadingMaxRetry: 3,
-              manifestLoadingRetryDelay: 1000,
-              levelLoadingTimeOut: 10000,
-              levelLoadingMaxRetry: 4,
-              fragLoadingTimeOut: 20000,
-              fragLoadingMaxRetry: 6,
-              fragLoadingRetryDelay: 1000,
-              
-              // XHR setup for headers
-              xhrSetup: function(xhr, url) {
-                xhr.setRequestHeader("ngrok-skip-browser-warning", "anyvalue");
-              }
-            });
-            
-            hls.loadSource("$finalUrl");
-            hls.attachMedia(video);
-            
-            hls.on(Hls.Events.MANIFEST_PARSED, function () { 
-              console.log('HLS manifest parsed successfully');
-              tryPlay(); 
-            });
-            
-            hls.on(Hls.Events.LEVEL_LOADED, function () { 
-              if (video.paused) tryPlay(); 
-            });
-            
-            hls.on(Hls.Events.ERROR, function (event, data) {
-              console.error('[HLS] type=' + data.type + ' details=' + data.details + ' fatal=' + data.fatal + ' url=' + (data.url || data.frag?.relurl || '-'));
-              
-              if (data.fatal) {
-                const msg = data.type + ': ' + data.details + (data.url ? '<br><small>' + data.url + '</small>' : '');
-                switch (data.type) {
-                  case Hls.ErrorTypes.NETWORK_ERROR:
-                    console.log('[HLS] Network error, retrying...');
-                    hls.startLoad();
-                    break;
-                  case Hls.ErrorTypes.MEDIA_ERROR:
-                    console.log('[HLS] Media error, recovering...');
-                    hls.recoverMediaError();
-                    break;
-                  default:
-                    document.body.innerHTML = '<div style="color:orange;text-align:center;padding:16px;font-family:monospace;font-size:12px;">❌ ' + msg + '</div>';
-                    hls.destroy();
-                    break;
-                }
-              }
-            });
-          })
-          .catch(err => {
-            console.error('[HLS] Fetch failed:', err.message || err);
-            document.body.innerHTML = '<div style="color:red;text-align:center;padding:16px;font-family:monospace;font-size:11px;">❌ ' + (err.message || err) + '<br><small style="color:#aaa;word-break:break-all;">' + "$finalUrl" + '</small></div>';
-          });
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = "$finalUrl";
-        tryPlay();
-      } else {
-        document.body.innerHTML = '<p style="color:white;text-align:center;padding:16px;">HLS not supported.</p>';
-      }
-    </script>
-  </body>
-</html>
-'''
-          .toJS;
+      iframe.srcdoc = html.toJS;
 
       container.appendChild(iframe);
       return container;
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_error != null) {
-      return Container(
-        color: Colors.black,
+  // ── build ────────────────────────────────────────────────────────────────
+
+  Widget _unavailableWidget() => Container(
+        color: const Color(0xFF111111),
         alignment: Alignment.center,
         padding: const EdgeInsets.all(12),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, color: Colors.redAccent, size: 28),
+            Icon(Icons.videocam_off_rounded,
+                color: Colors.grey.shade600, size: 36),
             const SizedBox(height: 8),
             Text(
-              _error!,
-              style: const TextStyle(color: Colors.redAccent, fontSize: 11),
-              textAlign: TextAlign.center,
-              maxLines: 5,
-              overflow: TextOverflow.ellipsis,
+              'Stream Unavailable',
+              style: TextStyle(
+                color: Colors.grey.shade500,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
       );
-    }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) return _unavailableWidget();
 
     if (_resolvedUrl == null) {
       return Container(
@@ -309,17 +275,18 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
     }
 
     if (!kIsWeb) {
-      return const Center(
-          child: Text('⚠️ HLS player is only supported on Web.'));
+      return _unavailableWidget();
     }
 
     _registerView(_resolvedUrl!);
-    final width = widget.width ?? MediaQuery.of(context).size.width;
-    final height = widget.height ?? width * 9 / 16;
+
+    final w = widget.width ?? MediaQuery.of(context).size.width;
+    final h = widget.height ?? w * 9 / 16;
 
     return SizedBox(
-        width: width,
-        height: height,
-        child: HtmlElementView(viewType: _viewType));
+      width: w,
+      height: h,
+      child: HtmlElementView(viewType: _viewType),
+    );
   }
 }
