@@ -38,30 +38,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
     super.initState();
     _model = createModel(context, () => LoginPageModel());
 
-    // On page load action.
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      _model.loginResponse = await AuthService().login(
-        username: _model.emailAddressTextController.text,
-        password: _model.passwordTextController.text,
-      );
-
-      if ((_model.apiAuthResult?.succeeded ?? true)) {
-        context.pushNamed(ListCameraPageWidget.routeName);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '\"Login failed. Please check password.\"',
-              style: TextStyle(
-                color: FlutterFlowTheme.of(context).primaryText,
-              ),
-            ),
-            duration: Duration(milliseconds: 4000),
-            backgroundColor: FlutterFlowTheme.of(context).secondary,
-          ),
-        );
-      }
-    });
+    // ...existing code...
 
     _model.emailAddressTextController ??= TextEditingController();
     _model.emailAddressFocusNode ??= FocusNode();
@@ -494,7 +471,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                             final token = body?['accessToken'] ?? body?['token'] ?? '';
                                             AppState().authToken = token?.toString() ?? '';
 
-                                            context.pushNamed(ListCameraPageWidget.routeName);
+                                            context.goNamed(ListCameraPageWidget.routeName);
                                           } else {
                                             safeSetState(() => _model.isLoading = false);
                                             ScaffoldMessenger.of(context).showSnackBar(
