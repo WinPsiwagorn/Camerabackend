@@ -11,7 +11,7 @@ services:
     environment:
       TZ: "Asia/Bangkok"
       GOOGLE_APPLICATION_CREDENTIALS: "/secrets/serviceAccount.json"
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:19092"
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
       FIREBASE_CREDENTIALS_PATH: "file:/secrets/serviceAccount.json"
       JAVA_OPTS: "-Xmx3g -Xms1g -XX:MaxDirectMemorySize=2g"
     volumes:
@@ -118,3 +118,27 @@ services:
         reservations:
           cpus: '1'
           memory: 1G
+
+  accident-detector:
+    build:
+      context: ./accident-ai-main
+      dockerfile: Dockerfile
+    container_name: accident-detector
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=Asia/Bangkok
+    volumes:
+      - ./accident-ai-main/output:/output
+      - ./accident-ai-main/.env:/app/.env
+      - ./accident-ai-main/secrets:/secrets
+    depends_on:
+      - kafka
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 6G
+        reservations:
+          cpus: '2'
+          memory: 3G
