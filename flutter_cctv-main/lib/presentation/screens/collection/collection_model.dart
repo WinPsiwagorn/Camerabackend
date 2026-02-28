@@ -1,10 +1,10 @@
 import '/data/services/index.dart';
-import '/presentation/widgets/nav/views/nav_bar_main_widget.dart';
-import '/utils/flutter_flow/data_table.dart';
-import '/utils/flutter_flow/icon_button.dart';
-import '/utils/flutter_flow/theme.dart';
-import '/utils/flutter_flow/util.dart';
-import '/utils/flutter_flow/widgets.dart';
+import '/presentation/widgets/nav_bar_main_widget.dart';
+import '/utils/flutter_flow_data_table.dart';
+import '/utils/flutter_flow_icon_button.dart';
+import '/utils/flutter_flow_theme.dart';
+import '/utils/flutter_flow_util.dart';
+import '/utils/flutter_flow_widgets.dart';
 import 'dart:ui';
 import 'collection_widget.dart' show CollectionWidget;
 import 'package:flutter/material.dart';
@@ -17,6 +17,12 @@ class CollectionModel extends FlutterFlowModel<CollectionWidget> {
 
   bool? isMenuOpen;
 
+  bool filterAssignedCategory = false;
+  
+  bool filterUnassignedCategory = false;
+
+  Map<String, bool> expandedCategories = {};
+
   List<String> selectedCameras = [];
   void addToSelectedCameras(String item) => selectedCameras.add(item);
   void removeFromSelectedCameras(String item) => selectedCameras.remove(item);
@@ -27,13 +33,23 @@ class CollectionModel extends FlutterFlowModel<CollectionWidget> {
   void updateSelectedCamerasAtIndex(int index, Function(String) updateFn) =>
       selectedCameras[index] = updateFn(selectedCameras[index]);
 
+  // Pagination state
+  List<dynamic> listOfCameras = [];
+  int currentPage = 1;
+  int totalPages = 1;
+  int totalCameras = 0;
+  static const int pageSize = 10;
+  bool isLoading = false;
+  String searchQuery = '';
+
   ///  State fields for stateful widgets in this page.
 
   // State field(s) for TextField widget.
   FocusNode? textFieldFocusNode;
   TextEditingController? textController;
   String? Function(BuildContext, String?)? textControllerValidator;
-  List<dynamic> simpleSearchResults = [];
+  // Stores action output result for [Backend Call - API (Get Camera)] action in search.
+  ApiCallResponse? apiResultSearch;
   // Stores action output result for [Backend Call - API (Add Category to Camera)] action in Button widget.
   ApiCallResponse? apiResultvxw;
   // Stores action output result for [Backend Call - API (Get Camera)] action in Button widget.
@@ -41,10 +57,6 @@ class CollectionModel extends FlutterFlowModel<CollectionWidget> {
   // State field(s) for PaginatedDataTable widget.
   final paginatedDataTableController =
       FlutterFlowDataTableController<dynamic>();
-  // State field(s) for Checkbox widget.
-  Map<dynamic, bool> checkboxValueMap = {};
-  List<dynamic> get checkboxCheckedItems =>
-      checkboxValueMap.entries.where((e) => e.value).map((e) => e.key).toList();
 
   // Model for NavBarMain component.
   late NavBarMainModel navBarMainModel;

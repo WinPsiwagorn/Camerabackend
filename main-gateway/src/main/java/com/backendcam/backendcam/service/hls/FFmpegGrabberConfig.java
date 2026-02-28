@@ -136,10 +136,6 @@ public class FFmpegGrabberConfig {
         grabber.setOption("fflags", "+nobuffer+discardcorrupt+igndts+genpts");
         grabber.setOption("flags", "low_delay");
 
-        // Timeouts - must be set to avoid hanging on network issues
-        grabber.setOption("stimeout", "10000000"); // 10 seconds in microseconds
-        grabber.setOption("timeout", "10000000");
-
         // RTSP specific settings
         grabber.setOption("rtsp_transport", "tcp");
         grabber.setOption("rtsp_flags", "prefer_tcp");
@@ -147,7 +143,7 @@ public class FFmpegGrabberConfig {
         grabber.setOption("stimeout", "5000000"); // socket timeout 5 secs
         grabber.setOption("rw_timeout", "5000000"); // read write timeout 5 secs
 
-        grabber.setOption("allowed_media_types", "video+audio");
+        grabber.setOption("allowed_media_types", "video");
         grabber.setOption("use_wallclock_as_timestamps", "1");
 
         grabber.setOption("err_detect", "ignore_err");

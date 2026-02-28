@@ -58,7 +58,6 @@ public class FirestoreService {
      * OFFLINE: อัปเดต status + คำนวณ lastSeen.message ใหม่ โดย "ไม่เปลี่ยน"
      * timestamp เดิม
      */
-    @SuppressWarnings("unchecked")
     public void updateOffline(String docId) {
         if (!bootstrap.isInitialized())
             return;

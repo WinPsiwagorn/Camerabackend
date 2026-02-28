@@ -1,0 +1,47 @@
+name: Deploy to server via Cloudflare SSH
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run commands on remote via Cloudflare Tunnel
+        uses: and-fm/cloudflared-ssh-action@v3
+        with:
+          host: ${{ secrets.HOST }}       # Cloudflare Tunnel hostname
+          username: ${{ secrets.USER }}   # SSH user
+          private_key_filename: "id_rsa"
+          private_key_value: ${{ secrets.SSH_KEY }}
+
+          # คำสั่งที่มึงจะรันบน remote
+          commands: |
+            set -e
+
+            APP_DIR=/home/se-lab/Github/CCTVbackend/cctv-prod/Chiang-rai-cctv
+            
+            echo "== Go to project =="
+            cd $APP_DIR
+            
+            echo "== Reset repo =="
+            git checkout main
+            git fetch origin
+            git reset --hard origin/main
+            git clean -fd
+            
+            echo "== Remove running containers =="
+            docker compose down --remove-orphans || true
+            
+            echo "== Deploy containers =="
+            docker compose up -d --build --remove-orphans
+            
+            echo "== Cleanup old images =="
+            docker image prune -f
+            
+            echo "== Done =="

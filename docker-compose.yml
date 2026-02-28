@@ -105,8 +105,8 @@ services:
       context: ./flutter_cctv-main
       dockerfile: Dockerfile
     container_name: flutter-web
-    ports:
-      - "3000:80"
+    volumes:
+      - /var/www/flutter:/output
     environment:
       TZ: "Asia/Bangkok"
     restart: unless-stopped

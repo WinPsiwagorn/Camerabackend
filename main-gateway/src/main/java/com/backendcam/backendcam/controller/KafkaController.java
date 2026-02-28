@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.backendcam.backendcam.model.dto.MotionEvent;
+import com.backendcam.backendcam.model.dto.motion.MotionEvent;
 import com.backendcam.backendcam.service.kafka.MotionEventProducer;
 
 import lombok.RequiredArgsConstructor;

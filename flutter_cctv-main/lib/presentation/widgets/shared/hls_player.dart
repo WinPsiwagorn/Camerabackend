@@ -104,10 +104,19 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
     if (!kIsWeb) return;
 
     ui_web.platformViewRegistry.registerViewFactory(_viewType, (int viewId) {
+      // Create container div with explicit dimensions
+      final container = web.document.createElement('div') as web.HTMLDivElement;
+      container.style.width = '100%';
+      container.style.height = '100%';
+      container.style.overflow = 'hidden';
+      container.style.pointerEvents = 'none'; // Allow clicks to pass through to Flutter
+      
       final iframe = web.HTMLIFrameElement();
       iframe.width = '100%';
       iframe.height = '100%';
       iframe.style.border = 'none';
+      iframe.style.display = 'block';
+      iframe.style.pointerEvents = 'none'; // Allow clicks to pass through to Flutter
       iframe.allow = 'autoplay; fullscreen';
       iframe.setAttribute('allowfullscreen', '');
 
@@ -136,11 +145,9 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
   <body>
     <div class="wrap">
       <video id="video" autoplay muted playsinline></video>
-      //<button id="fsBtn" aria-label="Fullscreen" title="Fullscreen"><⤢></button>
     </div>
     <script>
       const video = document.getElementById('video');
-      const fsBtn = document.getElementById('fsBtn');
       video.muted = true;
 
       function tryPlay() {
@@ -150,25 +157,91 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
         }
       }
 
-      function goFullscreen() {
-        const el = video;
-        if (el.requestFullscreen) el.requestFullscreen();
-        else if (el.webkitEnterFullscreen) el.webkitEnterFullscreen();
-        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-        else if (el.msRequestFullscreen) el.msRequestFullscreen();
-      }
-      fsBtn.addEventListener('click', goFullscreen);
-
       if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-        const hls = new Hls({
-          xhrSetup: function(xhr, url) {
-            xhr.setRequestHeader("ngrok-skip-browser-warning", "anyvalue");
-          }
-        });
-        hls.loadSource("$finalUrl");
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, function () { tryPlay(); });
-        hls.on(Hls.Events.LEVEL_LOADED, function () { if (video.paused) tryPlay(); });
+        console.log('Loading HLS stream:', "$finalUrl");
+        
+        // First, check if manifest exists and is valid
+        fetch("$finalUrl")
+          .then(response => {
+            console.log('Manifest response status:', response.status);
+            return response.text();
+          })
+          .then(text => {
+            console.log('Manifest content:', text.substring(0, 500));
+            if (!text.includes('#EXTM3U')) {
+              console.error('Invalid HLS manifest - missing #EXTM3U header');
+              document.body.innerHTML = '<p style="color:orange;text-align:center;padding:16px;">Invalid HLS stream format</p>';
+              return;
+            }
+            
+            // If valid, initialize HLS.js with optimized config
+            const hls = new Hls({
+              debug: false,
+              enableWorker: true,
+              lowLatencyMode: true,
+              backBufferLength: 90,
+              
+              // Improved buffering settings
+              maxBufferLength: 30,
+              maxMaxBufferLength: 600,
+              maxBufferSize: 60 * 1000 * 1000,
+              maxBufferHole: 0.5,
+              
+              // Network settings
+              manifestLoadingTimeOut: 10000,
+              manifestLoadingMaxRetry: 3,
+              manifestLoadingRetryDelay: 1000,
+              levelLoadingTimeOut: 10000,
+              levelLoadingMaxRetry: 4,
+              fragLoadingTimeOut: 20000,
+              fragLoadingMaxRetry: 6,
+              fragLoadingRetryDelay: 1000,
+              
+              // XHR setup for headers
+              xhrSetup: function(xhr, url) {
+                xhr.setRequestHeader("ngrok-skip-browser-warning", "anyvalue");
+              }
+            });
+            
+            hls.loadSource("$finalUrl");
+            hls.attachMedia(video);
+            
+            hls.on(Hls.Events.MANIFEST_PARSED, function () { 
+              console.log('HLS manifest parsed successfully');
+              tryPlay(); 
+            });
+            
+            hls.on(Hls.Events.LEVEL_LOADED, function () { 
+              if (video.paused) tryPlay(); 
+            });
+            
+            hls.on(Hls.Events.ERROR, function (event, data) {
+              console.error('HLS Error:', data.type, data.details, data.fatal);
+              
+              // Auto-recover from network errors
+              if (data.fatal) {
+                switch (data.type) {
+                  case Hls.ErrorTypes.NETWORK_ERROR:
+                    console.log('Network error, attempting to recover...');
+                    hls.startLoad();
+                    break;
+                  case Hls.ErrorTypes.MEDIA_ERROR:
+                    console.log('Media error, attempting to recover...');
+                    hls.recoverMediaError();
+                    break;
+                  default:
+                    console.error('Fatal error, unable to recover');
+                    document.body.innerHTML = '<p style="color:orange;text-align:center;padding:16px;">Stream Error: ' + data.details + '</p>';
+                    hls.destroy();
+                    break;
+                }
+              }
+            });
+          })
+          .catch(err => {
+            console.error('Failed to fetch manifest:', err);
+            document.body.innerHTML = '<p style="color:red;text-align:center;padding:16px;">Failed to load stream</p>';
+          });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = "$finalUrl";
         tryPlay();
@@ -181,7 +254,8 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
 '''
           .toJS;
 
-      return iframe;
+      container.appendChild(iframe);
+      return container;
     });
   }
 
@@ -193,7 +267,7 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
         alignment: Alignment.center,
         child: Text(
           '❌ $_error',
-          style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+          style: const TextStyle(color: Colors.redAccent, fontSize: AppTextStyles.commandBody),
           textAlign: TextAlign.center,
         ),
       );

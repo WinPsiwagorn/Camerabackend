@@ -60,5 +60,8 @@ env/
 *.db
 
 .dart_tool
+.flutter-plugins
 .flutter-plugins-dependencies
-.lock
+*.iml
+.idea
+.vscode

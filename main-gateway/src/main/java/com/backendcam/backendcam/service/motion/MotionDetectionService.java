@@ -1,21 +1,6 @@
 package com.backendcam.backendcam.service.motion;
 
-import com.backendcam.backendcam.model.dto.MotionEvent;
-import com.backendcam.backendcam.service.hls.FFmpegGrabberConfig;
-import com.backendcam.backendcam.service.kafka.MotionEventProducer;
-import org.bytedeco.javacv.FFmpegFrameGrabber;
-import org.bytedeco.javacv.Frame;
-import org.bytedeco.javacv.Java2DFrameConverter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import jakarta.annotation.PreDestroy;
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,6 +8,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.Java2DFrameConverter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.backendcam.backendcam.model.dto.motion.MotionEvent;
+import com.backendcam.backendcam.service.hls.FFmpegGrabberConfig;
+import com.backendcam.backendcam.service.kafka.MotionEventProducer;
+
+import jakarta.annotation.PreDestroy;
 
 /**
  * Service for managing motion detection on camera streams

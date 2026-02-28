@@ -6,10 +6,14 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.backendcam.backendcam.exception.DuplicateResourceException;
+import com.backendcam.backendcam.exception.ResourceInUseException;
 import com.backendcam.backendcam.model.dto.PageResponse;
 import com.backendcam.backendcam.model.dto.category.CategoryCreateDTO;
 import com.backendcam.backendcam.model.dto.category.CategoryResponseDTO;
+import com.backendcam.backendcam.model.entity.Camera;
 import com.backendcam.backendcam.model.entity.Category;
+import com.backendcam.backendcam.repository.CameraRepository;
 import com.backendcam.backendcam.repository.CategoryRepository;
 import com.backendcam.backendcam.util.PaginationUtil;
 
@@ -20,15 +24,24 @@ import lombok.RequiredArgsConstructor;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final CameraRepository cameraRepository;
 
     public CategoryResponseDTO createCategory(CategoryCreateDTO categoryDto) {
         try {
+            Category existing = categoryRepository.findByName(categoryDto.getName());
+            if (existing != null) {
+                throw new DuplicateResourceException(
+                        "Category with name '" + categoryDto.getName() + "' already exists");
+            }
+
             Category category = new Category();
             category.setName(categoryDto.getName());
 
             String id = categoryRepository.createCategory(category);
             category.setId(id);
             return toDto(category);
+        } catch (DuplicateResourceException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to create category", e);
         }
@@ -76,10 +89,28 @@ public class CategoryService {
         }
     }
 
-    public boolean deleteCategory(String id) {
+    public boolean deleteCategory(String id, boolean force) {
         try {
+            List<Camera> camerasUsing = cameraRepository.getCamerasByCategoryId(id)
+                    .orElse(List.of());
+
+            if (!camerasUsing.isEmpty()) {
+                if (!force) {
+                    throw new ResourceInUseException(
+                            "Category is assigned to " + camerasUsing.size() +
+                            " camera(s) and cannot be deleted. " +
+                            "Remove it from all cameras first, or use ?force=true to cascade-remove.");
+                }
+                // force=true: remove the category ref from every camera first
+                for (Camera camera : camerasUsing) {
+                    cameraRepository.removeCategoryFromCamera(camera.getId(), id);
+                }
+            }
+
             categoryRepository.deleteCategory(id);
             return true;
+        } catch (ResourceInUseException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete category", e);
         }

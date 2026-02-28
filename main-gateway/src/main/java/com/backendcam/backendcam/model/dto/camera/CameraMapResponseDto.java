@@ -9,4 +9,5 @@ public class CameraMapResponseDto {
     private String id;
     private String name;
     private String latLong;
+    private String status;
 }

@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.backendcam.backendcam.model.CameraStreamState;
-import com.backendcam.backendcam.model.dto.StreamRequest;
+import com.backendcam.backendcam.model.entity.CameraStreamState;
+import com.backendcam.backendcam.model.dto.camera.StreamRequest;
 import com.backendcam.backendcam.model.entity.Camera;
 import com.backendcam.backendcam.repository.CameraRepository;
 import com.backendcam.backendcam.service.StreamManager;

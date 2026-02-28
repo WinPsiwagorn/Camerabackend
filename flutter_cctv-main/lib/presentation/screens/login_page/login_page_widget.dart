@@ -38,30 +38,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
     super.initState();
     _model = createModel(context, () => LoginPageModel());
 
-    // On page load action.
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      _model.loginResponse = await AuthService().login(
-        username: _model.emailAddressTextController.text,
-        password: _model.passwordTextController.text,
-      );
-
-      if ((_model.apiAuthResult?.succeeded ?? true)) {
-        context.pushNamed(ListCameraPageWidget.routeName);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '\"Login failed. Please check password.\"',
-              style: TextStyle(
-                color: FlutterFlowTheme.of(context).primaryText,
-              ),
-            ),
-            duration: Duration(milliseconds: 4000),
-            backgroundColor: FlutterFlowTheme.of(context).secondary,
-          ),
-        );
-      }
-    });
+    // ...existing code...
 
     _model.emailAddressTextController ??= TextEditingController();
     _model.emailAddressFocusNode ??= FocusNode();
@@ -201,7 +178,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                             .fontStyle,
                                       ),
                                       color: Color(0xFF101213),
-                                      fontSize: 36.0,
+                                      fontSize: AppTextStyles.displayLarge,
                                       letterSpacing: 0.0,
                                       fontWeight: FontWeight.w600,
                                       fontStyle: FlutterFlowTheme.of(context)
@@ -226,7 +203,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                                   .fontStyle,
                                         ),
                                         color: Color(0xFF57636C),
-                                        fontSize: 14.0,
+                                      fontSize: AppTextStyles.labelNormal,
                                         letterSpacing: 0.0,
                                         fontWeight: FontWeight.w500,
                                         fontStyle: FlutterFlowTheme.of(context)
@@ -270,7 +247,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                                       .fontStyle,
                                             ),
                                             color: Color(0xFF57636C),
-                                            fontSize: 16.0,
+                                            fontSize: AppTextStyles.navBrand,
                                             letterSpacing: 0.0,
                                             fontWeight: FontWeight.w500,
                                             fontStyle:
@@ -324,7 +301,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                                     .fontStyle,
                                           ),
                                           color: Color(0xFF101213),
-                                          fontSize: 16.0,
+                                          fontSize: AppTextStyles.tableHeader,
                                           letterSpacing: 0.0,
                                           fontWeight: FontWeight.w500,
                                           fontStyle:
@@ -363,7 +340,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                                       .fontStyle,
                                             ),
                                             color: Color(0xFF57636C),
-                                            fontSize: 16.0,
+                                            fontSize: AppTextStyles.tableHeader,
                                             letterSpacing: 0.0,
                                             fontWeight: FontWeight.w500,
                                             fontStyle:
@@ -433,7 +410,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                                     .fontStyle,
                                           ),
                                           color: Color(0xFF101213),
-                                          fontSize: 16.0,
+                                          fontSize: AppTextStyles.tableHeader,
                                           letterSpacing: 0.0,
                                           fontWeight: FontWeight.w500,
                                           fontStyle:
@@ -494,7 +471,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                             final token = body?['accessToken'] ?? body?['token'] ?? '';
                                             AppState().authToken = token?.toString() ?? '';
 
-                                            context.pushNamed(ListCameraPageWidget.routeName);
+                                            context.goNamed(ListCameraPageWidget.routeName);
                                           } else {
                                             safeSetState(() => _model.isLoading = false);
                                             ScaffoldMessenger.of(context).showSnackBar(
@@ -527,7 +504,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                                     .fontStyle,
                                           ),
                                           color: Colors.white,
-                                          fontSize: 16.0,
+                                          fontSize: AppTextStyles.tableHeader,
                                           letterSpacing: 0.0,
                                           fontWeight: FontWeight.w500,
                                           fontStyle:

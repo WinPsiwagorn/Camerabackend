@@ -42,11 +42,11 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
     _model = createModel(context, () => MarkerInfoPopupModel());
 
     _model.textController1 ??=
-        TextEditingController(text: widget!.cameraData?['address']);
+        TextEditingController(text: widget.cameraData?['address']);
     _model.textFieldFocusNode1 ??= FocusNode();
 
     _model.textController2 ??=
-        TextEditingController(text: widget!.cameraData?['latLong']?.toString());
+        TextEditingController(text: widget.cameraData?['latLong']?.toString());
     _model.textFieldFocusNode2 ??= FocusNode();
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
@@ -61,402 +61,513 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: AlignmentDirectional(0.0, 0.0),
-      child: Padding(
-        padding: EdgeInsets.all(24.0),
-        child: Container(
-          width: 500.0,
-          height: 353.68,
-          decoration: BoxDecoration(
-            color: FlutterFlowTheme.of(context).primaryBackground,
-            boxShadow: [
-              BoxShadow(
-                blurRadius: 4.0,
-                color: Color(0x33000000),
-                offset: Offset(
-                  0.0,
-                  2.0,
-                ),
-              )
-            ],
-            borderRadius: BorderRadius.circular(0.0),
-            shape: BoxShape.rectangle,
-          ),
+    final isOnline = widget.cameraData?['status']?.toString().toLowerCase() == 'online';
+    final statusColor = isOnline ? Color(0xFF10B981) : Color(0xFFEF4444);
+    final statusText = isOnline ? 'Online' : 'Offline';
+    final cameraId = widget.cameraData?['id']?.toString() ?? '';
+    final categories = widget.cameraData?['categories'] as List<dynamic>?;
+
+    return Container(
+      color: Colors.black.withOpacity(0.4),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+        child: Align(
+          alignment: AlignmentDirectional(0.0, 0.0),
           child: Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      valueOrDefault<String>(
-                        widget!.cameraData?['name'],
-                        '[name]',
+            padding: EdgeInsets.all(24.0),
+            child: Container(
+              width: 520.0,
+              constraints: BoxConstraints(maxHeight: 600),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: 40.0,
+                    color: Colors.black.withOpacity(0.25),
+                    offset: Offset(0, 20),
+                    spreadRadius: 0,
+                  ),
+                  BoxShadow(
+                    blurRadius: 8.0,
+                    color: Colors.black.withOpacity(0.1),
+                    offset: Offset(0, 4),
+                    spreadRadius: 0,
+                  ),
+                ],
+                borderRadius: BorderRadius.circular(20.0),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Premium Header with formal gray color
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(24.0),
+                    decoration: BoxDecoration(
+                      color: Color(0xFF4B5563),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
                       ),
-                      style:
-                          FlutterFlowTheme.of(context).headlineMedium.override(
-                                fontFamily: FlutterFlowTheme.of(context)
-                                    .headlineMediumFamily,
-                                fontSize: 20.0,
-                                letterSpacing: 0.0,
-                                useGoogleFonts: !FlutterFlowTheme.of(context)
-                                    .headlineMediumIsCustom,
-                              ),
                     ),
-                    Text(
-                      valueOrDefault<String>(
-                        (widget!.cameraData?['lastSeen'] as Map<String, dynamic>?)?['message'],
-                        'checking',
-                      ),
-                      style:
-                          FlutterFlowTheme.of(context).headlineMedium.override(
-                                fontFamily: FlutterFlowTheme.of(context)
-                                    .headlineMediumFamily,
-                                color: Colors.black,
-                                fontSize: 14.0,
-                                letterSpacing: 0.0,
-                                fontWeight: FontWeight.w600,
-                                useGoogleFonts: !FlutterFlowTheme.of(context)
-                                    .headlineMediumIsCustom,
-                              ),
-                    ),
-                    FlutterFlowIconButton(
-                      borderColor: Colors.transparent,
-                      borderRadius: 20.0,
-                      buttonSize: 40.0,
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: FlutterFlowTheme.of(context).secondaryText,
-                        size: 24.0,
-                      ),
-                      onPressed: () async {
-                        context.safePop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Close button clicked!',
-                              style: TextStyle(
-                                color: FlutterFlowTheme.of(context).primaryText,
-                              ),
-                            ),
-                            duration: Duration(milliseconds: 4000),
-                            backgroundColor:
-                                FlutterFlowTheme.of(context).secondary,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TextFormField(
-                          controller: _model.textController1,
-                          focusNode: _model.textFieldFocusNode1,
-                          autofocus: false,
-                          enabled: true,
-                          readOnly: true,
-                          obscureText: false,
-                          decoration: InputDecoration(
-                            isDense: true,
-                            labelText: 'Address',
-                            labelStyle: FlutterFlowTheme.of(context)
-                                .labelMedium
-                                .override(
-                                  fontFamily: FlutterFlowTheme.of(context)
-                                      .labelMediumFamily,
-                                  letterSpacing: 0.0,
-                                  useGoogleFonts: !FlutterFlowTheme.of(context)
-                                      .labelMediumIsCustom,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  // Premium camera icon badge
+                                  Container(
+                                    padding: EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.25),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.3),
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.videocam_rounded,
+                                      color: Colors.white,
+                                      size: 28,
+                                    ),
+                                  ),
+                                  SizedBox(width: 16),
+                                  // Camera name and ID
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          valueOrDefault<String>(
+                                            widget.cameraData?['name'],
+                                            'Camera',
+                                          ),
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: AppTextStyles.sectionTitle,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: -0.5,
+                                            height: 1.2,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        if (cameraId.isNotEmpty) ...[
+                                          SizedBox(height: 4),
+                                          Text(
+                                            'ID: $cameraId',
+                                            style: TextStyle(
+                                              color: Colors.white.withOpacity(0.8),
+                                              fontSize: AppTextStyles.commandBody,
+                                              fontWeight: FontWeight.w500,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Close button with glass effect
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.3),
+                                  width: 1,
                                 ),
-                            hintText: 'Address',
-                            hintStyle: FlutterFlowTheme.of(context)
-                                .labelMedium
-                                .override(
-                                  fontFamily: FlutterFlowTheme.of(context)
-                                      .labelMediumFamily,
-                                  letterSpacing: 0.0,
-                                  useGoogleFonts: !FlutterFlowTheme.of(context)
-                                      .labelMediumIsCustom,
-                                ),
-                            enabledBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                color: Color(0x00000000),
-                                width: 1.0,
                               ),
-                              borderRadius: BorderRadius.circular(8.0),
+                              child: IconButton(
+                                onPressed: () => Navigator.pop(context),
+                                icon: Icon(Icons.close_rounded, color: Colors.white),
+                                iconSize: 20,
+                                padding: EdgeInsets.all(8),
+                                constraints: BoxConstraints(),
+                              ),
                             ),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                color: Color(0x00000000),
-                                width: 1.0,
-                              ),
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                            errorBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                color: FlutterFlowTheme.of(context).error,
-                                width: 1.0,
-                              ),
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                            focusedErrorBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                color: FlutterFlowTheme.of(context).error,
-                                width: 1.0,
-                              ),
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                            filled: true,
-                            fillColor: FlutterFlowTheme.of(context)
-                                .secondaryBackground,
-                          ),
-                          style: FlutterFlowTheme.of(context)
-                              .bodyMedium
-                              .override(
-                                fontFamily: FlutterFlowTheme.of(context)
-                                    .bodyMediumFamily,
-                                letterSpacing: 0.0,
-                                useGoogleFonts: !FlutterFlowTheme.of(context)
-                                    .bodyMediumIsCustom,
-                              ),
-                          cursorColor: FlutterFlowTheme.of(context).primaryText,
-                          enableInteractiveSelection: true,
-                          validator: _model.textController1Validator
-                              .asValidator(context),
+                          ],
                         ),
-                      ].divide(SizedBox(height: 8.0)),
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              TextFormField(
-                                controller: _model.textController2,
-                                focusNode: _model.textFieldFocusNode2,
-                                autofocus: false,
-                                enabled: true,
-                                readOnly: true,
-                                obscureText: false,
-                                decoration: InputDecoration(
-                                  isDense: true,
-                                  labelText: 'Position',
-                                  labelStyle: FlutterFlowTheme.of(context)
-                                      .labelMedium
-                                      .override(
-                                        fontFamily: FlutterFlowTheme.of(context)
-                                            .labelMediumFamily,
-                                        letterSpacing: 0.0,
-                                        useGoogleFonts:
-                                            !FlutterFlowTheme.of(context)
-                                                .labelMediumIsCustom,
-                                      ),
-                                  hintText: 'Latitude',
-                                  hintStyle: FlutterFlowTheme.of(context)
-                                      .labelMedium
-                                      .override(
-                                        fontFamily: FlutterFlowTheme.of(context)
-                                            .labelMediumFamily,
-                                        letterSpacing: 0.0,
-                                        useGoogleFonts:
-                                            !FlutterFlowTheme.of(context)
-                                                .labelMediumIsCustom,
-                                      ),
-                                  enabledBorder: UnderlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: Color(0x00000000),
-                                      width: 1.0,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8.0),
+                        SizedBox(height: 12),
+                        // Status badge and categories
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            // Status badge with pulse effect
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: statusColor,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: statusColor.withOpacity(0.4),
+                                    blurRadius: 8,
+                                    spreadRadius: 0,
                                   ),
-                                  focusedBorder: UnderlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: Color(0x00000000),
-                                      width: 1.0,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8.0),
-                                  ),
-                                  errorBorder: UnderlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: FlutterFlowTheme.of(context).error,
-                                      width: 1.0,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8.0),
-                                  ),
-                                  focusedErrorBorder: UnderlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: FlutterFlowTheme.of(context).error,
-                                      width: 1.0,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8.0),
-                                  ),
-                                  filled: true,
-                                  fillColor: FlutterFlowTheme.of(context)
-                                      .secondaryBackground,
-                                ),
-                                style: FlutterFlowTheme.of(context)
-                                    .bodyMedium
-                                    .override(
-                                      fontFamily: FlutterFlowTheme.of(context)
-                                          .bodyMediumFamily,
-                                      letterSpacing: 0.0,
-                                      useGoogleFonts:
-                                          !FlutterFlowTheme.of(context)
-                                              .bodyMediumIsCustom,
-                                    ),
-                                cursorColor:
-                                    FlutterFlowTheme.of(context).primaryText,
-                                enableInteractiveSelection: true,
-                                validator: _model.textController2Validator
-                                    .asValidator(context),
+                                ],
                               ),
-                            ].divide(SizedBox(height: 8.0)),
-                          ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.white.withOpacity(0.6),
+                                          blurRadius: 4,
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    statusText.toUpperCase(),
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: AppTextStyles.commandSmall,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Category tags
+                            if (categories != null && categories.isNotEmpty)
+                              ...categories.take(3).map((category) {
+                                final categoryName = category.toString();
+                                return Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.25),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.label_rounded,
+                                        color: Colors.white,
+                                        size: 12,
+                                      ),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        categoryName,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: AppTextStyles.commandSmall,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                          ],
                         ),
                       ],
                     ),
-                  ].divide(SizedBox(height: 16.0)),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Status',
-                      style: FlutterFlowTheme.of(context).labelMedium.override(
-                            fontFamily:
-                                FlutterFlowTheme.of(context).labelMediumFamily,
-                            letterSpacing: 0.0,
-                            useGoogleFonts: !FlutterFlowTheme.of(context)
-                                .labelMediumIsCustom,
-                          ),
-                    ),
-                    if (valueOrDefault<bool>(
-                      widget!.cameraData?['status'] == 'online',
-                      true,
-                    ))
-                      Padding(
-                        padding: EdgeInsetsDirectional.fromSTEB(
-                            8.0, 16.0, 8.0, 16.0),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: FlutterFlowTheme.of(context).success,
-                            borderRadius: BorderRadius.circular(20.0),
-                          ),
-                          child: Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Text(
-                              'Online',
-                              style: FlutterFlowTheme.of(context)
-                                  .labelSmall
-                                  .override(
-                                    fontFamily: FlutterFlowTheme.of(context)
-                                        .labelSmallFamily,
-                                    color: FlutterFlowTheme.of(context).info,
-                                    letterSpacing: 0.0,
-                                    useGoogleFonts:
-                                        !FlutterFlowTheme.of(context)
-                                            .labelSmallIsCustom,
-                                  ),
+                  ),
+
+                  // Content with better spacing
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.all(24.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Section title
+                          Text(
+                            'CAMERA DETAILS',
+                            style: TextStyle(
+                              fontSize: AppTextStyles.commandSmall,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.shade500,
+                              letterSpacing: 1.2,
                             ),
                           ),
-                        ),
-                      ),
-                    if (widget!.cameraData?['status'] != 'online')
-                      Padding(
-                        padding: EdgeInsetsDirectional.fromSTEB(
-                            8.0, 16.0, 8.0, 16.0),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: FlutterFlowTheme.of(context).error,
-                            borderRadius: BorderRadius.circular(20.0),
-                          ),
-                          child: Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Text(
-                              'Offline',
-                              style: FlutterFlowTheme.of(context)
-                                  .labelSmall
-                                  .override(
-                                    fontFamily: FlutterFlowTheme.of(context)
-                                        .labelSmallFamily,
-                                    color: FlutterFlowTheme.of(context).info,
-                                    letterSpacing: 0.0,
-                                    useGoogleFonts:
-                                        !FlutterFlowTheme.of(context)
-                                            .labelSmallIsCustom,
-                                  ),
+                          SizedBox(height: 16),
+
+                          // Address
+                          if (widget.cameraData?['address'] != null && 
+                              widget.cameraData!['address'].toString().isNotEmpty)
+                            _buildPremiumInfoCard(
+                              Icons.location_on_rounded,
+                              'Location',
+                              widget.cameraData!['address'].toString(),
+                              Color(0xFFEF4444),
                             ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Align(
-                      alignment: AlignmentDirectional(0.0, 0.0),
-                      child: FFButtonWidget(
-                        onPressed: () async {
-                          await widget.onLiveFeedTapped?.call(
-                            widget!.cameraData!.url,
-                            widget!.cameraData!,
-                          );
-                        },
-                        text: ' Live Feed',
-                        icon: FaIcon(
-                          FontAwesomeIcons.camera,
-                          size: 24.0,
-                        ),
-                        options: FFButtonOptions(
-                          width: 150.0,
-                          height: 48.0,
-                          padding: EdgeInsets.all(8.0),
-                          iconPadding: EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          color: FlutterFlowTheme.of(context).primary,
-                          textStyle: FlutterFlowTheme.of(context)
-                              .titleSmall
-                              .override(
-                                fontFamily: FlutterFlowTheme.of(context)
-                                    .titleSmallFamily,
-                                color: FlutterFlowTheme.of(context).info,
-                                letterSpacing: 0.0,
-                                useGoogleFonts: !FlutterFlowTheme.of(context)
-                                    .titleSmallIsCustom,
+
+                          SizedBox(height: 12),
+
+                          // Coordinates
+                          if (widget.cameraData?['latLong'] != null)
+                            _buildPremiumInfoCard(
+                              Icons.my_location_rounded,
+                              'Coordinates',
+                              widget.cameraData!['latLong'].toString(),
+                              Color(0xFF3B82F6),
+                            ),
+
+                          SizedBox(height: 12),
+
+                          // RTSP URL (if available)
+                          if (widget.cameraData?['rtspUrl'] != null &&
+                              widget.cameraData!['rtspUrl'].toString().isNotEmpty)
+                            _buildPremiumInfoCard(
+                              Icons.link_rounded,
+                              'Stream URL',
+                              widget.cameraData!['rtspUrl'].toString(),
+                              Color(0xFF8B5CF6),
+                              isMonospace: true,
+                              isCopyable: true,
+                            ),
+
+                          SizedBox(height: 24),
+
+                          // Divider
+                          Container(
+                            height: 1,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.grey.shade300,
+                                  Colors.transparent,
+                                ],
                               ),
-                          elevation: 0.0,
-                          borderSide: BorderSide(
-                            color: Colors.transparent,
-                            width: 1.0,
+                            ),
                           ),
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
+
+                          SizedBox(height: 24),
+
+                          // Action Buttons with better hierarchy
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    color: isOnline ? Color(0xFF6B7280) : null,
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: isOnline
+                                        ? [
+                                            BoxShadow(
+                                              color: Color(0xFF6B7280).withOpacity(0.3),
+                                              blurRadius: 12,
+                                              offset: Offset(0, 4),
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                  child: ElevatedButton(
+                                    onPressed: isOnline
+                                        ? () async {
+                                            await widget.onLiveFeedTapped?.call(
+                                              widget.cameraData?['rtspUrl'] ?? '',
+                                              widget.cameraData,
+                                            );
+                                            Navigator.pop(context);
+                                          }
+                                        : null,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: isOnline ? Colors.transparent : Colors.grey.shade200,
+                                      foregroundColor: isOnline ? Colors.white : Colors.grey.shade500,
+                                      shadowColor: Colors.transparent,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          isOnline ? Icons.play_circle_fill_rounded : Icons.videocam_off_rounded,
+                                          size: 22,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          isOnline ? 'View Live Feed' : 'Camera Offline',
+                                          style: TextStyle(
+                                            fontSize: AppTextStyles.labelNormal,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.3,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          
+                          // Helpful hint for offline cameras
+                          if (!isOnline)
+                            Padding(
+                              padding: EdgeInsets.only(top: 12),
+                              child: Container(
+                                padding: EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Color(0xFFFEF2F2),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Color(0xFFFECACA),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline_rounded,
+                                      color: Color(0xFFEF4444),
+                                      size: 16,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'This camera is currently offline and unavailable for viewing',
+                                        style: TextStyle(
+                                          color: Color(0xFFDC2626),
+                                          fontSize: AppTextStyles.commandBody,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                  ].divide(SizedBox(width: 12.0)),
-                ),
-              ].divide(SizedBox(height: 20.0)),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPremiumInfoCard(
+    IconData icon,
+    String label,
+    String value,
+    Color accentColor, {
+    bool isMonospace = false,
+    bool isCopyable = false,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.grey.shade200,
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Icon with colored background
+          Container(
+            padding: EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: accentColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: accentColor.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: Icon(icon, color: accentColor, size: 20),
+          ),
+          SizedBox(width: 14),
+          // Content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: AppTextStyles.commandSmall,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade500,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        value,
+                        style: TextStyle(
+                          fontSize: AppTextStyles.labelNormal,
+                          color: Colors.grey.shade800,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: isMonospace ? 'monospace' : null,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                    if (isCopyable) ...[
+                      SizedBox(width: 8),
+                      InkWell(
+                        onTap: () {
+                          // Copy to clipboard functionality
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Copied to clipboard'),
+                              duration: Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: accentColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Icon(
+                            Icons.content_copy_rounded,
+                            color: accentColor,
+                            size: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

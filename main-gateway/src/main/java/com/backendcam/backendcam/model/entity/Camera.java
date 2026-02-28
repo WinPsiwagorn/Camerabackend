@@ -1,6 +1,7 @@
 package com.backendcam.backendcam.model.entity;
 
 import com.google.cloud.firestore.GeoPoint;
+import com.google.cloud.firestore.annotation.DocumentId;
 
 import java.util.List;
 
@@ -10,6 +11,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class Camera {
+    @DocumentId
     private String id;
     private String name;
     private GeoPoint latLong;

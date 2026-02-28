@@ -249,6 +249,8 @@ public class CameraService {
         if (camera.getLatLong() != null) {
             dto.setLatLong(camera.getLatLong().getLatitude() + "," + camera.getLatLong().getLongitude());
         }
+
+        dto.setStatus(camera.getStatus());
         
         return dto;
     }

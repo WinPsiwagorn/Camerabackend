@@ -9,7 +9,6 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class CameraInfo {
-    private String cameraId;
-    private String cameraName;
+public class MessageResponse {
+    private String message;
 }

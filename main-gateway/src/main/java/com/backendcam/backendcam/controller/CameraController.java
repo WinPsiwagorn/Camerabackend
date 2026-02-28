@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.backendcam.backendcam.model.dto.MessageResponseDTO;
+import com.backendcam.backendcam.model.dto.MessageResponse;
 import com.backendcam.backendcam.model.dto.PageResponse;
 import com.backendcam.backendcam.model.dto.camera.CameraMapResponseDto;
 import com.backendcam.backendcam.model.dto.camera.CameraResponseDto;
@@ -55,9 +55,9 @@ public class CameraController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<MessageResponseDTO> deleteCamera(@PathVariable String id) {
+    public ResponseEntity<MessageResponse> deleteCamera(@PathVariable String id) {
         cameraService.deleteCamera(id);
-        return ResponseEntity.ok(new MessageResponseDTO("Camera ID: " + id + " deleted successfully"));
+        return ResponseEntity.ok(new MessageResponse("Camera ID: " + id + " deleted successfully"));
     }
 
     @GetMapping("/map")

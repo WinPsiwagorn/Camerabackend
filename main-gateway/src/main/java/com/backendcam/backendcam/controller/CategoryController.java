@@ -6,7 +6,7 @@ import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.backendcam.backendcam.model.dto.MessageResponseDTO;
+import com.backendcam.backendcam.model.dto.MessageResponse;
 import com.backendcam.backendcam.model.dto.PageResponse;
 import com.backendcam.backendcam.model.dto.camera.CameraResponseDto;
 import com.backendcam.backendcam.model.dto.category.AddCategoryDto;
@@ -67,9 +67,12 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<MessageResponseDTO> deleteCategory(@PathVariable String id) {
-        categoryService.deleteCategory(id);
-        return ResponseEntity.ok(new MessageResponseDTO("Category ID: " + id + " deleted successfully"));
+    public ResponseEntity<MessageResponse> deleteCategory(
+        @PathVariable String id,
+        @RequestParam(defaultValue = "false") boolean force
+    ) {
+        categoryService.deleteCategory(id, force);
+        return ResponseEntity.ok(new MessageResponse("Category ID: " + id + " deleted successfully"));
     }
 
     // ==================== Camera-Category Management ====================
@@ -102,11 +105,11 @@ public class CategoryController {
      * Remove a category from a camera's categories array
      */
     @DeleteMapping("/{categoryId}/cameras/{cameraId}")
-    public ResponseEntity<MessageResponseDTO> removeCategoryFromCamera(
+    public ResponseEntity<MessageResponse> removeCategoryFromCamera(
         @PathVariable String categoryId,
         @PathVariable String cameraId
     ) {
         cameraService.removeCategoryFromCamera(cameraId, categoryId);
-        return ResponseEntity.ok(new MessageResponseDTO("Category removed from camera successfully"));
+        return ResponseEntity.ok(new MessageResponse("Category removed from camera successfully"));
     }
 }

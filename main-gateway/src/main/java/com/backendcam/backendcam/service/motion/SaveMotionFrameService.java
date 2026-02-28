@@ -1,6 +1,5 @@
 package com.backendcam.backendcam.service.motion;
 
-import com.backendcam.backendcam.model.dto.MotionEvent;
 import com.backendcam.backendcam.service.firestore.FirebaseAdminBootstrap;
 
 import com.google.cloud.storage.Bucket;
