@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/category")
+@RequestMapping("/categories")
 public class CategoryController {
 
     private final CategoryService categoryService;
@@ -29,7 +29,7 @@ public class CategoryController {
     // ==================== Category CRUD ====================
 
     @PostMapping
-    public ResponseEntity<CategoryResponseDTO> createCategory(@RequestBody CategoryCreateDTO categoryDto) {
+    public ResponseEntity<CategoryResponseDTO> createCategory(@Valid @RequestBody CategoryCreateDTO categoryDto) {
         CategoryResponseDTO created = categoryService.createCategory(categoryDto);
         return ResponseEntity.ok(created);
     }

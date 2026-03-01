@@ -12,7 +12,7 @@ class ApiConfig {
   static const String camerasTotalEndpoint = '/cameras/total';
 
   // Category Endpoints
-  static const String categoryEndpoint = '/category';
+  static const String categoryEndpoint = '/categories';
 
   // License Plate Endpoints
   static const String licensePlateSearchEndpoint = '/license-plates/search';

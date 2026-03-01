@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.backendcam.backendcam.service.motion.MotionDetectionService;
 
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -120,27 +121,15 @@ public class MotionDetectionController {
     /**
      * Request DTOs
      */
+    @Data
     public static class StartRequest {
         private String cameraId;
         private String url;
         private int checkIntervalSeconds = 1; // default 1 second
-
-        public String getCameraId() { return cameraId; }
-        public void setCameraId(String cameraId) { this.cameraId = cameraId; }
-        
-        public String getUrl() { return url; }
-        public void setUrl(String url) { this.url = url; }
-        
-        public int getCheckIntervalSeconds() { return checkIntervalSeconds; }
-        public void setCheckIntervalSeconds(int checkIntervalSeconds) { 
-            this.checkIntervalSeconds = checkIntervalSeconds; 
-        }
     }
 
+    @Data
     public static class StopRequest {
         private String cameraId;
-
-        public String getCameraId() { return cameraId; }
-        public void setCameraId(String cameraId) { this.cameraId = cameraId; }
     }
 }
