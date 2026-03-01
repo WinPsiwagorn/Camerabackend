@@ -14,6 +14,7 @@ firebase:
 logging:
   level:
     com.camerastatus: INFO
+    # com.camerastatus: DEBUG
 
 async:
   executor:

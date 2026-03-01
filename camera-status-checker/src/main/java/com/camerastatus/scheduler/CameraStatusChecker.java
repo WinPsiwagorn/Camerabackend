@@ -5,12 +5,15 @@ import java.net.Socket;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 @Component
 public class CameraStatusChecker {
 
+    private static final Logger log = LoggerFactory.getLogger(CameraStatusChecker.class);
     private static final int TIMEOUT_MS = 4_000;
 
     /**
@@ -24,13 +27,19 @@ public class CameraStatusChecker {
             String host = uri.getHost();
             int port = uri.getPort() > 0 ? uri.getPort() : 554;
 
-            if (host == null || host.isBlank()) return false;
+            if (host == null || host.isBlank()) {
+                log.warn("[Checker] Could not parse host from URL: {}", rtspUrl);
+                return false;
+            }
 
+            log.debug("[Checker] Probing {}:{} (url={})", host, port, rtspUrl);
             try (Socket socket = new Socket()) {
                 socket.connect(new InetSocketAddress(host, port), TIMEOUT_MS);
+                log.debug("[Checker] ONLINE  {}:{}", host, port);
                 return true;
             }
         } catch (Exception e) {
+            log.debug("[Checker] OFFLINE - {} | reason: {}", rtspUrl, e.getMessage());
             return false;
         }
     }
