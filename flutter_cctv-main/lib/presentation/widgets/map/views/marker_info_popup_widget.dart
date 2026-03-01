@@ -160,18 +160,7 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                        if (cameraId.isNotEmpty) ...[
-                                          SizedBox(height: 4),
-                                          Text(
-                                            'ID: $cameraId',
-                                            style: TextStyle(
-                                              color: Colors.white.withOpacity(0.8),
-                                              fontSize: AppTextStyles.commandBody,
-                                              fontWeight: FontWeight.w500,
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                        ],
+                                        // Removed camera ID display
                                       ],
                                     ),
                                   ),

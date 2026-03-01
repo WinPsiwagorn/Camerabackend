@@ -102,10 +102,15 @@ class CategoryService {
   }
 
   /// ลบ Category
-  Future<ApiCallResponse> deleteCategory(String categoryId) async {
+  /// [force] = true → cascade-remove category from all cameras then delete (backend ?force=true)
+  Future<ApiCallResponse> deleteCategory(String categoryId,
+      {bool force = false}) async {
+    final url = force
+        ? '$_baseUrl${ApiConfig.categoryEndpoint}/$categoryId?force=true'
+        : '$_baseUrl${ApiConfig.categoryEndpoint}/$categoryId';
     return ApiManager.instance.makeApiCall(
       callName: 'Delete Category by ID',
-      apiUrl: '$_baseUrl${ApiConfig.categoryEndpoint}/$categoryId',
+      apiUrl: url,
       callType: ApiCallType.DELETE,
       headers: {},
       params: {},

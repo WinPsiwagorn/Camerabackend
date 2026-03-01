@@ -402,7 +402,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                   if (!_model.isLoading && _model.errorMessage == null)
                     Positioned(
                       top: 12,
-                      left: 12,
+                      right: 12,
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
