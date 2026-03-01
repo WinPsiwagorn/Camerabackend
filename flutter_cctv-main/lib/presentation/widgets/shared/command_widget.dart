@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 // Begin custom widget code
 // DO NOT REMOVE OR MODIFY THE CODE ABOVE!
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http; // <-- ใช้ยิง POST
 import '/data/services/category_service.dart';
@@ -48,6 +49,162 @@ class CameraInfo {
   }
 }
 
+// ─── TODO [2]: Informative HLS loading tile ─────────────────────────────────
+class _StreamLoadingTile extends StatefulWidget {
+  final String cameraName;
+  const _StreamLoadingTile({Key? key, required this.cameraName})
+      : super(key: key);
+  @override
+  State<_StreamLoadingTile> createState() => _StreamLoadingTileState();
+}
+
+class _StreamLoadingTileState extends State<_StreamLoadingTile> {
+  Timer? _timer;
+  bool _isSlow = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(const Duration(seconds: 10), () {
+      if (mounted) setState(() => _isSlow = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            widget.cameraName,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 8),
+          const LinearProgressIndicator(
+            color: Colors.white54,
+            backgroundColor: Colors.white12,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _isSlow ? 'Taking longer than usual…' : 'Starting stream…',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.55),
+              fontSize: 9,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── TODO [3]: Pulsing accident overlay widget ────────────────────────────────
+class _AccidentOverlay extends StatefulWidget {
+  final String? timestamp;
+  const _AccidentOverlay({Key? key, this.timestamp}) : super(key: key);
+  @override
+  State<_AccidentOverlay> createState() => _AccidentOverlayState();
+}
+
+class _AccidentOverlayState extends State<_AccidentOverlay>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    )..repeat(reverse: true);
+    _opacity = Tween<double>(begin: 1.0, end: 0.25).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  String _formatTs(String? raw) {
+    if (raw == null || raw.isEmpty) return '';
+    final dt = DateTime.tryParse(raw);
+    if (dt == null) return raw;
+    final local = dt.toLocal();
+    return '${local.hour.toString().padLeft(2, '0')}:'
+        '${local.minute.toString().padLeft(2, '0')}:'
+        '${local.second.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _opacity,
+      builder: (context, _) {
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: Colors.red.withOpacity(_opacity.value),
+              width: 3,
+            ),
+            color: Colors.red.withOpacity(0.07 * _opacity.value),
+          ),
+          child: Stack(
+            children: [
+              // Warning badge — top-right corner
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.88),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.warning_amber_rounded,
+                          color: Colors.white, size: 10),
+                      const SizedBox(width: 3),
+                      Text(
+                        'ACCIDENT  ${_formatTs(widget.timestamp)}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _VideoTile extends StatelessWidget {
   final int index;
   final CameraInfo? camera;
@@ -85,7 +242,7 @@ class _VideoTile extends StatelessWidget {
                         future: hlsFuture,
                         builder: (context, snap) {
                           if (snap.connectionState == ConnectionState.waiting) {
-                            return _loading();
+                            return _StreamLoadingTile(cameraName: camera!.name);
                           }
                           final hls = snap.data;
                           if (hls == null || hls.isEmpty) {
@@ -311,7 +468,11 @@ class _CommandWidgetState extends State<CommandWidget> {
   Map<int, String> _gridPositions = {}; // position -> cameraId
   int? _selectedTileIndex; // Track selected tile for swapping (null = none selected)
   int _rebuildKey = 0; // Force rebuild after position changes
-  
+
+  // ─── TODO [3]: Accident alert state ─────────────────────────────────────────
+  Map<String, Map<String, dynamic>> _latestAccidents = {}; // cameraId → accident
+  Timer? _accidentPollTimer;
+
   @override
   void initState() {
     super.initState();
@@ -320,6 +481,17 @@ class _CommandWidgetState extends State<CommandWidget> {
     _fetchCategories();
     _fetchCameras();
     _loadGridLayout();
+    _pollAccidents();
+    _accidentPollTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _pollAccidents(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _accidentPollTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchCategories() async {
@@ -383,12 +555,21 @@ class _CommandWidgetState extends State<CommandWidget> {
               .map((e) => CameraInfo.fromJson(e as Map<String, dynamic>))
               .toList();
           _isLoading = false;
-          _errorMessage = jsonList.isEmpty ? 'No cameras found' : null;
+          _errorMessage = null;
         });
         
         print('✅ Parsed ${_cameras.length} cameras');
         print('📺 Streams will be started using camera IDs (backend fetches RTSP)');
         
+      } else if (response.statusCode == 404 && _selectedCategoryId != null) {
+        // 404 from getCamerasByCategoryId = category exists but has 0 cameras
+        // Treat as an empty list so the category-aware empty state is shown
+        print('ℹ️ 404 for category $_selectedCategoryId → treating as empty list');
+        setState(() {
+          _cameras = [];
+          _isLoading = false;
+          _errorMessage = null;
+        });
       } else {
         final errorMsg = 'API Error: ${response.statusCode}';
         print('❌ Failed to load cameras: ${response.statusCode}');
@@ -449,17 +630,170 @@ class _CommandWidgetState extends State<CommandWidget> {
     });
   }
 
-  String _getCategoryName(String categoryId) {
+  /// [truncate] = true for the compact category chip/button label.
+  /// Pass truncate: false when displaying the full name (e.g. empty-state message).
+  String _getCategoryName(String categoryId, {bool truncate = true}) {
     try {
       final category = _categories.firstWhere(
         (cat) => cat['id']?.toString() == categoryId,
         orElse: () => {'name': 'Unknown'},
       );
       final name = category['name']?.toString() ?? 'Unknown';
+      if (!truncate) return name;
       return name.length > 9 ? '${name.substring(0, 9)}...' : name;
     } catch (e) {
       return 'Unknown';
     }
+  }
+
+  // ─── TODO [3]: Poll accidents endpoint every 30 s ───────────────────────────
+  Future<void> _pollAccidents() async {
+    try {
+      final resp = await http
+          .get(Uri.parse('$kApiBaseUrl/api/accidents?limit=100'))
+          .timeout(const Duration(seconds: 10));
+      if (resp.statusCode != 200) return;
+      final body = jsonDecode(resp.body);
+      final List<dynamic> list =
+          body is List ? body : (body['data'] as List? ?? []);
+      final now = DateTime.now();
+      final Map<String, Map<String, dynamic>> fresh = {};
+      for (final a in list) {
+        if (a is! Map<String, dynamic>) continue;
+        final cameraId = a['cameraId']?.toString();
+        if (cameraId == null || cameraId.isEmpty) continue;
+        // TTL: only show accidents from the last 5 minutes
+        final ts = DateTime.tryParse(a['timestamp']?.toString() ?? '');
+        if (ts != null && now.difference(ts).inMinutes >= 5) continue;
+        // Keep the most-recent accident per camera
+        if (!fresh.containsKey(cameraId)) fresh[cameraId] = a;
+      }
+      if (mounted) setState(() => _latestAccidents = fresh);
+    } catch (_) {
+      // Silently ignore poll errors — next tick will retry
+    }
+  }
+
+  // ─── TODO [3]: Wrap a tile child with the accident overlay if needed ──────────
+  Widget _withAccidentOverlay(int index, CameraInfo? cam, Widget child) {
+    if (cam == null || cam.id.isEmpty) return child;
+    final accident = _latestAccidents[cam.id];
+    if (accident == null) return child;
+    return Stack(
+      children: [
+        child,
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => _showAccidentDialog(cam, accident),
+            child: _AccidentOverlay(
+              timestamp: accident['timestamp']?.toString(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── TODO [3]: Full-screen accident detail dialog ─────────────────────────────
+  void _showAccidentDialog(
+      CameraInfo camera, Map<String, dynamic> accident) {
+    final imageUrl = accident['imageUrl']?.toString() ?? '';
+    final timestamp = accident['timestamp']?.toString() ?? '';
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        insetPadding: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded,
+                      color: Colors.red, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Accident Detected — ${camera.name}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white54),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(color: Colors.white12, height: 1),
+            // Accident image
+            if (imageUrl.isNotEmpty)
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 400),
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (_, child, progress) => progress == null
+                      ? child
+                      : const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32),
+                            child: CircularProgressIndicator(
+                                color: Colors.white54),
+                          )),
+                  errorBuilder: (_, __, ___) => const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Icon(Icons.broken_image,
+                        color: Colors.white24, size: 64),
+                  ),
+                ),
+              )
+            else
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: Icon(Icons.image_not_supported,
+                    color: Colors.white24, size: 64),
+              ),
+            // Timestamp
+            if (timestamp.isNotEmpty)
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  'Detected at: $timestamp',
+                  style: const TextStyle(
+                      color: Colors.white54, fontSize: 12),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            // Dismiss button
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text('Dismiss'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   /// เริ่ม HLS ถ้ายังไม่เคยเริ่ม หรือ RTSP เปลี่ยน
@@ -792,48 +1126,84 @@ class _CommandWidgetState extends State<CommandWidget> {
                   final cams = _cameras;
                   print('🎨 Building grid with ${cams.length} cameras');
 
+                  // ─── TODO [1]: Category-aware empty state ───────────────
                   if (cams.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.videocam_off,
-                            color: Colors.white54,
-                            size: 64,
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'No cameras available',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
+                    if (_selectedCategoryId != null) {
+                      // Category selected but has 0 cameras
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.folder_open,
+                              color: Colors.white38,
+                              size: 64,
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Check your API connection',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.6),
-                              fontSize: 14,
+                            const SizedBox(height: 16),
+                            Text(
+                              'There is no camera in this category',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                          ),
-                          const SizedBox(height: 24),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              _fetchCameras();
-                              _fetchCategories();
-                            },
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Refresh'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
+                            const SizedBox(height: 8),
+                            const Text(
+                              'You can add cameras manually from the Collection page',
+                              style: TextStyle(
+                                color: Colors.white38,
+                                fontSize: 13,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                          ),
-                        ],
-                      ),
-                    );
+                          ],
+                        ),
+                      );
+                    } else {
+                      // No cameras in the system at all
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.videocam_off,
+                              color: Colors.white54,
+                              size: 64,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'No cameras available',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Check your API connection',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.6),
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                _fetchCameras();
+                                _fetchCategories();
+                              },
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Refresh'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
                   }
 
                   // Streams are started on-demand when cameras are displayed in the grid
@@ -883,19 +1253,30 @@ class _CommandWidgetState extends State<CommandWidget> {
                         fut = _ensureHls(cam);
                       }
 
+                      // ─── TODO [3]: Wrap tile with accident overlay ───────
                       if (_isEditMode) {
-                        return _buildClickableVideoTile(
-                          index: index,
-                          camera: cam,
-                          hlsFuture: fut,
+                        return _withAccidentOverlay(
+                          index,
+                          cam,
+                          _buildClickableVideoTile(
+                            index: index,
+                            camera: cam,
+                            hlsFuture: fut,
+                          ),
                         );
                       } else {
-                        return _VideoTile(
-                          key: cam != null ? ValueKey('tile_${cam.id}') : ValueKey('empty_$index'),
-                          index: index,
-                          camera: cam,
-                          hlsFuture: fut,
-                          isEditMode: false,
+                        return _withAccidentOverlay(
+                          index,
+                          cam,
+                          _VideoTile(
+                            key: cam != null
+                                ? ValueKey('tile_${cam.id}')
+                                : ValueKey('empty_$index'),
+                            index: index,
+                            camera: cam,
+                            hlsFuture: fut,
+                            isEditMode: false,
+                          ),
                         );
                       }
                     },

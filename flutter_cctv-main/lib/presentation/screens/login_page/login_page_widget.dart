@@ -128,7 +128,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                         image: DecorationImage(
                           fit: BoxFit.cover,
                           image: Image.asset(
-                            'assets/images/CCTV.jpg',
+                            'assets/images/login.jpg',
                           ).image,
                         ),
                       ),
