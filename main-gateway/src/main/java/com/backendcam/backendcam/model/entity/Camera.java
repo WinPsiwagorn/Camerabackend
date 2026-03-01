@@ -24,7 +24,6 @@ public class Camera {
     @Getter
     @Setter
     public static class LastSeen {
-        private String message;
         private String timestamp;
     }
 }
