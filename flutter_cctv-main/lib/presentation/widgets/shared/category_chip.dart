@@ -17,6 +17,14 @@ class CategoryChip extends StatelessWidget {
     _ChipColor(bg: Color(0xFFDBEAFE), text: Color(0xFF1D4ED8)), // blue
     _ChipColor(bg: Color(0xFFD1FAE5), text: Color(0xFF065F46)), // green
     _ChipColor(bg: Color(0xFFFEF3C7), text: Color(0xFF92400E)), // amber
+    _ChipColor(bg: Color(0xFFFCE7F3), text: Color(0xFF9F1239)), // rose
+    _ChipColor(bg: Color(0xFFCCFBF1), text: Color(0xFF115E59)), // teal
+    _ChipColor(bg: Color(0xFFE0E7FF), text: Color(0xFF3730A3)), // indigo
+    _ChipColor(bg: Color(0xFFFFEDD5), text: Color(0xFF9A3412)), // orange
+    _ChipColor(bg: Color(0xFFF3E8FF), text: Color(0xFF6B21A8)), // purple
+    _ChipColor(bg: Color(0xFFD1FAE5), text: Color(0xFF047857)), // emerald
+    _ChipColor(bg: Color(0xFFE0F2FE), text: Color(0xFF075985)), // sky
+    _ChipColor(bg: Color(0xFFFEE2E2), text: Color(0xFFB91C1C)), // red
   ];
 
   static _ChipColor colorFor(String name) {
