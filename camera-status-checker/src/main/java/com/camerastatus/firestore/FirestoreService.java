@@ -1,6 +1,5 @@
 package com.camerastatus.firestore;
 
-import com.camerastatus.util.TimeAgoFormatter;
 import com.google.cloud.firestore.*;
 import com.google.firebase.cloud.FirestoreClient;
 import org.springframework.stereotype.Service;
@@ -32,42 +31,36 @@ public class FirestoreService {
         }
     }
 
-    public void batchUpdateStatuses(List<String> onlineIds, Map<String, String> offlineIdToLastTs) {
+    /**
+     * Write only on status transitions:
+     * - onlineIds       : cameras that just came back online → write status=online only, no timestamp
+     * - offlineIds      : cameras that just went offline     → write status=offline + lastSeen.timestamp=now
+     */
+    public void batchUpdateStatuses(List<String> onlineIds, List<String> offlineIds) {
         if (!bootstrap.isInitialized()) return;
+        if (onlineIds.isEmpty() && offlineIds.isEmpty()) return;
         try {
             Firestore db = FirestoreClient.getFirestore();
             String nowStr = OffsetDateTime.now(BANGKOK).format(ISO_OFFSET);
             WriteBatch batch = db.batch();
             int ops = 0;
 
+            // came back online — just flip status, frontend shows "online" with no timestamp needed
             for (String docId : onlineIds) {
-                Map<String, Object> payload = Map.of(
-                        "status", "online",
-                        "lastSeen", Map.of(
-                                "timestamp", nowStr,
-                                "message", TimeAgoFormatter.humanizeSinceSeconds(0)
-                        )
-                );
-                batch.set(db.collection(COLLECTION).document(docId), payload, SetOptions.merge());
+                batch.set(db.collection(COLLECTION).document(docId),
+                        Map.of("status", "online"),
+                        SetOptions.merge());
                 if (++ops == 499) { batch.commit(); batch = db.batch(); ops = 0; }
             }
 
-            for (Map.Entry<String, String> e : offlineIdToLastTs.entrySet()) {
-                String docId = e.getKey();
-                String tsStr = e.getValue();
-                Map<String, Object> payload = new HashMap<>();
-                payload.put("status", "offline");
-
-                if (tsStr != null && !tsStr.isBlank()) {
-                    OffsetDateTime ts = OffsetDateTime.parse(tsStr, ISO_OFFSET);
-                    long secs = Math.max(0, Duration.between(ts, OffsetDateTime.now(BANGKOK)).getSeconds());
-                    payload.put("lastSeen", Map.of(
-                            "timestamp", tsStr,
-                            "message", TimeAgoFormatter.humanizeSinceSeconds(secs)
-                    ));
-                }
-
-                batch.set(db.collection(COLLECTION).document(docId), payload, SetOptions.merge());
+            // just went offline — record exact moment it died, frontend calculates "X ago"
+            for (String docId : offlineIds) {
+                batch.set(db.collection(COLLECTION).document(docId),
+                        Map.of(
+                                "status", "offline",
+                                "lastSeen", Map.of("timestamp", nowStr)
+                        ),
+                        SetOptions.merge());
                 if (++ops == 499) { batch.commit(); batch = db.batch(); ops = 0; }
             }
 
@@ -78,9 +71,13 @@ public class FirestoreService {
     }
 
     public static Optional<String> pickRtspUrl(Map<String, Object> data) {
-        Object u1 = data.get("url");
-        Object u2 = data.get("URL");
-        String url = u1 instanceof String s1 ? s1 : (u2 instanceof String s2 ? s2 : null);
-        return Optional.ofNullable(url).map(String::trim).filter(s -> !s.isEmpty());
+        for (String key : List.of("rtspUrl", "url", "URL", "rtsp_url")) {
+            Object val = data.get(key);
+            if (val instanceof String s && !s.isBlank()) {
+                return Optional.of(s.trim());
+            }
+        }
+        return Optional.empty();
     }
 }
+
