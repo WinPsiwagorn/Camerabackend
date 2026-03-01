@@ -72,29 +72,41 @@ class _CollectionWidgetState extends State<CollectionWidget> {
         search: search.isNotEmpty ? search : null,
       );
 
+      if (!mounted) return;
+
       if (response.succeeded) {
         final dataList = CameraService().parseDataList(response.jsonBody) ?? [];
-        _model.listOfCameras = dataList;
-
-        // Parse meta from API response
         final meta = getJsonField(response.jsonBody, r'$.meta');
-        if (meta != null && meta is Map<String, dynamic>) {
-          _model.totalCameras = (meta['totalItems'] as int?) ?? dataList.length;
-          _model.totalPages = (meta['totalPages'] as int?) ?? 1;
-        } else {
-          _model.totalCameras = dataList.length;
-          _model.totalPages = 1;
-        }
+
+        // Single atomic rebuild — all state set together
+        safeSetState(() {
+          _model.listOfCameras = dataList;
+          _model.currentPage = page;
+          _model.searchQuery = search;
+          _model.isLoading = false;
+          if (meta != null && meta is Map<String, dynamic>) {
+            _model.totalCameras =
+                (meta['totalItems'] as int?) ?? dataList.length;
+            _model.totalPages = (meta['totalPages'] as int?) ?? 1;
+          } else {
+            _model.totalCameras = dataList.length;
+            _model.totalPages = 1;
+          }
+        });
       } else {
         debugPrint('API error: ${response.statusCode}');
-        _model.listOfCameras = [];
+        safeSetState(() {
+          _model.listOfCameras = [];
+          _model.currentPage = page;
+          _model.searchQuery = search;
+          _model.isLoading = false;
+        });
       }
 
-      _model.currentPage = page;
-      _model.searchQuery = search;
+      // Reset PaginatedDataTable to page 1 so it doesn't stay at a stale offset
+      _model.paginatedDataTableController.paginatorController.goToFirstPage();
     } catch (e) {
       debugPrint('Error fetching cameras: $e');
-    } finally {
       if (mounted) safeSetState(() => _model.isLoading = false);
     }
   }
@@ -474,202 +486,6 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              FlutterFlowIconButton(
-                                borderColor: Color(0xFF4B39EF),
-                                borderRadius: 12.0,
-                                borderWidth: 2.0,
-                                buttonSize: 50.0,
-                                fillColor: Color(0xFFE0E3E7),
-                                icon: Icon(
-                                  Icons.filter_list_rounded,
-                                  color: Color(0xFF4B39EF),
-                                  size: 26.0,
-                                ),
-                                onPressed: () async {
-                                  // Show filter dialog
-                                  await showDialog(
-                                    context: context,
-                                    builder: (BuildContext dialogContext) {
-                                      return StatefulBuilder(
-                                        builder: (context, setDialogState) {
-                                          return AlertDialog(
-                                            title: Row(
-                                              children: [
-                                                Icon(Icons.filter_list_rounded,
-                                                    color: Color(0xFF4B39EF)),
-                                                SizedBox(width: 8.0),
-                                                Text('Filter Cameras'),
-                                              ],
-                                            ),
-                                            content: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text('Filter by Category',
-                                                    style: FlutterFlowTheme.of(
-                                                            context)
-                                                        .bodyLarge
-                                                        .override(
-                                                          fontFamily:
-                                                              'Readex Pro',
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                        )),
-                                                SizedBox(height: 8.0),
-                                                CheckboxListTile(
-                                                  title: Row(
-                                                    children: [
-                                                      Icon(
-                                                          Icons
-                                                              .label_outlined,
-                                                          size: 20.0,
-                                                          color: Color(
-                                                              0xFF39D2C0)),
-                                                      SizedBox(width: 8.0),
-                                                      Text(
-                                                          'Cameras with Categories'),
-                                                    ],
-                                                  ),
-                                                  subtitle: Text(
-                                                      'Show only cameras assigned to categories',
-                                                      style: FlutterFlowTheme
-                                                              .of(context)
-                                                          .bodySmall),
-                                                  value: _model
-                                                      .filterAssignedCategory,
-                                                  onChanged: (value) {
-                                                    setDialogState(() {
-                                                      _model.filterAssignedCategory =
-                                                          value ?? false;
-                                                      // If both are selected, deselect the other
-                                                      if (_model
-                                                              .filterAssignedCategory &&
-                                                          _model
-                                                              .filterUnassignedCategory) {
-                                                        _model.filterUnassignedCategory =
-                                                            false;
-                                                      }
-                                                    });
-                                                  },
-                                                  activeColor:
-                                                      Color(0xFF39D2C0),
-                                                  controlAffinity:
-                                                      ListTileControlAffinity
-                                                          .leading,
-                                                ),
-                                                CheckboxListTile(
-                                                  title: Row(
-                                                    children: [
-                                                      Icon(
-                                                          Icons
-                                                              .label_off_outlined,
-                                                          size: 20.0,
-                                                          color: Color(
-                                                              0xFFFF5963)),
-                                                      SizedBox(width: 8.0),
-                                                      Text(
-                                                          'Cameras without Categories'),
-                                                    ],
-                                                  ),
-                                                  subtitle: Text(
-                                                      'Show only cameras not assigned to any category',
-                                                      style: FlutterFlowTheme
-                                                              .of(context)
-                                                          .bodySmall),
-                                                  value: _model
-                                                      .filterUnassignedCategory,
-                                                  onChanged: (value) {
-                                                    setDialogState(() {
-                                                      _model.filterUnassignedCategory =
-                                                          value ?? false;
-                                                      // If both are selected, deselect the other
-                                                      if (_model
-                                                              .filterUnassignedCategory &&
-                                                          _model
-                                                              .filterAssignedCategory) {
-                                                        _model.filterAssignedCategory =
-                                                            false;
-                                                      }
-                                                    });
-                                                  },
-                                                  activeColor:
-                                                      Color(0xFFFF5963),
-                                                  controlAffinity:
-                                                      ListTileControlAffinity
-                                                          .leading,
-                                                ),
-                                              ],
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () {
-                                                  // Reset filters
-                                                  safeSetState(() {
-                                                    _model.filterAssignedCategory =
-                                                        false;
-                                                    _model.filterUnassignedCategory =
-                                                        false;
-                                                  });
-                                                  Navigator.pop(dialogContext);
-                                                },
-                                                child: Text('Clear'),
-                                              ),
-                                              ElevatedButton(
-                                                onPressed: () {
-                                                  Navigator.pop(dialogContext);
-                                                  safeSetState(() {});
-                                                  
-                                                  String filterMessage = '';
-                                                  if (_model
-                                                      .filterAssignedCategory) {
-                                                    filterMessage =
-                                                        'Showing cameras with categories';
-                                                  } else if (_model
-                                                      .filterUnassignedCategory) {
-                                                    filterMessage =
-                                                        'Showing cameras without categories';
-                                                  } else {
-                                                    filterMessage =
-                                                        'Showing all cameras';
-                                                  }
-                                                  
-                                                  ScaffoldMessenger.of(context)
-                                                      .showSnackBar(
-                                                    SnackBar(
-                                                      content: Row(
-                                                        children: [
-                                                          Icon(
-                                                              Icons
-                                                                  .filter_list_rounded,
-                                                              color:
-                                                                  Colors.white),
-                                                          SizedBox(width: 8.0),
-                                                          Text(filterMessage),
-                                                        ],
-                                                      ),
-                                                      backgroundColor:
-                                                          Color(0xFF4B39EF),
-                                                      behavior: SnackBarBehavior
-                                                          .floating,
-                                                    ),
-                                                  );
-                                                },
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor:
-                                                      Color(0xFF4B39EF),
-                                                ),
-                                                child: Text('Apply'),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      );
-                                    },
-                                  );
-                                },
-                              ),
-                            const SizedBox(width: 16),
                             FlutterFlowIconButton(
                               borderColor: Color(0xFFDC2626),
                                 borderRadius: 12.0,
@@ -686,8 +502,6 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                   safeSetState(() {
                                     _model.textController?.clear();
                                     _model.searchQuery = '';
-                                    _model.filterAssignedCategory = false;
-                                    _model.filterUnassignedCategory = false;
                                   });
                                   
                                   // Fetch first page with no search
@@ -1052,6 +866,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                           ),
                                                                           tooltip: 'Delete',
                                                                           onPressed: () async {
+                                                                            // ── Normal delete confirm ──────────────────────────────
                                                                             final confirmDelete =
                                                                                 await showDialog<bool>(
                                                                               context: context,
@@ -1059,14 +874,39 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                                 return AlertDialog(
                                                                                   title: Row(
                                                                                     children: [
-                                                                                      Icon(Icons.warning,
+                                                                                      Icon(Icons.warning_amber_rounded,
                                                                                           color: Colors.red),
                                                                                       SizedBox(width: 8.0),
                                                                                       Text('Delete Category'),
                                                                                     ],
                                                                                   ),
-                                                                                  content: Text(
-                                                                                    'Delete "$categoryName"?\n\nCameras will not be deleted.',
+                                                                                  content: Column(
+                                                                                    mainAxisSize: MainAxisSize.min,
+                                                                                    crossAxisAlignment:
+                                                                                        CrossAxisAlignment.start,
+                                                                                    children: [
+                                                                                      Text(
+                                                                                          'Delete "$categoryName"?'),
+                                                                                      SizedBox(height: 12.0),
+                                                                                      Row(
+                                                                                        children: [
+                                                                                          Icon(
+                                                                                              Icons.info_outline,
+                                                                                              size: 14,
+                                                                                              color: Colors.red),
+                                                                                          SizedBox(width: 4.0),
+                                                                                          Text(
+                                                                                            'This action can\'t be undo',
+                                                                                            style: TextStyle(
+                                                                                              color: Colors.red,
+                                                                                              fontSize: 12,
+                                                                                              fontWeight:
+                                                                                                  FontWeight.w600,
+                                                                                            ),
+                                                                                          ),
+                                                                                        ],
+                                                                                      ),
+                                                                                    ],
                                                                                   ),
                                                                                   actions: [
                                                                                     TextButton(
@@ -1091,42 +931,170 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                                                 );
                                                                               },
                                                                             );
-                                                                            
-                                                                            if (confirmDelete == true) {
+
+                                                                            if (confirmDelete != true) return;
+
+                                                                            // ── Call normal delete ─────────────────────────────────
+                                                                            showDialog(
+                                                                              context: context,
+                                                                              barrierDismissible: false,
+                                                                              builder: (_) => const Center(
+                                                                                  child:
+                                                                                      CircularProgressIndicator()),
+                                                                            );
+
+                                                                            final deleteResponse =
+                                                                                await CategoryService()
+                                                                                    .deleteCategory(categoryId);
+
+                                                                            if (context.mounted)
+                                                                              Navigator.pop(context); // close loader
+
+                                                                            if (deleteResponse.succeeded) {
+                                                                              if (context.mounted)
+                                                                                ScaffoldMessenger.of(context)
+                                                                                    .showSnackBar(SnackBar(
+                                                                                  content:
+                                                                                      Text('Category deleted!'),
+                                                                                  backgroundColor:
+                                                                                      Color(0xFF4CAF50),
+                                                                                ));
+                                                                              setDialogState(() {});
+                                                                              return;
+                                                                            }
+
+                                                                            // ── Handle 409 – category has cameras ─────────────────
+                                                                            // Check both HTTP status AND JSON body (web CORS can alter the HTTP layer)
+                                                                            final bool _isConflict =
+                                                                                deleteResponse.statusCode == 409 ||
+                                                                                    getJsonField(deleteResponse.jsonBody,
+                                                                                            r'$.status') ==
+                                                                                        409;
+                                                                            if (_isConflict) {
+                                                                              if (!context.mounted) return;
+                                                                              final forceConfirm =
+                                                                                  await showDialog<bool>(
+                                                                                context: context,
+                                                                                builder: (forceContext) {
+                                                                                  return AlertDialog(
+                                                                                    title: Row(
+                                                                                      children: [
+                                                                                        Icon(
+                                                                                            Icons
+                                                                                                .warning_amber_rounded,
+                                                                                            color: Colors.orange),
+                                                                                        SizedBox(width: 8.0),
+                                                                                        Text('Category in Use'),
+                                                                                      ],
+                                                                                    ),
+                                                                                    content: Column(
+                                                                                      mainAxisSize: MainAxisSize.min,
+                                                                                      crossAxisAlignment:
+                                                                                          CrossAxisAlignment.start,
+                                                                                      children: [
+                                                                                        Text(
+                                                                                          '"$categoryName" is still assigned to one or more cameras.',
+                                                                                        ),
+                                                                                        SizedBox(height: 8.0),
+                                                                                        Text(
+                                                                                          'Force delete will remove this category from ALL cameras and then delete it.',
+                                                                                          style: TextStyle(
+                                                                                              color:
+                                                                                                  Color(0xFF6B7280)),
+                                                                                        ),
+                                                                                        SizedBox(height: 12.0),
+                                                                                        Row(
+                                                                                          children: [
+                                                                                            Icon(
+                                                                                                Icons.info_outline,
+                                                                                                size: 14,
+                                                                                                color: Colors.red),
+                                                                                            SizedBox(width: 4.0),
+                                                                                            Text(
+                                                                                              'This action can\'t be undo',
+                                                                                              style: TextStyle(
+                                                                                                color: Colors.red,
+                                                                                                fontSize: 12,
+                                                                                                fontWeight:
+                                                                                                    FontWeight.w600,
+                                                                                              ),
+                                                                                            ),
+                                                                                          ],
+                                                                                        ),
+                                                                                      ],
+                                                                                    ),
+                                                                                    actions: [
+                                                                                      TextButton(
+                                                                                        onPressed: () =>
+                                                                                            Navigator.pop(
+                                                                                                forceContext, false),
+                                                                                        child: Text('Cancel'),
+                                                                                      ),
+                                                                                      ElevatedButton(
+                                                                                        onPressed: () =>
+                                                                                            Navigator.pop(
+                                                                                                forceContext, true),
+                                                                                        style: ElevatedButton
+                                                                                            .styleFrom(
+                                                                                          backgroundColor:
+                                                                                              Color(0xFFEF4444),
+                                                                                        ),
+                                                                                        child: Text(
+                                                                                            'Force Delete',
+                                                                                            style: TextStyle(
+                                                                                                color: Colors.white)),
+                                                                                      ),
+                                                                                    ],
+                                                                                  );
+                                                                                },
+                                                                              );
+
+                                                                              if (forceConfirm != true) return;
+
+                                                                              // ── Call force delete ─────────────────────────────
+                                                                              if (!context.mounted) return;
                                                                               showDialog(
                                                                                 context: context,
                                                                                 barrierDismissible: false,
-                                                                                builder: (loadingContext) => Center(
-                                                                                  child: CircularProgressIndicator(),
-                                                                                ),
+                                                                                builder: (_) => const Center(
+                                                                                    child:
+                                                                                        CircularProgressIndicator()),
                                                                               );
-                                                                              
-                                                                              final deleteResponse =
+
+                                                                              final forceResponse =
                                                                                   await CategoryService()
-                                                                                      .deleteCategory(categoryId);
-                                                                              
-                                                                              Navigator.pop(context);
-                                                                              
-                                                                              if (deleteResponse.succeeded) {
+                                                                                      .deleteCategory(categoryId,
+                                                                                          force: true);
+
+                                                                              if (context.mounted)
+                                                                                Navigator.pop(
+                                                                                    context); // close loader
+
+                                                                              if (context.mounted)
                                                                                 ScaffoldMessenger.of(context)
-                                                                                    .showSnackBar(
-                                                                                  SnackBar(
-                                                                                    content:
-                                                                                        Text('Category deleted!'),
-                                                                                    backgroundColor:
-                                                                                        Color(0xFF4CAF50),
+                                                                                    .showSnackBar(SnackBar(
+                                                                                  content: Text(
+                                                                                    forceResponse.succeeded
+                                                                                        ? 'Category force deleted!'
+                                                                                        : 'Force delete failed',
                                                                                   ),
-                                                                                );
+                                                                                  backgroundColor: forceResponse
+                                                                                          .succeeded
+                                                                                      ? Color(0xFF4CAF50)
+                                                                                      : Colors.red,
+                                                                                ));
+
+                                                                              if (forceResponse.succeeded)
                                                                                 setDialogState(() {});
-                                                                              } else {
+                                                                            } else {
+                                                                              // ── Other errors ──────────────────────────────────
+                                                                              if (context.mounted)
                                                                                 ScaffoldMessenger.of(context)
-                                                                                    .showSnackBar(
-                                                                                  SnackBar(
-                                                                                    content: Text('Failed to delete'),
-                                                                                    backgroundColor: Colors.red,
-                                                                                  ),
-                                                                                );
-                                                                              }
+                                                                                    .showSnackBar(SnackBar(
+                                                                                  content: Text(
+                                                                                      'Failed to delete (${deleteResponse.statusCode})'),
+                                                                                  backgroundColor: Colors.red,
+                                                                                ));
                                                                             }
                                                                           },
                                                                         ),
@@ -1659,23 +1627,6 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                     // Start with paginated camera list
                                     var cameraItems = _model.listOfCameras;
                                         
-                                        // Apply category filters
-                                        if (_model.filterAssignedCategory) {
-                                          cameraItems = cameraItems.where((camera) {
-                                            final categories = getJsonField(camera, r'$.categories');
-                                            // Check if camera has categories assigned
-                                            return categories != null && 
-                                                   (categories is List ? categories.isNotEmpty : true);
-                                          }).toList();
-                                        } else if (_model.filterUnassignedCategory) {
-                                          cameraItems = cameraItems.where((camera) {
-                                            final categories = getJsonField(camera, r'$.categories');
-                                            // Check if camera has no categories assigned
-                                            return categories == null || 
-                                                   (categories is List ? categories.isEmpty : false);
-                                          }).toList();
-                                        }
-                                        
                                         if (cameraItems.isEmpty) {
                                           return Center(
                                             child: Column(
@@ -1690,37 +1641,12 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                                 ),
                                                 SizedBox(height: 16.0),
                                                 Text(
-                                                  _model.textController.text
-                                                          .isNotEmpty
+                                                  _model.textController.text.isNotEmpty
                                                       ? 'No cameras found matching "${_model.textController.text}"'
-                                                      : _model.filterAssignedCategory
-                                                          ? 'No cameras with categories found'
-                                                          : _model.filterUnassignedCategory
-                                                              ? 'No cameras without categories found'
-                                                              : 'No cameras available',
-                                                  style: FlutterFlowTheme.of(
-                                                          context)
-                                                      .titleMedium,
+                                                      : 'No cameras available',
+                                                  style: FlutterFlowTheme.of(context).titleMedium,
                                                   textAlign: TextAlign.center,
                                                 ),
-                                                if (_model.filterAssignedCategory ||
-                                                    _model.filterUnassignedCategory)
-                                                  Padding(
-                                                    padding: EdgeInsets.only(
-                                                        top: 12.0),
-                                                    child: Text(
-                                                      'Try clearing the filter',
-                                                      style: FlutterFlowTheme
-                                                              .of(context)
-                                                          .bodySmall
-                                                          .override(
-                                                            fontFamily:
-                                                                'Readex Pro',
-                                                            fontStyle: FontStyle
-                                                                .italic,
-                                                          ),
-                                                    ),
-                                                  ),
                                               ],
                                             ),
                                           );
