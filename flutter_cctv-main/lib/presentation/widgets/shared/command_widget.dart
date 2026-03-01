@@ -555,12 +555,21 @@ class _CommandWidgetState extends State<CommandWidget> {
               .map((e) => CameraInfo.fromJson(e as Map<String, dynamic>))
               .toList();
           _isLoading = false;
-          _errorMessage = jsonList.isEmpty ? 'No cameras found' : null;
+          _errorMessage = null;
         });
         
         print('✅ Parsed ${_cameras.length} cameras');
         print('📺 Streams will be started using camera IDs (backend fetches RTSP)');
         
+      } else if (response.statusCode == 404 && _selectedCategoryId != null) {
+        // 404 from getCamerasByCategoryId = category exists but has 0 cameras
+        // Treat as an empty list so the category-aware empty state is shown
+        print('ℹ️ 404 for category $_selectedCategoryId → treating as empty list');
+        setState(() {
+          _cameras = [];
+          _isLoading = false;
+          _errorMessage = null;
+        });
       } else {
         final errorMsg = 'API Error: ${response.statusCode}';
         print('❌ Failed to load cameras: ${response.statusCode}');
@@ -1121,9 +1130,6 @@ class _CommandWidgetState extends State<CommandWidget> {
                   if (cams.isEmpty) {
                     if (_selectedCategoryId != null) {
                       // Category selected but has 0 cameras
-                      final catName = _getCategoryName(
-                          _selectedCategoryId!,
-                          truncate: false);
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -1135,7 +1141,7 @@ class _CommandWidgetState extends State<CommandWidget> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'No cameras in "$catName"',
+                              'There is no camera in this category',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -1144,7 +1150,7 @@ class _CommandWidgetState extends State<CommandWidget> {
                             ),
                             const SizedBox(height: 8),
                             const Text(
-                              'Add cameras via the Collection page',
+                              'You can add cameras manually from the Collection page',
                               style: TextStyle(
                                 color: Colors.white38,
                                 fontSize: 13,
