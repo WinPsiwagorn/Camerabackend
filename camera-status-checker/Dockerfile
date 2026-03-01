@@ -1,8 +1,26 @@
+# ---------- Stage 1: Build ----------
+FROM maven:3.9.9-eclipse-temurin-21 AS builder
+
+WORKDIR /build
+
+# copy pom ก่อน เพื่อใช้ cache dependency
+COPY pom.xml .
+RUN mvn -B -q -e -DskipTests dependency:go-offline
+
+# copy source code
+COPY src ./src
+
+# build jar
+RUN mvn clean package -DskipTests
+
+
+# ---------- Stage 2: Run ----------
 FROM eclipse-temurin:21-jdk-jammy
 
 WORKDIR /app
 
-COPY target/camera-status-checker-0.0.1-SNAPSHOT.jar app.jar
+# copy jar จาก stage แรก
+COPY --from=builder /build/target/*.jar app.jar
 
 EXPOSE 8081
 
