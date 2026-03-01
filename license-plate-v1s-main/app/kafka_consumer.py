@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 import requests
 from aiokafka import AIOKafkaConsumer
 from config import settings
@@ -66,7 +67,12 @@ async def consume(detector):
                     logger.warning(f"File not found for detection: {image_url}\nExpected path: {temp_image_path}\nReason: {fnf}")
                 except Exception as e:
                     logger.error(f"Error during detection for {image_url}: {e}")
+                finally:
+                # 🗑️ Always clean up the temp file after detection
+                    if os.path.exists(temp_image_path):
+                        os.remove(temp_image_path)
             else:
                 logger.warning(f"Skipping message without imageUrl: {payload}")
+            
     finally:
         await consumer.stop()
