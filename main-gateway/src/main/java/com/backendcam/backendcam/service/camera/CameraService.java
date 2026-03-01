@@ -234,7 +234,6 @@ public class CameraService {
 
         if (camera.getLastSeen() != null) {
             CameraResponseDto.LastSeen lastSeenDto = new CameraResponseDto.LastSeen();
-            lastSeenDto.setMessage(camera.getLastSeen().getMessage());
             lastSeenDto.setTimestamp(camera.getLastSeen().getTimestamp());
             dto.setLastSeen(lastSeenDto);
         }

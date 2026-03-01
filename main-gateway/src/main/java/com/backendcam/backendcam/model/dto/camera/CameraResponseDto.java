@@ -19,7 +19,6 @@ public class CameraResponseDto {
     @Getter
     @Setter
     public static class LastSeen {
-        private String message;
         private String timestamp;
     }
 }
