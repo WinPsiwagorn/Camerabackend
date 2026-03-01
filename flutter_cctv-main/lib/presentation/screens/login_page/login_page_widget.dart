@@ -128,7 +128,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                         image: DecorationImage(
                           fit: BoxFit.cover,
                           image: Image.asset(
-                            'assets/images/Screenshot_2024_1228_145217.png',
+                            'assets/images/CCTV.jpg',
                           ).image,
                         ),
                       ),
@@ -235,7 +235,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                     autofillHints: [AutofillHints.email],
                                     obscureText: false,
                                     decoration: InputDecoration(
-                                      labelText: 'Email',
+                                      labelText: 'Username',
                                       labelStyle: FlutterFlowTheme.of(context)
                                           .labelLarge
                                           .override(
@@ -447,7 +447,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                           if (username.isEmpty || password.isEmpty) {
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               SnackBar(
-                                                content: const Text('กรุณากรอก Username และ Password'),
+                                                content: const Text('Please fill in Username and Password'),
                                                 backgroundColor: const Color(0xFFEF4444),
                                                 behavior: SnackBarBehavior.floating,
                                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -484,7 +484,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                             );
                                           }
                                         },
-                                  text: _model.isLoading ? 'กำลังเข้าสู่ระบบ...' : 'Log In',
+                                  text: _model.isLoading ? 'Loading...' : 'Log In',
                                   options: FFButtonOptions(
                                     width: double.infinity,
                                     height: 44.0,

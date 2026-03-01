@@ -25,18 +25,11 @@ public class UserController {
     public ResponseEntity<Map<String, Object>> getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
-
-        Map<String, Object> user = userService.getUserByUsername(username);
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(userService.getUserByUsername(username));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getUserById(@PathVariable String id) {
-        try {
-            Map<String, Object> user = userService.getUserById(id);
-            return ResponseEntity.ok(user);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 }

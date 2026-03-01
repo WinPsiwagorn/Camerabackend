@@ -325,7 +325,7 @@ class _CommandWidgetState extends State<CommandWidget> {
   Future<void> _fetchCategories() async {
     try {
       print('🔄 Fetching categories from API...');
-      print('API URL: http://se-lab.aboutblank.in.th/api/category');
+      print('API URL: $kApiBaseUrl/api/categories');
       final response = await CategoryService().getCategories();
       print('📡 Category Response Status: ${response.statusCode}');
       print('📡 Category Response Body Type: ${response.jsonBody.runtimeType}');
