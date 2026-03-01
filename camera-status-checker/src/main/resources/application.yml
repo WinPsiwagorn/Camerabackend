@@ -1,0 +1,22 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: camera-status-checker
+
+firebase:
+  credentials:
+    path: file:/secrets/serviceAccount.json
+  storage:
+    bucket: centralcamera-7de28.firebasestorage.app
+
+logging:
+  level:
+    com.camerastatus: INFO
+
+async:
+  executor:
+    core-pool-size: 50
+    max-pool-size: 200
+    queue-capacity: 500
