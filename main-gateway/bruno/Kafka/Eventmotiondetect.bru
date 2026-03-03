@@ -1,0 +1,27 @@
+meta {
+  name: Eventmotiondetect
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{dev_env}}/kafka/sendMotionEvent
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "cameraId": "CAM_01",
+    "imageUrl": "https://cdn.discordapp.com/attachments/1464205793619611712/1476621834240917644/image.png?ex=69a3c4ff&is=69a2737f&hm=4cb7c7472f1c6436607c5c613b6cf2a885cac0b2bd9c0ea4f1ae8b2fe1c87bb3&"
+  }
+}
+
+vars:pre-request {
+  dev_env: http://localhost:8080/api
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

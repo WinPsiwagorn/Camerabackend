@@ -1,6 +1,8 @@
 package com.backendcam.backendcam.service.motion;
 
+import com.backendcam.backendcam.model.dto.motion.MotionEvent;
 import com.backendcam.backendcam.service.firestore.FirebaseAdminBootstrap;
+import com.backendcam.backendcam.service.kafka.MotionEventProducer;
 
 import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.Blob;
@@ -17,9 +19,12 @@ import java.io.ByteArrayOutputStream;
 public class SaveMotionFrameService {
 
     private final FirebaseAdminBootstrap bootstrap;
+    private final MotionEventProducer motionEventProducer;
 
-    public SaveMotionFrameService(FirebaseAdminBootstrap bootstrap) {
+    public SaveMotionFrameService(FirebaseAdminBootstrap bootstrap,
+                                  MotionEventProducer motionEventProducer) {
         this.bootstrap = bootstrap;
+        this.motionEventProducer = motionEventProducer;
     }
 
     /**
@@ -61,18 +66,13 @@ public class SaveMotionFrameService {
     /**
      * Upload a Frame to Firebase Storage
      */
-    public String uploadMotionFrame(Frame frame, String cameraId) {
-        if (!bootstrap.isInitialized()) {
-            return null;
-        }
+    public void uploadMotionFrame(Frame frame, String cameraId) {
+        if (!bootstrap.isInitialized()) return;
 
         try {
-            // Use deep copy to avoid buffer sharing issues
             BufferedImage image = deepCopyFrameToImage(frame);
-            if (image == null) return null;
-
-            return uploadBufferedImage(image, cameraId);
-
+            if (image == null) return;
+            uploadBufferedImage(image, cameraId);
         } catch (Exception e) {
             throw new RuntimeException("Upload frame to Firebase Storage failed", e);
         }
@@ -82,25 +82,23 @@ public class SaveMotionFrameService {
      * Upload a BufferedImage directly to Firebase Storage
      * Used when we've already selected the best frame
      */
-    public String uploadMotionFrame(BufferedImage image, String cameraId) {
-        if (!bootstrap.isInitialized()) {
-            return null;
-        }
-
-        if (image == null) return null;
+    public void uploadMotionFrame(BufferedImage image, String cameraId) {
+        if (!bootstrap.isInitialized()) return;
+        if (image == null) return;
 
         try {
-            return uploadBufferedImage(image, cameraId);
+            uploadBufferedImage(image, cameraId);
         } catch (Exception e) {
             throw new RuntimeException("Upload BufferedImage to Firebase Storage failed", e);
         }
     }
 
     /**
-     * Common upload logic for BufferedImage
+     * Common upload logic for BufferedImage.
+     * After a successful upload, fires a MotionEvent to Kafka so downstream
+     * consumers (accident-ai, license-plate, etc.) are notified automatically.
      */
-    private String uploadBufferedImage(BufferedImage image, String cameraId) throws Exception {
-        // Use try-with-resources to ensure stream is closed
+    private void uploadBufferedImage(BufferedImage image, String cameraId) throws Exception {
         byte[] bytes;
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             ImageIO.write(image, "jpg", baos);
@@ -112,8 +110,14 @@ public class SaveMotionFrameService {
         Bucket bucket = StorageClient.getInstance().bucket();
         Blob blob = bucket.create(path, bytes, "image/jpeg");
 
-        return "https://storage.googleapis.com/"
+        String url = "https://storage.googleapis.com/"
                 + bucket.getName() + "/"
                 + blob.getName();
+
+        motionEventProducer.send(MotionEvent.builder()
+                .cameraId(cameraId)
+                .timestamp(System.currentTimeMillis())
+                .imageUrl(url)
+                .build());
     }
 }

@@ -38,30 +38,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
     super.initState();
     _model = createModel(context, () => LoginPageModel());
 
-    // On page load action.
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      _model.loginResponse = await AuthService().login(
-        username: _model.emailAddressTextController.text,
-        password: _model.passwordTextController.text,
-      );
-
-      if ((_model.apiAuthResult?.succeeded ?? true)) {
-        context.pushNamed(ListCameraPageWidget.routeName);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '\"Login failed. Please check password.\"',
-              style: TextStyle(
-                color: FlutterFlowTheme.of(context).primaryText,
-              ),
-            ),
-            duration: Duration(milliseconds: 4000),
-            backgroundColor: FlutterFlowTheme.of(context).secondary,
-          ),
-        );
-      }
-    });
+    // ...existing code...
 
     _model.emailAddressTextController ??= TextEditingController();
     _model.emailAddressFocusNode ??= FocusNode();
@@ -151,7 +128,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                         image: DecorationImage(
                           fit: BoxFit.cover,
                           image: Image.asset(
-                            'assets/images/Screenshot_2024_1228_145217.png',
+                            'assets/images/CCTV.jpg',
                           ).image,
                         ),
                       ),
@@ -258,7 +235,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                     autofillHints: [AutofillHints.email],
                                     obscureText: false,
                                     decoration: InputDecoration(
-                                      labelText: 'Email',
+                                      labelText: 'Username',
                                       labelStyle: FlutterFlowTheme.of(context)
                                           .labelLarge
                                           .override(
@@ -470,7 +447,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                           if (username.isEmpty || password.isEmpty) {
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               SnackBar(
-                                                content: const Text('กรุณากรอก Username และ Password'),
+                                                content: const Text('Please fill in Username and Password'),
                                                 backgroundColor: const Color(0xFFEF4444),
                                                 behavior: SnackBarBehavior.floating,
                                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -494,7 +471,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                             final token = body?['accessToken'] ?? body?['token'] ?? '';
                                             AppState().authToken = token?.toString() ?? '';
 
-                                            context.pushNamed(ListCameraPageWidget.routeName);
+                                            context.goNamed(ListCameraPageWidget.routeName);
                                           } else {
                                             safeSetState(() => _model.isLoading = false);
                                             ScaffoldMessenger.of(context).showSnackBar(
@@ -507,7 +484,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                             );
                                           }
                                         },
-                                  text: _model.isLoading ? 'กำลังเข้าสู่ระบบ...' : 'Log In',
+                                  text: _model.isLoading ? 'Loading...' : 'Log In',
                                   options: FFButtonOptions(
                                     width: double.infinity,
                                     height: 44.0,

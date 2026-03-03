@@ -11,7 +11,7 @@ services:
     environment:
       TZ: "Asia/Bangkok"
       GOOGLE_APPLICATION_CREDENTIALS: "/secrets/serviceAccount.json"
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:19092"
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
       FIREBASE_CREDENTIALS_PATH: "file:/secrets/serviceAccount.json"
       JAVA_OPTS: "-Xmx3g -Xms1g -XX:MaxDirectMemorySize=2g"
     volumes:
@@ -29,6 +29,36 @@ services:
         reservations:
           cpus: '2'
           memory: 2G
+
+  motion-detect:
+    container_name: motion-detect
+    build:
+      context: ./motion-detect
+      dockerfile: Dockerfile
+    image: motion-detect:latest
+    ports:
+      - "8081:8081"
+    environment:
+      TZ: "Asia/Bangkok"
+      GOOGLE_APPLICATION_CREDENTIALS: "/secrets/serviceAccount.json"
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      FIREBASE_CREDENTIALS_PATH: "file:/secrets/serviceAccount.json"
+      JAVA_OPTS: "-Xmx4g -Xms2g -XX:MaxDirectMemorySize=2g"
+    volumes:
+      - ./motion-detect/secrets/serviceAccount.json:/secrets/serviceAccount.json:ro
+      - /usr/share/zoneinfo/Asia/Bangkok:/etc/localtime:ro
+      - /usr/share/zoneinfo/Asia/Bangkok:/etc/timezone:ro
+    depends_on:
+      - kafka
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '12'
+          memory: 8G
+        reservations:
+          cpus: '4'
+          memory: 4G
 
 
   kafka:
@@ -105,8 +135,8 @@ services:
       context: ./flutter_cctv-main
       dockerfile: Dockerfile
     container_name: flutter-web
-    ports:
-      - "3000:80"
+    volumes:
+      - /var/www/flutter:/output
     environment:
       TZ: "Asia/Bangkok"
     restart: unless-stopped
@@ -118,3 +148,27 @@ services:
         reservations:
           cpus: '1'
           memory: 1G
+
+  accident-detector:
+    build:
+      context: ./accident-ai-main
+      dockerfile: Dockerfile
+    container_name: accident-detector
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=Asia/Bangkok
+    volumes:
+      - ./accident-ai-main/output:/output
+      - ./accident-ai-main/.env:/app/.env
+      - ./accident-ai-main/secrets:/secrets
+    depends_on:
+      - kafka
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 6G
+        reservations:
+          cpus: '2'
+          memory: 3G

@@ -182,7 +182,8 @@ public class CameraService {
                 .collect(Collectors.toList());
     }
 
-    private GeoPoint parseGeoPoint(String latLong) {        try {
+    private GeoPoint parseGeoPoint(String latLong) {
+        try {
             String[] coords = latLong.split(",");
             if (coords.length != 2) throw new IllegalArgumentException();
             return new GeoPoint(

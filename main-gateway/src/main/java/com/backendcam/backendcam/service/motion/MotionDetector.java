@@ -1,5 +1,6 @@
 package com.backendcam.backendcam.service.motion;
 
+import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.bytedeco.opencv.opencv_core.*;
@@ -7,268 +8,108 @@ import org.bytedeco.opencv.opencv_video.BackgroundSubtractorMOG2;
 
 import static org.bytedeco.opencv.global.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_imgproc.*;
-import static org.bytedeco.opencv.global.opencv_video.*;
+import static org.bytedeco.opencv.global.opencv_video.createBackgroundSubtractorMOG2;
 
-/**
- * Motion Detection using JavaCV (OpenCV wrapper)
- * 
- * ✅ Integrates directly with your existing HLS streaming code
- * ✅ Uses the same Frame objects from FFmpegFrameGrabber
- * ✅ Zero conversion overhead
- * 
- * Usage:
- * MotionDetector detector = new MotionDetector();
- * detector.initialize(width, height);
- * 
- * while (streaming) {
- *     Frame frame = grabber.grabImage();
- *     boolean motion = detector.detectMotion(frame);
- *     if (motion) {
- *         // Trigger alert, recording, etc.
- *     }
- * }
- *
- * NOTE: This class is NOT a Spring bean. Each camera stream must create
- * its own instance to avoid shared state / race conditions.
- */
 public class MotionDetector {
 
-    // Motion detection sensitivity - TUNED FOR OUTDOOR TRAFFIC CAMERAS
-    // For 1920x1080 = 2,073,600 pixels, we need significant motion
-    private static final int MOTION_THRESHOLD = 8000;     // Minimum pixels changed (~0.4% of frame)
-    private static final double SENSITIVITY = 12.0;       // Lower = less sensitive to small changes
-    private static final double MIN_MOTION_PERCENT = 0.4; // Minimum % of frame that must change
-    
-    // OpenCV objects
-    private BackgroundSubtractorMOG2 backgroundSubtractor;
-    private OpenCVFrameConverter.ToMat converterToMat;
-    private Mat foregroundMask;
-    private Mat morphKernel;
-    private Mat grayMat;
-    private Mat laplacianMat;
-    
-    private boolean initialized = false;
-    private int frameWidth = 0;
-    private int frameHeight = 0;
+    // Max width used for detection — full resolution is not needed
+    private static final int DETECTION_MAX_WIDTH = 640;
 
-    public MotionDetector() {
-        this.converterToMat = new OpenCVFrameConverter.ToMat();
-    }
+    private BackgroundSubtractorMOG2 mog2;
+    private final OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
 
-    /**
-     * Initialize motion detector
-     * Call this once before starting detection
-     * 
-     * @param width Frame width
-     * @param height Frame height
-     */
+    // Pre-allocated, reused every frame — no per-call heap allocation
+    private Mat fgMask;
+    private Mat kernel;
+    private Mat resized;   // downscaled frame for MOG2
+    private Mat gray;      // grayscale for sharpness
+    private Mat laplacian; // laplacian output for sharpness
+
+    // Pre-allocated Mat outputs for meanStdDev — Scalar is not accepted by this binding
+    private Mat meanMat  = new Mat();
+    private Mat stdMat   = new Mat();
+
+    private int detectionWidth;
+    private int detectionHeight;
+    private boolean needsResize;
+
     public void initialize(int width, int height) {
-        if (initialized) {
-            cleanup();
-        }
+        // Downscale to at most DETECTION_MAX_WIDTH, keep aspect ratio, ensure even dims
+        double scale = Math.min(1.0, (double) DETECTION_MAX_WIDTH / width);
+        detectionWidth  = ((int) (width  * scale)) & ~1;
+        detectionHeight = ((int) (height * scale)) & ~1;
+        needsResize = (detectionWidth < width || detectionHeight < height);
 
-        this.frameWidth = width;
-        this.frameHeight = height;
-
-        // Create background subtractor (MOG2 algorithm)
-        // Parameters: history=1000 (longer history for stable background), varThreshold, detectShadows
-        backgroundSubtractor = createBackgroundSubtractorMOG2(1000, 25, false);
-        backgroundSubtractor.setVarThreshold(SENSITIVITY);
-        backgroundSubtractor.setDetectShadows(false); // Faster without shadow detection
-        backgroundSubtractor.setNMixtures(5); // More Gaussian mixtures for complex scenes
-        
-        // Create mask for foreground
-        foregroundMask = new Mat();
-        
-        // Create LARGER morphology kernel for better noise reduction
-        morphKernel = getStructuringElement(MORPH_RECT, new Size(5, 5));
-        
-        // For sharpness calculation
-        grayMat = new Mat();
-        laplacianMat = new Mat();
-        
-        initialized = true;
-        System.out.println("Motion detector initialized: " + width + "x" + height + 
-                         " (threshold: " + MOTION_THRESHOLD + " pixels, " + MIN_MOTION_PERCENT + "%)");
+        mog2      = createBackgroundSubtractorMOG2(100, 16, true);
+        fgMask    = new Mat(detectionHeight, detectionWidth, CV_8UC1);
+        resized   = new Mat(detectionHeight, detectionWidth, CV_8UC3);
+        gray      = new Mat(detectionHeight, detectionWidth, CV_8UC1);
+        laplacian = new Mat(detectionHeight, detectionWidth, CV_64F);
+        kernel    = getStructuringElement(MORPH_RECT, new Size(3, 3));
     }
 
     /**
-     * Detect motion in a frame
-     * Uses both pixel count AND percentage thresholds to avoid false positives
-     * 
-     * @param frame Frame from FFmpegFrameGrabber
-     * @return true if motion detected, false otherwise
+     * Convert Frame to Mat once — call this in the orchestrator and pass the
+     * result to both detectMotion() and calculateSharpness() to avoid
+     * converting the same frame twice.
      */
-    // Store last motion detection results to avoid redundant calculations
-    private int lastMotionPixels = 0;
-    private double lastMotionPercent = 0.0;
-    
-    public boolean detectMotion(Frame frame) {
-        if (!initialized) {
-            throw new IllegalStateException("Motion detector not initialized. Call initialize() first.");
-        }
-
-        if (frame == null || frame.image == null) {
-            return false;
-        }
-
-        Mat frameMat = null;
-        try {
-            // Convert JavaCV Frame to OpenCV Mat
-            frameMat = converterToMat.convert(frame);
-            
-            if (frameMat == null || frameMat.empty()) {
-                return false;
-            }
-
-            // Apply background subtraction
-            backgroundSubtractor.apply(frameMat, foregroundMask);
-
-            // Apply threshold to remove weak detections (shadows, noise)
-            threshold(foregroundMask, foregroundMask, 200, 255, THRESH_BINARY);
-
-            // Reduce noise with morphological operations (open removes small noise, close fills gaps)
-            morphologyEx(foregroundMask, foregroundMask, MORPH_OPEN, morphKernel);
-            morphologyEx(foregroundMask, foregroundMask, MORPH_CLOSE, morphKernel);
-            
-            // Additional erosion to remove edge noise
-            erode(foregroundMask, foregroundMask, morphKernel);
-
-            // Count non-zero pixels (white = motion)
-            lastMotionPixels = countNonZero(foregroundMask);
-            int totalPixels = frameWidth * frameHeight;
-            lastMotionPercent = (lastMotionPixels * 100.0) / totalPixels;
-
-            // Must exceed BOTH thresholds (absolute pixel count AND percentage)
-            boolean hasMotion = lastMotionPixels > MOTION_THRESHOLD && lastMotionPercent > MIN_MOTION_PERCENT;
-            
-            return hasMotion;
-
-        } catch (Exception e) {
-            System.err.println("Motion detection error: " + e.getMessage());
-            return false;
-        } finally {
-            // CRITICAL: Close Mat to prevent memory leak
-            if (frameMat != null) {
-                frameMat.close();
-            }
-        }
+    public Mat convertFrame(Frame frame) {
+        return converter.convert(frame);
     }
 
     /**
-     * Calculate sharpness of a frame using Laplacian variance
-     * Higher value = sharper image, lower value = more blur
-     * 
-     * @param frame Frame to analyze
-     * @return Sharpness score (typically 0-1000+, higher is sharper)
+     * Detect motion using the pre-allocated, downscaled pipeline.
+     * Accepts a Mat so the caller can reuse a single conversion.
      */
-    public double calculateSharpness(Frame frame) {
-        if (!initialized || frame == null || frame.image == null) {
-            return 0.0;
+    public boolean detectMotion(Mat mat) {
+        if (mat == null) return false;
+
+        // Downscale to detection resolution before running MOG2
+        Mat input = mat;
+        if (needsResize) {
+            resize(mat, resized, new Size(detectionWidth, detectionHeight));
+            input = resized;
         }
 
-        Mat frameMat = null;
-        Mat mean = null;
-        Mat stddev = null;
-        org.bytedeco.javacpp.indexer.Indexer indexer = null;
-        
-        try {
-            frameMat = converterToMat.convert(frame);
-            if (frameMat == null || frameMat.empty()) return 0.0;
+        mog2.apply(input, fgMask);
+        morphologyEx(fgMask, fgMask, MORPH_OPEN, kernel);
 
-            // Convert to grayscale
-            cvtColor(frameMat, grayMat, COLOR_BGR2GRAY);
-            
-            // Calculate Laplacian (edge detection)
-            Laplacian(grayMat, laplacianMat, CV_64F);
-            
-            // Calculate variance of Laplacian (measure of sharpness)
-            mean = new Mat();
-            stddev = new Mat();
-            meanStdDev(laplacianMat, mean, stddev);
-            
-            indexer = stddev.createIndexer();
-            double variance = Math.pow(indexer.getDouble(0), 2);
-            
-            return variance;
+        int motionPixels = countNonZero(fgMask);
+        int totalPixels  = fgMask.rows() * fgMask.cols();
 
-        } catch (Exception e) {
-            return 0.0;
-        } finally {
-            // CRITICAL: Close all resources to prevent memory leak
-            if (indexer != null) {
-                try { indexer.close(); } catch (Exception ignored) {}
-            }
-            if (mean != null) mean.close();
-            if (stddev != null) stddev.close();
-            if (frameMat != null) frameMat.close();
-        }
+        return (double) motionPixels / totalPixels > 0.02; // 2%
     }
 
     /**
-     * Get motion percentage (0-100)
-     * Returns the cached value from the last detectMotion() call.
-     * IMPORTANT: Call detectMotion() first, then call this method.
-     * 
-     * @return Percentage of pixels with motion from last detection
+     * Calculate Laplacian sharpness using pre-allocated Mats.
+     * Uses the already-downscaled Mat to avoid redundant resizing.
      */
-    public double getLastMotionPercentage() {
-        return lastMotionPercent;
-    }
-    
-    /**
-     * Get motion pixel count from last detection
-     * 
-     * @return Number of pixels with motion from last detection
-     */
-    public int getLastMotionPixels() {
-        return lastMotionPixels;
+    public double calculateSharpness(Mat mat) {
+        if (mat == null) return 0;
+
+        // Reuse the already-resized buffer if downscaling was applied
+        Mat src = needsResize ? resized : mat;
+
+        cvtColor(src, gray, COLOR_BGR2GRAY);
+        Laplacian(gray, laplacian, CV_64F);
+
+        // meanStdDev requires Mat outputs in this JavaCV binding, not Scalar
+        meanStdDev(laplacian, meanMat, stdMat);
+
+        // stdMat is a 1×1 CV_64F Mat — read the single double via DoubleIndexer
+        DoubleIndexer idx = stdMat.createIndexer();
+        double sigmaVal = idx.get(0);
+        idx.close();
+        return sigmaVal * sigmaVal;
     }
 
-    /**
-     * Get the foreground mask (for visualization/debugging)
-     * Returns a Frame showing detected motion in white
-     * 
-     * @return Frame with motion mask or null
-     */
-    public Frame getMotionMask() {
-        if (foregroundMask != null && !foregroundMask.empty()) {
-            return converterToMat.convert(foregroundMask);
-        }
-        return null;
-    }
-
-    /**
-     * Reset background model (call when camera moves or scene changes)
-     */
-    public void resetBackground() {
-        if (backgroundSubtractor != null) {
-            backgroundSubtractor.close();
-            backgroundSubtractor = createBackgroundSubtractorMOG2(500, 16, false);
-            backgroundSubtractor.setVarThreshold(SENSITIVITY);
-            backgroundSubtractor.setDetectShadows(false);
-        }
-    }
-
-    /**
-     * Cleanup resources
-     */
     public void cleanup() {
-        if (backgroundSubtractor != null) {
-            backgroundSubtractor.close();
-        }
-        if (foregroundMask != null) {
-            foregroundMask.close();
-        }
-        if (morphKernel != null) {
-            morphKernel.close();
-        }
-        if (grayMat != null) {
-            grayMat.close();
-        }
-        if (laplacianMat != null) {
-            laplacianMat.close();
-        }
-        initialized = false;
+        if (fgMask    != null) fgMask.close();
+        if (kernel    != null) kernel.close();
+        if (resized   != null) resized.close();
+        if (gray      != null) gray.close();
+        if (laplacian != null) laplacian.close();
+        if (meanMat   != null) meanMat.close();
+        if (stdMat    != null) stdMat.close();
     }
 }
