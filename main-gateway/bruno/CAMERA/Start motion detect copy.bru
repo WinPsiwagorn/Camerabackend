@@ -1,11 +1,11 @@
 meta {
-  name: Start motion detect
+  name: Start motion detect copy
   type: http
-  seq: 8
+  seq: 9
 }
 
 post {
-  url: {{base_url}}/stream/hls/start
+  url: {{base_url}}/detection/start
   body: json
   auth: inherit
 }
@@ -18,7 +18,7 @@ body:json {
 }
 
 vars:pre-request {
-  base_url: http://localhost:8080/api
+  base_url: http://localhost:8081/api
 }
 
 settings {

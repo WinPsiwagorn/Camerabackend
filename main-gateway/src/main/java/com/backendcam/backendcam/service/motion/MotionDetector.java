@@ -40,7 +40,7 @@ public class MotionDetector {
         detectionHeight = ((int) (height * scale)) & ~1;
         needsResize = (detectionWidth < width || detectionHeight < height);
 
-        mog2      = createBackgroundSubtractorMOG2(500, 16, true);
+        mog2      = createBackgroundSubtractorMOG2(100, 16, true);
         fgMask    = new Mat(detectionHeight, detectionWidth, CV_8UC1);
         resized   = new Mat(detectionHeight, detectionWidth, CV_8UC3);
         gray      = new Mat(detectionHeight, detectionWidth, CV_8UC1);

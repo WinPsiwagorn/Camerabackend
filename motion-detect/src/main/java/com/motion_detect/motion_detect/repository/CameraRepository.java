@@ -1,0 +1,193 @@
+package com.motion_detect.motion_detect.repository;
+
+import com.motion_detect.motion_detect.model.entity.Camera;
+import com.motion_detect.motion_detect.firestore.FirebaseAdminBootstrap;
+import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.*;
+import com.google.firebase.cloud.FirestoreClient;
+
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.stereotype.Repository;
+
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+
+@Repository
+@RequiredArgsConstructor
+public class CameraRepository {
+    
+    private static final String COLLECTION = "cameras";
+    private final FirebaseAdminBootstrap bootstrap;
+
+    private Firestore getFirestore() {
+        if (!bootstrap.isInitialized()) {
+            throw new IllegalStateException("Firebase is not initialized");
+        }
+        return FirestoreClient.getFirestore();
+    }
+
+    public long getTotalCount() throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION).get();
+        return future.get().size();
+    }
+
+    public List<Camera> getCamerasByPage(int page, int limit) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        Query query = db.collection(COLLECTION)
+                .orderBy(FieldPath.documentId());
+        
+        if (limit > 0) {
+            query = query.limit(limit);
+
+            if (page > 1) {
+                int docsToSkip = (page - 1) * limit;
+                QuerySnapshot skipped = db.collection(COLLECTION)
+                        .orderBy(FieldPath.documentId())
+                        .limit(docsToSkip)
+                        .get()
+                        .get();
+
+                if (!skipped.isEmpty()) {
+                    DocumentSnapshot lastDoc = skipped.getDocuments().get(skipped.size() - 1);
+                    query = query.startAfter(lastDoc);
+                }
+            }
+        }
+
+        List<Camera> cameras = new ArrayList<>();
+        QuerySnapshot querySnapshot = query.get().get();
+        
+        for (QueryDocumentSnapshot document : querySnapshot.getDocuments()) {
+            Camera camera = document.toObject(Camera.class);
+            camera.setId(document.getId());
+            cameras.add(camera);
+        }
+
+        return cameras;
+    }
+
+    public Optional<Camera> getCameraById(String id) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        DocumentReference docRef = db.collection(COLLECTION).document(id);
+        
+        ApiFuture<DocumentSnapshot> future = docRef.get();
+        DocumentSnapshot document = future.get();
+
+        if (document.exists()) {
+            Camera camera = document.toObject(Camera.class);
+            camera.setId(document.getId());
+            return Optional.of(camera);
+        }
+
+        return Optional.empty();
+    }
+
+    public Camera updateFields(String id, Map<String, Object> updates) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        DocumentReference docRef = db.collection(COLLECTION).document(id);
+        
+        // Check if document exists
+        DocumentSnapshot snapshot = docRef.get().get();
+        if (!snapshot.exists()) {
+            throw new NoSuchElementException("Camera not found with id: " + id);
+        }
+
+        docRef.update(updates).get();
+        
+        // Fetch and return the updated document
+        DocumentSnapshot updatedSnapshot = docRef.get().get();
+        Camera camera = updatedSnapshot.toObject(Camera.class);
+        camera.setId(updatedSnapshot.getId());
+        return camera;
+    }
+
+    /**
+     * Alias for getCameraById — used by services expecting a JPA-style findById.
+     */
+    public java.util.Optional<Camera> findById(String id) throws ExecutionException, InterruptedException {
+        return getCameraById(id);
+    }
+
+    public String save(Camera camera) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        ApiFuture<DocumentReference> future = db.collection(COLLECTION).add(camera);
+        return future.get().getId();
+    }
+
+    public void delete(String id) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        db.collection(COLLECTION).document(id).delete().get();
+    }
+
+    public List<Camera> getAllCameras() throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        List<Camera> cameras = new ArrayList<>();
+
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION).get();
+        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+
+        for (QueryDocumentSnapshot document : documents) {
+            Camera camera = document.toObject(Camera.class);
+            camera.setId(document.getId());
+            cameras.add(camera);
+        }
+
+        return cameras;
+    }
+
+    public Optional<List<Camera>> getCamerasByCategoryId(String categoryId) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+
+        ApiFuture<QuerySnapshot> queryFuture = db.collection(COLLECTION)
+                .whereArrayContains("categories", categoryId)
+                .get();
+
+        List<QueryDocumentSnapshot> documents = queryFuture.get().getDocuments();
+
+        if (documents.isEmpty()) {
+            return Optional.empty();
+        }
+
+        List<Camera> cameras = new ArrayList<>();
+        for (QueryDocumentSnapshot document : documents) {
+            Camera camera = document.toObject(Camera.class);
+            camera.setId(document.getId());
+            cameras.add(camera);
+        }
+
+        return Optional.of(cameras);
+    }
+
+    public Camera addCategoryToCamera(String cameraId, String categoryId) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        DocumentReference docRef = db.collection(COLLECTION).document(cameraId);
+
+        DocumentSnapshot snapshot = docRef.get().get();
+        if (!snapshot.exists()) {
+            throw new NoSuchElementException("Camera not found with id: " + cameraId);
+        }
+
+        docRef.update("categories", FieldValue.arrayUnion(categoryId)).get();
+
+        DocumentSnapshot updatedSnapshot = docRef.get().get();
+        Camera camera = updatedSnapshot.toObject(Camera.class);
+        camera.setId(updatedSnapshot.getId());
+        return camera;
+    }
+
+    public void removeCategoryFromCamera(String cameraId, String categoryId) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        db.collection(COLLECTION).document(cameraId)
+                .update("categories", FieldValue.arrayRemove(categoryId)).get();
+    }
+
+    public long countByStatus(String status) throws ExecutionException, InterruptedException {
+        Firestore db = getFirestore();
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
+                .whereEqualTo("status", status)
+                .get();
+        return future.get().size();
+    }
+}
