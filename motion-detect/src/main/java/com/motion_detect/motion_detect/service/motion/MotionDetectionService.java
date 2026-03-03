@@ -1,6 +1,7 @@
 package com.motion_detect.motion_detect.service.motion;
 
 import com.motion_detect.motion_detect.config.FFmpegGrabberConfig;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
 import com.motion_detect.motion_detect.model.entity.Camera;
 import com.motion_detect.motion_detect.repository.CameraRepository;
 import jakarta.annotation.PreDestroy;
