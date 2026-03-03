@@ -1,12 +1,14 @@
-package com.backendcam.backendcam.service.motion;
+package com.motion_detect.motion_detect.service.motion;
 
-import com.backendcam.backendcam.model.dto.motion.MotionEvent;
-import com.backendcam.backendcam.service.firestore.FirebaseAdminBootstrap;
-import com.backendcam.backendcam.service.kafka.MotionEventProducer;
+import com.motion_detect.motion_detect.model.dto.MotionEvent;
+import com.motion_detect.motion_detect.firestore.FirebaseAdminBootstrap;
+import com.motion_detect.motion_detect.service.kafka.MotionEventProducer;
 
 import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.Blob;
 import com.google.firebase.cloud.StorageClient;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import org.springframework.stereotype.Service;
@@ -15,52 +17,47 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class SaveMotionFrameService {
 
     private final FirebaseAdminBootstrap bootstrap;
     private final MotionEventProducer motionEventProducer;
 
-    public SaveMotionFrameService(FirebaseAdminBootstrap bootstrap,
-                                  MotionEventProducer motionEventProducer) {
-        this.bootstrap = bootstrap;
-        this.motionEventProducer = motionEventProducer;
-    }
-
     /**
-     * Deep copy a frame to BufferedImage
-     * Creates a new converter each time to avoid buffer sharing issues
+     * Deep copy a frame to BufferedImage.
+     * Creates and immediately closes a converter to avoid native memory leak.
      */
     private BufferedImage deepCopyFrameToImage(Frame frame) {
         if (frame == null || frame.image == null) {
             return null;
         }
         
-        // Create a NEW converter for each conversion to avoid buffer sharing
         Java2DFrameConverter converter = new Java2DFrameConverter();
-        BufferedImage original = converter.convert(frame);
-        
-        if (original == null) {
-            return null;
-        }
-        
-        // Create a completely new BufferedImage with copied data
-        // Use TYPE_3BYTE_BGR which is well-supported for JPEG encoding
-        BufferedImage copy = new BufferedImage(
-            original.getWidth(), 
-            original.getHeight(), 
-            BufferedImage.TYPE_3BYTE_BGR
-        );
-        
-        // CRITICAL: Dispose Graphics to prevent memory leak
-        java.awt.Graphics g = copy.getGraphics();
         try {
-            g.drawImage(original, 0, 0, null);
+            BufferedImage original = converter.convert(frame);
+            if (original == null) {
+                return null;
+            }
+            
+            BufferedImage copy = new BufferedImage(
+                original.getWidth(), 
+                original.getHeight(), 
+                BufferedImage.TYPE_3BYTE_BGR
+            );
+            
+            java.awt.Graphics g = copy.getGraphics();
+            try {
+                g.drawImage(original, 0, 0, null);
+            } finally {
+                g.dispose();
+            }
+            
+            return copy;
         } finally {
-            g.dispose();
+            try { converter.close(); } catch (Exception e) { /* ignore */ }
         }
-        
-        return copy;
     }
 
     /**
@@ -114,10 +111,14 @@ public class SaveMotionFrameService {
                 + bucket.getName() + "/"
                 + blob.getName();
 
+        log.info("Motion frame uploaded for camera {}", cameraId);
+
         motionEventProducer.send(MotionEvent.builder()
                 .cameraId(cameraId)
                 .timestamp(System.currentTimeMillis())
                 .imageUrl(url)
                 .build());
+        
+        log.info("Kafka event sent for camera {}", cameraId);
     }
 }

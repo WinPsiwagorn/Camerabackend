@@ -11,6 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+//import com.backendcam.backendcam.service.motion.MotionOrchestratorService;
+//import com.backendcam.backendcam.service.motion.SaveMotionFrameService;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -27,9 +29,13 @@ public class HLSStreamService {
 
     private final Map<String, Thread> streamThreads = new ConcurrentHashMap<>();
     private final Map<String, StreamContext> streamContexts = new ConcurrentHashMap<>();
+    //private final Map<String, MotionOrchestratorService> motionOrchestrators = new ConcurrentHashMap<>();
 
     @Autowired
     private FFmpegGrabberConfig grabberConfig;
+    /* 
+    @Autowired
+    private SaveMotionFrameService saveMotionFrameService;*/
 
     @Autowired
     private FFmpegRecorderConfig recorderConfig;
@@ -75,6 +81,10 @@ public class HLSStreamService {
 
         StreamContext context = new StreamContext();
 
+        // Create a dedicated motion orchestrator for this stream
+        /*MotionOrchestratorService orchestrator = new MotionOrchestratorService(saveMotionFrameService);
+        motionOrchestrators.put(streamName, orchestrator);*/
+
         Thread thread = new Thread(() -> {
             String hlsOutput = outputDir.getAbsolutePath().replace('\\', '/') + "/stream.m3u8";
             int fullRestartCount = 0;
@@ -91,6 +101,9 @@ public class HLSStreamService {
                     grabber = grabberConfig.startGrabberWithRetry(RTSPUrl, streamName, context);
                     int width = grabber.getImageWidth();
                     int height = grabber.getImageHeight();
+
+ 
+                    //orchestrator.init(width, height);
 
                     // Phase 2 — Init recorder (with retries)
                     recorder = recorderConfig.startRecorderWithRetry(hlsOutput, outputDir, width, height, streamName,
@@ -161,6 +174,7 @@ public class HLSStreamService {
                             }
 
                             recorder.record(frame);
+                            //orchestrator.processFrame(frame, streamName);
                             frame.close();
 
                         } catch (org.bytedeco.javacv.FFmpegFrameRecorder.Exception recEx) {
@@ -221,6 +235,8 @@ public class HLSStreamService {
 
             // Final cleanup
             logger.info("Stream {} thread exiting", streamName);
+            //orchestrator.cleanup();
+            //motionOrchestrators.remove(streamName);
             resourceManager.cleanupResources(context);
             streamContexts.remove(streamName);
             streamThreads.remove(streamName);
@@ -235,6 +251,7 @@ public class HLSStreamService {
         if (existingContext != null || existingThread != null) {
             streamContexts.remove(streamName, context);
             streamThreads.remove(streamName, thread);
+            //motionOrchestrators.remove(streamName, orchestrator); // discard unused orchestrator
             return "/api/hls/" + streamName + "/stream.m3u8";
         }
 
@@ -263,6 +280,8 @@ public class HLSStreamService {
                     if (context != null) {
                         resourceManager.cleanupResources(context);
                     }
+                   // MotionOrchestratorService forcedOrchestrator = motionOrchestrators.remove(streamName);
+                   // if (forcedOrchestrator != null) forcedOrchestrator.cleanup();
                     thread.join(2000);
                     if (thread.isAlive()) {
                         logger.error("Thread {} still alive after forced cleanup. It will be abandoned.", streamName);

@@ -1,0 +1,27 @@
+meta {
+  name: Start motion detect copy
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{base_url}}/detection/start
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "cameraId":"cJ28CRzcApNUvvMSmSST"
+  }
+  
+}
+
+vars:pre-request {
+  base_url: http://localhost:8081/api
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

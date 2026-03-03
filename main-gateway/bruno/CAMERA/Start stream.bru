@@ -1,0 +1,27 @@
+meta {
+  name: Start stream
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{base_url}}/stream/hls/start
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "cameraId":"cJ28CRzcApNUvvMSmSST"
+  }
+  
+}
+
+vars:pre-request {
+  base_url: http://localhost:8080/api
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
