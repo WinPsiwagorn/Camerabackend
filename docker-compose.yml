@@ -157,6 +157,10 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - TZ=Asia/Bangkok
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_TOPIC=motion-event
+      - KAFKA_GROUP_ID=accident-consumer-group
+      - KAFKA_AUTO_OFFSET_RESET=earliest
     volumes:
       - ./accident-ai-main/output:/output
       - ./accident-ai-main/.env:/app/.env
