@@ -28,6 +28,7 @@ class MapViewWidget extends StatefulWidget {
 class _MapViewWidgetState extends State<MapViewWidget> {
   late MapViewModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  dynamic _selectedCamera;
 
   @override
   void initState() {
@@ -264,34 +265,33 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                 initialZoom: 13.0,
                 componentCameraDocs: _model.cameraDocuments,
                 onMarkerTappedCallback: (tappedCamera) async {
-                  await showModalBottomSheet(
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    enableDrag: false,
-                    context: context,
-                    builder: (ctx) => GestureDetector(
-                      onTap: () {
-                        FocusScope.of(ctx).unfocus();
-                        FocusManager.instance.primaryFocus?.unfocus();
-                      },
-                      child: Padding(
-                        padding: MediaQuery.viewInsetsOf(ctx),
-                        child: MarkerInfoPopupWidget(
-                          cameraData: tappedCamera,
-                          onCloseTapped: () async => Navigator.pop(ctx),
-                          onLiveFeedTapped: (streamUrl, cameraDoc) async {
-                            _model.addToPreviewList(cameraDoc);
-                            safeSetState(() {});
-                          },
-                        ),
-                      ),
-                    ),
-                  );
-                  safeSetState(() {});
+                  safeSetState(() => _selectedCamera = tappedCamera);
                 },
               ),
             ),
           ),
+          // ── Camera info popup (no dialog barrier) ──────────────────────
+          if (_selectedCamera != null)
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => safeSetState(() => _selectedCamera = null),
+              child: Align(
+                alignment: Alignment.center,
+                child: GestureDetector(
+                  onTap: () {}, // absorb taps inside card
+                  child: MarkerInfoPopupWidget(
+                    cameraData: _selectedCamera,
+                    onCloseTapped: () async =>
+                        safeSetState(() => _selectedCamera = null),
+                    onLiveFeedTapped: (streamUrl, cameraDoc) async {
+                      _model.addToPreviewList(cameraDoc);
+                      safeSetState(() => _selectedCamera = null);
+                    },
+                  ),
+                ),
+              ),
+            ),
+
           // Preview panel
           if (_model.previewList.isNotEmpty)
             Align(
@@ -352,8 +352,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
         key: scaffoldKey,
         backgroundColor: Colors.white,
         appBar: PreferredSize(
-          preferredSize:
-              Size.fromHeight(MediaQuery.sizeOf(context).height * 0.05),
+          preferredSize: const Size.fromHeight(AppTextStyles.navBarHeight),
           child: AppBar(
             backgroundColor: Colors.white,
             automaticallyImplyLeading: false,
