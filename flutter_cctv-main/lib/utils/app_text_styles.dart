@@ -12,6 +12,7 @@ abstract class AppTextStyles {
   static const double sectionTitle    = 22;   // หัวข้อ section / dialog header
   static const double navBrand        = 16;   // ชื่อแบรนด์ใน nav bar
   static const double navItem         = 13;   // nav item label
+  static const double navBarHeight    = 56.0; // ความสูง AppBar (ทุกหน้า)
   static const double statCardTitle   = 14;   // label บน stat card
   static const double statCardValue   = 24;   // ตัวเลขบน stat card
 

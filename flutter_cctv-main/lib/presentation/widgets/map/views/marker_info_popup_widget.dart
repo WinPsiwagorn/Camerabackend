@@ -2,7 +2,6 @@ import '/utils/flutter_flow/icon_button.dart';
 import '/utils/flutter_flow/theme.dart';
 import '/utils/flutter_flow/util.dart';
 import '/utils/flutter_flow/widgets.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -67,16 +66,12 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
     final cameraId = widget.cameraData?['id']?.toString() ?? '';
     final categories = widget.cameraData?['categories'] as List<dynamic>?;
 
-    return Container(
-      color: Colors.black.withOpacity(0.4),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
-        child: Align(
-          alignment: AlignmentDirectional(0.0, 0.0),
-          child: Padding(
-            padding: EdgeInsets.all(24.0),
-            child: Container(
-              width: 520.0,
+    return Align(
+      alignment: AlignmentDirectional(0.0, 0.0),
+      child: Padding(
+        padding: EdgeInsets.all(24.0),
+        child: Container(
+          width: 520.0,
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.of(context).size.height * 0.85,
               ),
@@ -178,7 +173,7 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
                                 ),
                               ),
                               child: IconButton(
-                                onPressed: () => Navigator.pop(context),
+                                onPressed: () => widget.onCloseTapped?.call(),
                                 icon: Icon(Icons.close_rounded, color: Colors.white),
                                 iconSize: 20,
                                 padding: EdgeInsets.all(8),
@@ -390,7 +385,6 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
                                               widget.cameraData?['rtspUrl'] ?? '',
                                               widget.cameraData,
                                             );
-                                            Navigator.pop(context);
                                           }
                                         : null,
                                     style: ElevatedButton.styleFrom(
@@ -470,8 +464,6 @@ class _MarkerInfoPopupWidgetState extends State<MarkerInfoPopupWidget> {
               ),
             ),
           ),
-        ),
-      ),
     );
   }
 
