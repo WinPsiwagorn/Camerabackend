@@ -159,6 +159,9 @@ class _NavBarMainWidgetState extends State<NavBarMainWidget> {
           ),
         ),
 
+        // ── Profile / Logout ─────────────────────────────────────────────────
+        _ProfileButton(primaryColor: _primaryColor),
+
       ],
     );
   }
@@ -251,4 +254,127 @@ class _NavItemWidget extends StatelessWidget {
   }
 }
 
+// ─── Profile / Logout button ──────────────────────────────────────────────────
 
+class _ProfileButton extends StatefulWidget {
+  final Color primaryColor;
+  const _ProfileButton({required this.primaryColor});
+
+  @override
+  State<_ProfileButton> createState() => _ProfileButtonState();
+}
+
+class _ProfileButtonState extends State<_ProfileButton> {
+  bool _hovered = false;
+
+  void _logout(BuildContext context) {
+    AppState().clearAuth();
+    context.goNamed('LoginPage');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: PopupMenuButton<String>(
+        offset: const Offset(0, 40),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: Color(0xFFE5E7EB)),
+        ),
+        color: Colors.white,
+        elevation: 8,
+        tooltip: '',
+        onSelected: (value) {
+          if (value == 'logout') _logout(context);
+        },
+        itemBuilder: (_) => [
+          PopupMenuItem<String>(
+            enabled: false,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'admin',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF111827),
+                  ),
+                ),
+                Text(
+                  'Administrator',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    color: const Color(0xFF6B7280),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const PopupMenuDivider(),
+          PopupMenuItem<String>(
+            value: 'logout',
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: Row(
+              children: [
+                const Icon(Icons.logout_rounded,
+                    size: 15, color: Color(0xFFEF4444)),
+                const SizedBox(width: 8),
+                Text(
+                  'Logout',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFFEF4444),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: _hovered
+                ? widget.primaryColor.withOpacity(0.07)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color:
+                  _hovered ? widget.primaryColor.withOpacity(0.3) : const Color(0xFFE5E7EB),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 13,
+                backgroundColor: widget.primaryColor.withOpacity(0.12),
+                child: Icon(Icons.person_rounded,
+                    size: 15, color: widget.primaryColor),
+              ),
+              const SizedBox(width: 7),
+              Text(
+                'admin',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: AppTextStyles.navItem,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF374151),
+                  letterSpacing: -0.1,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.keyboard_arrow_down_rounded,
+                  size: 14, color: const Color(0xFF9CA3AF)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

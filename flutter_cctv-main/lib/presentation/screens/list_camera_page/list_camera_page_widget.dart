@@ -221,7 +221,7 @@ class _ListCameraPageWidgetState extends State<ListCameraPageWidget> {
             child: NavBarMainWidget(),
           ),
           centerTitle: false,
-          toolbarHeight: MediaQuery.sizeOf(context).height * 0.05,
+          toolbarHeight: AppTextStyles.navBarHeight,
           elevation: 2,
         ),
         body: SafeArea(
