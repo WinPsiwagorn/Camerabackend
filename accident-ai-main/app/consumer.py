@@ -4,8 +4,9 @@ import logging
 import os
 import datetime
 
-import aiohttp
 from aiokafka import AIOKafkaConsumer
+import firebase_admin
+from firebase_admin import credentials, storage
 
 from config import settings
 from detect import detect_accident
@@ -16,6 +17,14 @@ logger = logging.getLogger(__name__)
 OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'output'))
 RETRY_INTERVAL_SECONDS = 5
 
+# Initialize Firebase Admin SDK with Storage bucket
+SERVICE_ACCOUNT_PATH = "/secrets/serviceAccount.json"
+if not firebase_admin._apps:
+    cred = credentials.Certificate(SERVICE_ACCOUNT_PATH)
+    firebase_admin.initialize_app(cred, {
+        'storageBucket': settings.FIREBASE_STORAGE_BUCKET
+    })
+    logger.info("Firebase Admin SDK initialized with Storage bucket")
 
 def parse_timestamp(raw) -> str:
     if isinstance(raw, int):
@@ -65,15 +74,25 @@ async def consume():
                 temp_image_path = os.path.join(OUTPUT_DIR, f"temp_{timestamp}.jpg")
 
                 try:
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(image_url) as response:
-                            if response.status != 200:
-                                logger.warning(f"Failed to download image: {image_url}, status: {response.status}")
-                                continue
-                            with open(temp_image_path, "wb") as f:
-                                f.write(await response.read())
+                    # Extract blob path from Firebase Storage URL
+                    # URL format: https://storage.googleapis.com/bucket-name/motion/cameraId/timestamp.jpg
+                    if "storage.googleapis.com" in image_url:
+                        # Extract path after bucket name
+                        parts = image_url.split("/")
+                        # Find index after bucket name (skip https://storage.googleapis.com/bucket-name/)
+                        blob_path = "/".join(parts[4:])  # motion/cameraId/timestamp.jpg
+                        
+                        # Download from Firebase Storage with authentication (non-blocking)
+                        bucket = storage.bucket()
+                        blob = bucket.blob(blob_path)
+                        await asyncio.to_thread(blob.download_to_filename, temp_image_path)
+                        logger.debug(f"Downloaded from Firebase Storage: {blob_path}")
+                    else:
+                        logger.warning(f"Unknown storage URL format: {image_url}")
+                        continue
 
-                    accident_found = detect_accident(temp_image_path)
+                    # Run detection (also CPU-intensive, run in thread pool)
+                    accident_found = await asyncio.to_thread(detect_accident, temp_image_path)
 
                     if accident_found:
                         repo.save_accident(timestamp, image_url, camera_id)

@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     KAFKA_TOPIC: str
     KAFKA_GROUP_ID: str
     KAFKA_AUTO_OFFSET_RESET: str
+    FIREBASE_STORAGE_BUCKET: str 
 
     model_config = {
         "env_file": "/app/.env",

@@ -3,7 +3,7 @@ from firebase_admin import credentials, firestore
 import os
 import logging
 from datetime import datetime, timezone, timedelta
-
+from config import settings
 logger = logging.getLogger(__name__)
 
 CRED_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'secrets', 'serviceAccount.json'))
@@ -15,9 +15,12 @@ def parse_timestamp(ts_str: str) -> datetime:
 
 class FirestoreRepository:
     def __init__(self):
-        cred = credentials.Certificate(CRED_PATH)
         if not firebase_admin._apps:
-            firebase_admin.initialize_app(cred)
+            cred = credentials.Certificate(CRED_PATH)
+            firebase_admin.initialize_app(cred, {
+                'storageBucket': settings.FIREBASE_STORAGE_BUCKET
+            })
+            logger.info("Firebase Admin SDK initialized in FirestoreRepository")
         self.db = firestore.client()
 
     def save_accident(self, timestamp: str, image_url: str, camera_id: str):
