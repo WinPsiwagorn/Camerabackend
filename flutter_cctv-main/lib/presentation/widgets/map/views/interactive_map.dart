@@ -324,7 +324,7 @@ class _InteractiveMapState extends State<InteractiveMap> {
   void _showClusterPicker(BuildContext context, List<dynamic> docs) {
     showDialog(
       context: context,
-      barrierColor: Colors.black54,
+      barrierColor: Colors.transparent,
       builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),

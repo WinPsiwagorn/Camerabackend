@@ -359,6 +359,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
             SliverAppBar(
               pinned: true,
               floating: true,
+              toolbarHeight: AppTextStyles.navBarHeight,
               backgroundColor: const Color(0xFFF3F4F6),
               iconTheme: IconThemeData(color: Color(0xFFD6C6C6)),
               automaticallyImplyLeading: false,

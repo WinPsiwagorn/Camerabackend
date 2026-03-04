@@ -204,7 +204,7 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
             child: NavBarMainWidget(),
           ),
           centerTitle: false,
-          toolbarHeight: MediaQuery.sizeOf(context).height * 0.05,
+          toolbarHeight: AppTextStyles.navBarHeight,
           elevation: 2,
         ),
         body: SafeArea(
