@@ -71,9 +71,10 @@ async def consume():
                     continue
 
                 logger.info(f"Processing image from camera [{camera_id}]: {image_url}")
-                temp_image_path = os.path.join(OUTPUT_DIR, f"temp_{timestamp}.jpg")
+                temp_image_path = None
 
                 try:
+                    temp_image_path = os.path.join(OUTPUT_DIR, f"temp_{timestamp}.jpg")
                     # Extract blob path from Firebase Storage URL
                     # URL format: https://storage.googleapis.com/bucket-name/motion/cameraId/timestamp.jpg
                     if "storage.googleapis.com" in image_url:
