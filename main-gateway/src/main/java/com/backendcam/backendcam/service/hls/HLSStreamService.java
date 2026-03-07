@@ -2,7 +2,9 @@ package com.backendcam.backendcam.service.hls;
 
 import java.io.File;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.FFmpegFrameRecorder;
@@ -11,6 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.backendcam.backendcam.model.entity.Camera;
+import com.backendcam.backendcam.repository.CameraRepository;
 //import com.backendcam.backendcam.service.motion.MotionOrchestratorService;
 //import com.backendcam.backendcam.service.motion.SaveMotionFrameService;
 
@@ -30,6 +35,9 @@ public class HLSStreamService {
     private final Map<String, Thread> streamThreads = new ConcurrentHashMap<>();
     private final Map<String, StreamContext> streamContexts = new ConcurrentHashMap<>();
     //private final Map<String, MotionOrchestratorService> motionOrchestrators = new ConcurrentHashMap<>();
+
+    @Autowired
+    private CameraRepository cameraRepository;
 
     @Autowired
     private FFmpegGrabberConfig grabberConfig;
@@ -80,6 +88,8 @@ public class HLSStreamService {
         }
 
         StreamContext context = new StreamContext();
+        // Use AtomicReference so the reconnect loop can update the URL with a fresh one from Firebase
+        AtomicReference<String> currentRtspUrl = new AtomicReference<>(RTSPUrl);
 
         // Create a dedicated motion orchestrator for this stream
         /*MotionOrchestratorService orchestrator = new MotionOrchestratorService(saveMotionFrameService);
@@ -98,7 +108,7 @@ public class HLSStreamService {
 
                 try {
                     // Phase 1 — Init grabber (with retries, dimension detection)
-                    grabber = grabberConfig.startGrabberWithRetry(RTSPUrl, streamName, context);
+                    grabber = grabberConfig.startGrabberWithRetry(currentRtspUrl.get(), streamName, context);
                     int width = grabber.getImageWidth();
                     int height = grabber.getImageHeight();
 
@@ -143,9 +153,13 @@ public class HLSStreamService {
                                                 streamName, reconnectAttempts, MAX_RECONNECT_ATTEMPTS);
                                         try {
                                             grabberConfig.safeClose(grabber);
+                                            // Fetch fresh RTSP URL from Firebase in case it was updated
+                                            String freshUrl = fetchRtspUrlFromFirebase(streamName, currentRtspUrl.get());
+                                            currentRtspUrl.set(freshUrl);
+                                            // Clean stale HLS segments before reconnecting
+                                            resourceManager.cleanStreamFiles(streamName);
                                             Thread.sleep(RECONNECT_DELAY_MS);
-                                            // startGrabberWithRetry creates a fresh grabber internally
-                                            grabber = grabberConfig.startGrabberWithRetry(RTSPUrl, streamName, context);
+                                            grabber = grabberConfig.startGrabberWithRetry(currentRtspUrl.get(), streamName, context);
                                             nullFrameCount = 0;
                                             logger.info("Stream {} - Reconnected successfully", streamName);
                                         } catch (Exception reconnectEx) {
@@ -220,6 +234,10 @@ public class HLSStreamService {
                     if (fullRestartCount <= MAX_FULL_RESTARTS) {
                         logger.info("Stream {} - Full pipeline restart {}/{}, waiting {}ms...",
                                 streamName, fullRestartCount, MAX_FULL_RESTARTS, FULL_RESTART_DELAY_MS);
+                        // Refresh URL from Firebase and clean stale files before full restart
+                        String freshUrl = fetchRtspUrlFromFirebase(streamName, currentRtspUrl.get());
+                        currentRtspUrl.set(freshUrl);
+                        resourceManager.cleanStreamFiles(streamName);
                         try {
                             Thread.sleep(FULL_RESTART_DELAY_MS);
                         } catch (InterruptedException ie) {
@@ -258,6 +276,41 @@ public class HLSStreamService {
         thread.start();
         logger.info("Started stream thread for {}", streamName);
         return "/api/hls/" + streamName + "/stream.m3u8";
+    }
+
+    /**
+     * Attempts to fetch the latest RTSP URL for the given stream from Firebase/Firestore.
+     * The streamName is expected to follow the pattern "stream-{cameraId}".
+     * Falls back to the provided {@code fallbackUrl} if Firebase is unavailable or returns no URL.
+     *
+     * @param streamName  HLS stream name (e.g. "stream-abc123")
+     * @param fallbackUrl URL to use when Firebase lookup fails
+     * @return fresh RTSP URL from Firebase, or {@code fallbackUrl} on any error
+     */
+    private String fetchRtspUrlFromFirebase(String streamName, String fallbackUrl) {
+        try {
+            if (streamName != null && streamName.startsWith("stream-")) {
+                String cameraId = streamName.substring("stream-".length());
+                Optional<Camera> cameraOpt = cameraRepository.getCameraById(cameraId);
+                if (cameraOpt.isPresent()) {
+                    String freshUrl = cameraOpt.get().getRtspUrl();
+                    if (freshUrl != null && !freshUrl.isBlank()) {
+                        if (!freshUrl.equals(fallbackUrl)) {
+                            logger.info("Stream {} - RTSP URL refreshed from Firebase: {}", streamName, freshUrl);
+                        } else {
+                            logger.debug("Stream {} - RTSP URL unchanged after Firebase lookup", streamName);
+                        }
+                        return freshUrl;
+                    }
+                }
+                logger.warn("Stream {} - Camera {} not found or has no RTSP URL in Firebase, keeping cached URL",
+                        streamName, cameraId);
+            }
+        } catch (Exception e) {
+            logger.warn("Stream {} - Firebase RTSP URL lookup failed ({}), keeping cached URL",
+                    streamName, e.getMessage());
+        }
+        return fallbackUrl;
     }
 
     public String stopHLSStream(String streamName) {
