@@ -68,7 +68,7 @@ public class HLSStreamService {
 
     // ─── Main entry point ─────────────────────────────────────────────
 
-    public String startHLSStream(String RTSPUrl, String streamName) {
+    public synchronized String startHLSStream(String RTSPUrl, String streamName) {
 
         if (streamThreads.containsKey(streamName)) {
             return "/api/hls/" + streamName + "/stream.m3u8";
@@ -262,7 +262,8 @@ public class HLSStreamService {
 
     public String stopHLSStream(String streamName) {
         Thread thread = streamThreads.remove(streamName);
-        StreamContext context = streamContexts.get(streamName);
+        // Remove context eagerly so a concurrent startHLSStream can proceed during the join window
+        StreamContext context = streamContexts.remove(streamName);
 
         if (thread == null && context == null) {
             return "Stream not found or already stopped.";
@@ -295,16 +296,18 @@ public class HLSStreamService {
             }
         }
 
-        streamContexts.remove(streamName);
-
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        // Only delete HLS files if no new stream was started for this name during the join window
+        if (!streamContexts.containsKey(streamName)) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            resourceManager.deleteStreamDirectory(streamName);
+            logger.info("Stream {} stopped and files deleted", streamName);
+        } else {
+            logger.info("Stream {} stopped — new instance already running, files preserved", streamName);
         }
-
-        resourceManager.deleteStreamDirectory(streamName);
-        logger.info("Stream {} stopped and files deleted", streamName);
         return "Stream stopped and files deleted.";
     }
 }

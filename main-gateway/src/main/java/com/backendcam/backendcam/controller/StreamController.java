@@ -49,10 +49,10 @@ public class StreamController {
                 return ResponseEntity.badRequest().body(Map.of("error", "No RTSP URL configured for camera: " + request.getCameraId()));
             }
 
-            // Sanitize camera ID to use as stream name
-            String streamName = request.getCameraId().replaceAll("[^a-zA-Z0-9_-]", "_");
-
-            String hlsUrl = hlsService.startHLSStream(camera.getRtspUrl(), streamName);
+            // Route through StreamManager so the start is synchronized and ref-counted
+            streamManager.subscribe(request.getCameraId(), camera.getRtspUrl());
+            CameraStreamState state = streamManager.getStreamState(request.getCameraId());
+            String hlsUrl = "/api/hls/" + state.getProcessHandle() + "/stream.m3u8";
             return ResponseEntity.ok(Map.of("hlsUrl", hlsUrl));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", "Failed to start stream: " + e.getMessage()));
