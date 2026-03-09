@@ -117,6 +117,47 @@ public class StreamResourceManager {
         }
     }
 
+    /**
+     * Delete only the HLS segment files (.ts, .m3u8) inside the stream folder,
+     * preserving the directory itself so the recorder can immediately reuse it.
+     * Called before each reconnect attempt to avoid serving stale segments.
+     *
+     * @param streamName The name of the stream
+     */
+    public void cleanStreamFiles(String streamName) {
+        if (streamName == null || streamName.trim().isEmpty()) {
+            return;
+        }
+
+        Path streamDir = Paths.get(HLS_ROOT, streamName);
+
+        if (!Files.exists(streamDir) || !Files.isDirectory(streamDir)) {
+            return;
+        }
+
+        logger.info("Stream {} - Cleaning stale HLS segment files before reconnect", streamName);
+
+        try {
+            Files.walk(streamDir)
+                    .filter(Files::isRegularFile)
+                    .filter(p -> {
+                        String name = p.getFileName().toString();
+                        return name.endsWith(".ts") || name.endsWith(".m3u8");
+                    })
+                    .forEach(path -> {
+                        try {
+                            Files.deleteIfExists(path);
+                            logger.trace("Cleaned segment: {}", path);
+                        } catch (IOException e) {
+                            logger.warn("Failed to clean segment: {} - {}", path, e.getMessage());
+                        }
+                    });
+            logger.info("Stream {} - Stale HLS files cleaned", streamName);
+        } catch (IOException e) {
+            logger.error("Stream {} - Error cleaning HLS files: {}", streamName, e.getMessage());
+        }
+    }
+
     public String getHlsRoot() {
         return HLS_ROOT;
     }
