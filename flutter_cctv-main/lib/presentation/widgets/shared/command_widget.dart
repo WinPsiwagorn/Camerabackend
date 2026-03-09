@@ -265,7 +265,12 @@ class _VideoTileState extends State<_VideoTile> {
             child: widget.isEditMode
                 ? _editModePlaceholder(widget.camera?.name ?? 'CAM ${widget.index + 1}')
                 : hasCam
-                    ? FutureBuilder<_HlsResult>(
+                    // F2: hlsFuture is null when this camera is shown full-screen
+                    // in the focus overlay. Show a dark placeholder instead of a
+                    // live player to avoid two concurrent streams for the same camera.
+                    ? (widget.hlsFuture == null
+                        ? _StreamLoadingTile(cameraName: widget.camera!.name)
+                        : FutureBuilder<_HlsResult>(
                         // Use normalized key (id || name) so cameras with
                         // empty id don't all share the same ValueKey('').
                         key: ValueKey(widget.camera!.id.isNotEmpty
@@ -293,7 +298,7 @@ class _VideoTileState extends State<_VideoTile> {
                             hlsUrl: hls,
                           );
                         },
-                      )
+                      ))
                     : _noStream(widget.index),
           ),
           // Camera name label
@@ -1337,8 +1342,17 @@ class _CommandWidgetState extends State<CommandWidget> {
                     ),
                     itemBuilder: (context, index) {
                       final cam = slots[index];
+                      // F2: when this camera is already displayed full-screen in
+                      // the focus overlay, don't keep a live HlsPlayer running
+                      // in the grid behind it — that would create two concurrent
+                      // players (and two <iframes>) for the same stream.
+                      final isFocused = _focusedCamera != null &&
+                          cam != null &&
+                          (cam.id.isNotEmpty
+                              ? cam.id == _focusedCamera!.id
+                              : cam.name == _focusedCamera!.name);
                       final Future<_HlsResult>? fut =
-                          cam != null ? _ensureHls(cam) : null;
+                          (cam != null && !isFocused) ? _ensureHls(cam) : null;
 
                       // Edit mode: tap-to-swap tiles
                       if (_isEditMode) {
