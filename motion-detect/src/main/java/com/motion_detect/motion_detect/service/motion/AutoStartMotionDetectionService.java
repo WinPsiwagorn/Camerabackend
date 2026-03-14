@@ -39,7 +39,8 @@ public class AutoStartMotionDetectionService {
         "6zPF3zqxrpIYnV2Xgxph",
         "kYXGuURA9fnOpggMugyY",
         "u6NVd7Nt5bdUalWPoZpI",
-        "CGBuqkY8DoeVXzRKlEZV"
+        "CGBuqkY8DoeVXzRKlEZV",
+        "5Api66Erl2ISMw2XLXtA"
     );
 
     /**

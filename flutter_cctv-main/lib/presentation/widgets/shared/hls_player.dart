@@ -39,14 +39,21 @@ class HlsPlayer extends StatefulWidget {
 }
 
 class _HlsPlayerWebState extends State<HlsPlayer> {
+  // F3: use a global counter so simultaneous widgets never share a viewType,
+  // even when they are created in the same millisecond.
+  static int _counter = 0;
+
   late final String _viewType;
   String? _resolvedUrl;
   String? _error;
+  // F1: track whether we have already registered the platform-view factory
+  // so we never call registerViewFactory twice for the same _viewType.
+  bool _viewRegistered = false;
 
   @override
   void initState() {
     super.initState();
-    _viewType = 'hls-view-${DateTime.now().millisecondsSinceEpoch}';
+    _viewType = 'hls-view-${++_counter}';
     _initPlayer();
   }
 
@@ -285,7 +292,12 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
       return _unavailableWidget();
     }
 
-    _registerView(_resolvedUrl!);
+    // F1: only register the factory once — calling it again on every rebuild
+    // would create a fresh <iframe> on each repaint (double-stream bug).
+    if (!_viewRegistered) {
+      _registerView(_resolvedUrl!);
+      _viewRegistered = true;
+    }
 
     final w = widget.width ?? MediaQuery.of(context).size.width;
     final h = widget.height ?? w * 9 / 16;

@@ -530,7 +530,7 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                             FFButtonWidget(
                               onPressed: () async {
                                   // Show comprehensive category management dialog
-                                  showDialog(
+                                  await showDialog(
                                     context: context,
                                     builder: (BuildContext dialogContext) {
                                       // State for the dialog
@@ -1572,6 +1572,13 @@ class _CollectionWidgetState extends State<CollectionWidget> {
                                       );
                                     },
                                   );
+                                  // Re-fetch table after dialog closes to reflect any category changes
+                                  if (mounted) {
+                                    _fetchCameras(
+                                      page: _model.currentPage,
+                                      search: _model.searchQuery,
+                                    );
+                                  }
                                 },
                                 text: 'Manage Categories',
                                 icon: Icon(

@@ -112,6 +112,7 @@ services:
       - ./license-plate-v1s-main/output:/app/output
       - ./license-plate-v1s-main/models:/app/models
       - ./license-plate-v1s-main/.env.dev:/app/.env
+      - ./license-plate-v1s-main/secrets:/secrets
     environment:
       - PYTHONUNBUFFERED=1
       - TZ=Asia/Bangkok
