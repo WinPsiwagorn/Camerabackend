@@ -163,10 +163,21 @@ public class LicensePlateService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        // Assign camera objects back to each plate
+        // Assign a trimmed camera object (id, name, latLong, address, status only) back to each plate
         plates.forEach(p -> {
-            if (p.getCameraId() != null) {
-                p.setCamera(cache.get(p.getCameraId()));
+            String camId = p.getCameraId();
+            if (camId != null) {
+                Camera full = cache.get(camId);
+                if (full != null) {
+                    Camera trimmed = new Camera();
+                    trimmed.setId(full.getId());
+                    trimmed.setName(full.getName());
+                    trimmed.setLatLong(full.getLatLong());
+                    trimmed.setAddress(full.getAddress());
+                    trimmed.setStatus(full.getStatus());
+                    // rtspUrl, categories, lastSeen are intentionally omitted
+                    p.setCamera(trimmed);
+                }
             }
         });
     }
