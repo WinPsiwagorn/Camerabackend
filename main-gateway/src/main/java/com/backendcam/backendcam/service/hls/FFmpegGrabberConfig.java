@@ -196,7 +196,7 @@ public class FFmpegGrabberConfig {
         // Probe settings - must be large enough to detect HEVC/H.265 resolution
         // Too small (e.g. 32) causes "Picture size 0x0" errors on HEVC cameras
         grabber.setOption("analyzeduration", "5000000"); // 5 second to analyze stream
-        grabber.setOption("probesize", "15000000"); // 15MB to detect codec params
+        grabber.setOption("probesize", "1000000"); // 1MB to detect codec params
         grabber.setOption("max_delay", "500000"); // 500ms max delay
         grabber.setOption("reorder_queue_size", "0");
 
