@@ -1,5 +1,6 @@
 package com.backendcam.backendcam.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,7 +12,11 @@ import lombok.Setter;
 public class LicensePlate {
     private String timestamp;
     private String imageUrl;
+
+    @JsonIgnore
     private String cameraId;
+
+    private Camera camera;
     private LicensePlateBody licensePlate;
 
     @Getter
