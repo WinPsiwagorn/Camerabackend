@@ -188,7 +188,7 @@ class LicensePlateDetector:
         use_ocr: Optional[bool] = None,
         kafka_timestamp: Optional[str] = None,
         image_url: Optional[str] = None,
-        camera_id: Optional[str] = None
+        camera_name: Optional[str] = None
     ) -> Dict:
         """
         ตรวจจับป้ายทะเบียนในภาพและอ่านข้อความ (ถ้าเปิดใช้งาน OCR)
@@ -200,7 +200,7 @@ class LicensePlateDetector:
             use_ocr: ใช้ OCR หรือไม่ (ถ้าไม่ได้ระบุ จะใช้ค่าจากการตั้งค่าเริ่มต้น)
             kafka_timestamp: timestamp จาก Kafka message
             image_url: URL ของภาพต้นฉบับจาก Kafka
-            camera_id: ID ของกล้องที่ส่งภาพมา
+            camera_name: ชื่อของกล้องที่ส่งภาพมา
         
         Returns:
             dict ของผลลัพธ์การตรวจจับ
@@ -268,7 +268,7 @@ class LicensePlateDetector:
             "timestamp": timestamp_iso,
             "kafka_timestamp": kafka_timestamp,
             "imageUrl": image_url,
-            "cameraId": camera_id,
+            "cameraName": camera_name,
             "detections": detections,
             "total_plates": len(detections),
             "processing_time": {
@@ -610,13 +610,13 @@ class LicensePlateDetector:
         docs = []
         timestamp = output_data.get("timestamp")
         imageUrl = output_data.get("imageUrl")
-        cameraId = output_data.get("cameraId")
+        cameraName = output_data.get("cameraName")
         for det in output_data.get("detections", []):
             ocr = det.get("ocr", {})
             doc = {
                 "timestamp": timestamp,
                 "imageUrl": imageUrl,
-                "cameraId": cameraId,
+                "cameraName": cameraName,
                 "licensePlate": {
                     "fullPlate": ocr.get("full_plate", ""),
                     "text": ocr.get("text", ""),
