@@ -46,6 +46,7 @@ class FirestoreRepository:
             "timestamp": Firestore.Timestamp,
             "imageUrl": str,
             "cameraName": str,
+            "cameraId": str,
             "kafka_timestamp": Firestore.Timestamp (optional),
             "licensePlate": {
                 "fullPlate": str,
@@ -60,6 +61,7 @@ class FirestoreRepository:
             timestamp_str = data.get("timestamp", "")
             image_url = data.get("imageUrl", "")
             camera_name = data.get("cameraName", "")
+            camera_id = data.get("cameraId", "")
             kafka_timestamp_str = data.get("kafka_timestamp", "")
             license_plate = data.get("licensePlate", {})
             
@@ -71,6 +73,7 @@ class FirestoreRepository:
                 "timestamp": parsed_timestamp,
                 "imageUrl": image_url,
                 "cameraName": camera_name,
+                "cameraId": camera_id,
                 "licensePlate": license_plate
             }
             
