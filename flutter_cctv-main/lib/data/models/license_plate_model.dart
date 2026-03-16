@@ -1,12 +1,14 @@
 /// License Plate Data Model - โมเดลข้อมูลทะเบียนรถ
 class LicensePlateModel {
   final String? timestamp;
+  final String? cameraName;
   final String? cameraId;
   final String? imageUrl;
   final LicensePlateDetail? licensePlate;
 
   LicensePlateModel({
     this.timestamp,
+    this.cameraName,
     this.cameraId,
     this.imageUrl,
     this.licensePlate,
@@ -15,6 +17,7 @@ class LicensePlateModel {
   factory LicensePlateModel.fromJson(Map<String, dynamic> json) {
     return LicensePlateModel(
       timestamp: json['timestamp'] as String?,
+      cameraName: json['cameraName'] as String?,
       cameraId: json['cameraId'] as String?,
       imageUrl: json['imageUrl'] as String?,
       licensePlate: json['licensePlate'] != null
@@ -27,6 +30,7 @@ class LicensePlateModel {
   Map<String, dynamic> toJson() {
     return {
       if (timestamp != null) 'timestamp': timestamp,
+      if (cameraName != null) 'cameraName': cameraName,
       if (cameraId != null) 'cameraId': cameraId,
       if (imageUrl != null) 'imageUrl': imageUrl,
       if (licensePlate != null) 'licensePlate': licensePlate?.toJson(),
@@ -35,7 +39,7 @@ class LicensePlateModel {
 
   @override
   String toString() =>
-      'LicensePlateModel(cameraId: $cameraId, plate: ${licensePlate?.fullPlate})';
+      'LicensePlateModel(cameraName: $cameraName, cameraId: $cameraId, plate: ${licensePlate?.fullPlate})';
 }
 
 /// รายละเอียดของทะเบียนรถ
