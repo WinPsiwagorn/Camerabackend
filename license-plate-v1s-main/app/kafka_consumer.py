@@ -46,7 +46,7 @@ async def consume(detector):
             image_url = payload.get("imageUrl")
             use_ocr = payload.get("use_ocr", True)
             kafka_timestamp = payload.get("timestamp")  # รับ timestamp จาก Kafka
-            camera_id = payload.get("cameraId")  # รับ cameraId จาก Kafka
+            camera_name = payload.get("cameraName")  # รับ cameraName จาก Kafka
 
             if image_url:
                 temp_image_path = None
@@ -76,7 +76,7 @@ async def consume(detector):
                         use_ocr=use_ocr,
                         kafka_timestamp=kafka_timestamp,
                         image_url=image_url,
-                        camera_id=camera_id
+                        camera_name=camera_name
                     )
                     logger.info(f"Detection finished for {image_url}: {result.get('total_plates')} plates detected.")
                     logger.info(f"      Saved: {result.get('output_image_path')}")
