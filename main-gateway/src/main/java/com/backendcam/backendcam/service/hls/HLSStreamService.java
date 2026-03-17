@@ -108,7 +108,12 @@ public class HLSStreamService {
 
                 try {
                     // Phase 1 — Init grabber (with retries, dimension detection)
-                    grabber = grabberConfig.startGrabberWithRetry(currentRtspUrl.get(), streamName, context);
+                    // SD Configuration (Standard Definition)
+                    // grabber = grabberConfig.startGrabberWithRetry(currentRtspUrl.get(), streamName, context);
+                    
+                    // HD Configuration (High Definition - 720p/1080p)
+                    grabber = grabberConfig.startGrabberWithRetryHD(currentRtspUrl.get(), streamName, context);
+                    
                     int width = grabber.getImageWidth();
                     int height = grabber.getImageHeight();
 
@@ -116,8 +121,11 @@ public class HLSStreamService {
                     //orchestrator.init(width, height);
 
                     // Phase 2 — Init recorder (with retries)
-                    recorder = recorderConfig.startRecorderWithRetry(hlsOutput, outputDir, width, height, streamName,
-                            context);
+                    // SD Configuration (Standard Definition)
+                    // recorder = recorderConfig.startRecorderWithRetry(hlsOutput, outputDir, width, height, streamName, context);
+                    
+                    // HD Configuration (High Definition - 720p/1080p)
+                    recorder = recorderConfig.startRecorderWithRetryHD(hlsOutput, outputDir, width, height, streamName, context);
 
                     logger.info("Stream {} - Flushing stale grabber buffer...", streamName);
                     int flushed = 0;
@@ -159,7 +167,10 @@ public class HLSStreamService {
                                             // Clean stale HLS segments before reconnecting
                                             resourceManager.cleanStreamFiles(streamName);
                                             Thread.sleep(RECONNECT_DELAY_MS);
-                                            grabber = grabberConfig.startGrabberWithRetry(currentRtspUrl.get(), streamName, context);
+                                            // SD Configuration
+                                            // grabber = grabberConfig.startGrabberWithRetry(currentRtspUrl.get(), streamName, context);
+                                            // HD Configuration
+                                            grabber = grabberConfig.startGrabberWithRetryHD(currentRtspUrl.get(), streamName, context);
                                             nullFrameCount = 0;
                                             logger.info("Stream {} - Reconnected successfully", streamName);
                                         } catch (Exception reconnectEx) {
