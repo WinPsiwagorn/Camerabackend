@@ -37,7 +37,7 @@ services:
       dockerfile: Dockerfile
     image: motion-detect:latest
     ports:
-      - "8081:8081"
+      - "8082:8082"
     environment:
       TZ: "Asia/Bangkok"
       GOOGLE_APPLICATION_CREDENTIALS: "/secrets/serviceAccount.json"
@@ -112,6 +112,7 @@ services:
       - ./license-plate-v1s-main/output:/app/output
       - ./license-plate-v1s-main/models:/app/models
       - ./license-plate-v1s-main/.env.dev:/app/.env
+      - ./license-plate-v1s-main/secrets:/secrets
     environment:
       - PYTHONUNBUFFERED=1
       - TZ=Asia/Bangkok
@@ -157,6 +158,10 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - TZ=Asia/Bangkok
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_TOPIC=motion-event
+      - KAFKA_GROUP_ID=accident-consumer-group
+      - KAFKA_AUTO_OFFSET_RESET=earliest
     volumes:
       - ./accident-ai-main/output:/output
       - ./accident-ai-main/.env:/app/.env
@@ -172,3 +177,29 @@ services:
         reservations:
           cpus: '2'
           memory: 3G
+
+  camera-status-checker:
+    container_name: camera-status-checker
+    build:
+      context: ./camera-status-checker
+      dockerfile: Dockerfile
+    image: camera-status-checker:latest
+    ports:
+      - "8081:8081"
+    environment:
+      TZ: "Asia/Bangkok"
+      GOOGLE_APPLICATION_CREDENTIALS: "/secrets/serviceAccount.json"
+      FIREBASE_CREDENTIALS_PATH: "file:/secrets/serviceAccount.json"
+    volumes:
+      - ./camera-status-checker/secrets/serviceAccount.json:/secrets/serviceAccount.json:ro
+      - /usr/share/zoneinfo/Asia/Bangkok:/etc/localtime:ro
+      - /usr/share/zoneinfo/Asia/Bangkok:/etc/timezone:ro
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M

@@ -89,8 +89,49 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
   @override
   void dispose() {
     _model.dispose();
-
     super.dispose();
+  }
+
+  Future<void> _triggerLogin(BuildContext context) async {
+    final username = _model.emailAddressTextController.text.trim();
+    final password = _model.passwordTextController.text;
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please fill in Username and Password'),
+          backgroundColor: const Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+      return;
+    }
+
+    safeSetState(() => _model.isLoading = true);
+
+    _model.apiAuthResult = await AuthService().login(
+      username: username,
+      password: password,
+    );
+
+    if (!mounted) return;
+
+    if (_model.apiAuthResult?.succeeded ?? false) {
+      final body = _model.apiAuthResult!.jsonBody;
+      final token = body?['accessToken'] ?? body?['token'] ?? '';
+      AppState().authToken = token?.toString() ?? '';
+      context.goNamed(ListCameraPageWidget.routeName);
+    } else {
+      safeSetState(() => _model.isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Login failed. Please check your credentials.'),
+          backgroundColor: const Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    }
   }
 
   @override
@@ -128,7 +169,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                         image: DecorationImage(
                           fit: BoxFit.cover,
                           image: Image.asset(
-                            'assets/images/CCTV.jpg',
+                            'assets/images/login.jpg',
                           ).image,
                         ),
                       ),
@@ -234,6 +275,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                     autofocus: true,
                                     autofillHints: [AutofillHints.email],
                                     obscureText: false,
+                                    textInputAction: TextInputAction.next,
                                     decoration: InputDecoration(
                                       labelText: 'Username',
                                       labelStyle: FlutterFlowTheme.of(context)
@@ -327,6 +369,18 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                     autofocus: true,
                                     autofillHints: [AutofillHints.password],
                                     obscureText: !_model.passwordVisibility,
+                                    textInputAction: TextInputAction.done,
+                                    onFieldSubmitted: (_) {
+                                      if (!_model.isLoading) {
+                                        _model.passwordFocusNode?.unfocus();
+                                        final username = _model.emailAddressTextController.text.trim();
+                                        final password = _model.passwordTextController.text;
+                                        if (username.isNotEmpty && password.isNotEmpty) {
+                                          // trigger the same login flow
+                                          _triggerLogin(context);
+                                        }
+                                      }
+                                    },
                                     decoration: InputDecoration(
                                       labelText: 'Password',
                                       labelStyle: FlutterFlowTheme.of(context)
@@ -440,50 +494,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget>
                                 child: FFButtonWidget(
                                   onPressed: _model.isLoading
                                       ? null
-                                      : () async {
-                                          // Validate empty fields
-                                          final username = _model.emailAddressTextController.text.trim();
-                                          final password = _model.passwordTextController.text;
-                                          if (username.isEmpty || password.isEmpty) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: const Text('Please fill in Username and Password'),
-                                                backgroundColor: const Color(0xFFEF4444),
-                                                behavior: SnackBarBehavior.floating,
-                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                              ),
-                                            );
-                                            return;
-                                          }
-
-                                          safeSetState(() => _model.isLoading = true);
-
-                                          _model.apiAuthResult = await AuthService().login(
-                                            username: username,
-                                            password: password,
-                                          );
-
-                                          if (!mounted) return;
-
-                                          if (_model.apiAuthResult?.succeeded ?? false) {
-                                            // Extract and store token
-                                            final body = _model.apiAuthResult!.jsonBody;
-                                            final token = body?['accessToken'] ?? body?['token'] ?? '';
-                                            AppState().authToken = token?.toString() ?? '';
-
-                                            context.goNamed(ListCameraPageWidget.routeName);
-                                          } else {
-                                            safeSetState(() => _model.isLoading = false);
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: const Text('Login failed. Please check your credentials.'),
-                                                backgroundColor: const Color(0xFFEF4444),
-                                                behavior: SnackBarBehavior.floating,
-                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                              ),
-                                            );
-                                          }
-                                        },
+                                      : () => _triggerLogin(context),
                                   text: _model.isLoading ? 'Loading...' : 'Log In',
                                   options: FFButtonOptions(
                                     width: double.infinity,

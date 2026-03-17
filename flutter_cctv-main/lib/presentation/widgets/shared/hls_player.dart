@@ -39,54 +39,68 @@ class HlsPlayer extends StatefulWidget {
 }
 
 class _HlsPlayerWebState extends State<HlsPlayer> {
+  // F3: use a global counter so simultaneous widgets never share a viewType,
+  // even when they are created in the same millisecond.
+  static int _counter = 0;
+
   late final String _viewType;
   String? _resolvedUrl;
   String? _error;
+  // F1: track whether we have already registered the platform-view factory
+  // so we never call registerViewFactory twice for the same _viewType.
+  bool _viewRegistered = false;
 
   @override
   void initState() {
     super.initState();
-    _viewType = 'hls-view-${DateTime.now().millisecondsSinceEpoch}';
+    _viewType = 'hls-view-${++_counter}';
     _initPlayer();
   }
 
-  /// ถ้า URL เป็น RTSP จะเรียก backend เพื่อแปลงเป็น HLS
+  /// เรียก backend ด้วย cameraId เพื่อ start HLS stream
+  /// backend จะไปดึง rtspUrl เองจาก Firebase
   Future<void> _initPlayer() async {
     try {
       final url = widget.hlsUrl.trim();
-      if (url.startsWith('rtsp://')) {
-        if (widget.streamName == null) {
-          setState(() => _error = 'missing_stream_name');
-          return;
-        }
 
-        final hlsUrl = await _requestHlsUrl(url, widget.streamName!);
-        setState(() => _resolvedUrl = hlsUrl);
-      } else {
-        // ถ้าเป็น HLS อยู่แล้ว
+      // ถ้าเป็น HLS URL อยู่แล้ว ใช้ได้เลย
+      if (url.startsWith('http') && url.contains('.m3u8')) {
         setState(() => _resolvedUrl = url);
+        return;
       }
+
+      // ต้องการ streamName (cameraId) เพื่อเรียก backend
+      if (widget.streamName == null || widget.streamName!.isEmpty) {
+        setState(() => _error = 'missing_stream_name');
+        return;
+      }
+
+      final hlsUrl = await _requestHlsUrl(widget.streamName!);
+      setState(() => _resolvedUrl = hlsUrl);
     } catch (e) {
       setState(() => _error = e.toString());
     }
   }
 
-  Future<String> _requestHlsUrl(String rtspUrl, String streamName) async {
+  /// POST /api/stream/hls/start ด้วย cameraId
+  /// backend จะดึง rtspUrl เองแล้ว return { "hlsUrl": "/api/hls/.../stream.m3u8" }
+  Future<String> _requestHlsUrl(String cameraId) async {
     final uri = Uri.parse('$kApiBaseUrl/api/stream/hls/start');
-    final body = jsonEncode({'streamName': streamName, 'rtspUrl': rtspUrl});
+    final body = jsonEncode({'cameraId': cameraId});
 
     debugPrint('[HlsPlayer] POST $uri body=$body');
 
     final resp = await http
         .post(uri, headers: {'Content-Type': 'application/json'}, body: body)
-        .timeout(const Duration(seconds: 10));
+        .timeout(const Duration(seconds: 15));
 
     debugPrint('[HlsPlayer] response ${resp.statusCode}: ${resp.body}');
 
     if (resp.statusCode >= 200 && resp.statusCode < 300) {
       try {
         final obj = jsonDecode(resp.body);
-        final path = obj['message'] ?? obj['url'] ?? obj['hls'] ?? resp.body;
+        // key ใหม่คือ 'hlsUrl', รองรับ key เก่าด้วยเผื่อ backward compat
+        final path = obj['hlsUrl'] ?? obj['message'] ?? obj['url'] ?? obj['hls'];
         if (path is String && path.isNotEmpty) {
           final resolved = path.startsWith('http') ? path : '$kApiBaseUrl$path';
           debugPrint('[HlsPlayer] resolved: $resolved');
@@ -98,7 +112,7 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
       }
       throw Exception('Invalid response: ${resp.body}');
     } else {
-      throw Exception('HTTP ${resp.statusCode}');
+      throw Exception('HTTP ${resp.statusCode}: ${resp.body}');
     }
   }
 
@@ -278,7 +292,12 @@ class _HlsPlayerWebState extends State<HlsPlayer> {
       return _unavailableWidget();
     }
 
-    _registerView(_resolvedUrl!);
+    // F1: only register the factory once — calling it again on every rebuild
+    // would create a fresh <iframe> on each repaint (double-stream bug).
+    if (!_viewRegistered) {
+      _registerView(_resolvedUrl!);
+      _viewRegistered = true;
+    }
 
     final w = widget.width ?? MediaQuery.of(context).size.width;
     final h = widget.height ?? w * 9 / 16;

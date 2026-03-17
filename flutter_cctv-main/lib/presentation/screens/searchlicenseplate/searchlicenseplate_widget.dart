@@ -99,14 +99,18 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
           });
 
         _model.totalItems = _model.listOfPlates.length;
-        _model.totalPages =
-            (_model.totalItems / ListPlatePageModel.pageSize).ceil().clamp(1, 9999);
+        _model.totalPages = ((_model.totalItems / ListPlatePageModel.pageSize)
+                .ceil())
+            .clamp(1, 9999)
+            .toInt();
       } else {
         debugPrint('API error: ${response.statusCode}');
         _model.listOfPlates = [];
+        _model.totalItems = 0;
+        _model.totalPages = 1;
       }
 
-      _model.currentPage = page;
+      _model.currentPage = page.clamp(1, _model.totalPages).toInt();
       _model.searchQuery = search;
     } catch (e) {
       debugPrint('Error fetching plates: $e');
@@ -154,17 +158,45 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
   }
 
   
-  /// "20260215_224822" → "15/02/2026 22:48:22"
+  /// Format timestamp to: dd/MM/yyyy HH:mm:ss
   static String _formatTimestamp(String raw) {
     try {
-      if (raw.length < 15) return raw;
-      final y = raw.substring(0, 4);
-      final mo = raw.substring(4, 6);
-      final d = raw.substring(6, 8);
-      final h = raw.substring(9, 11);
-      final mi = raw.substring(11, 13);
-      final s = raw.substring(13, 15);
-      return '$d/$mo/$y $h:$mi:$s';
+      final value = raw.trim();
+      if (value.isEmpty) return '-';
+
+      String two(int n) => n.toString().padLeft(2, '0');
+      String formatDateTime(DateTime dt) {
+        final local = dt.toLocal();
+        return '${two(local.day)}/${two(local.month)}/${local.year} ${two(local.hour)}:${two(local.minute)}:${two(local.second)}';
+      }
+
+      // Format: 20260215_224822
+      final compactMatch = RegExp(r'^(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})$')
+          .firstMatch(value);
+      if (compactMatch != null) {
+        final y = int.parse(compactMatch.group(1)!);
+        final mo = int.parse(compactMatch.group(2)!);
+        final d = int.parse(compactMatch.group(3)!);
+        final h = int.parse(compactMatch.group(4)!);
+        final mi = int.parse(compactMatch.group(5)!);
+        final s = int.parse(compactMatch.group(6)!);
+        return formatDateTime(DateTime(y, mo, d, h, mi, s));
+      }
+
+      // ISO formats from backend/Firestore: 2026-03-16T15:44:12+07:00
+      final parsed = DateTime.tryParse(value);
+      if (parsed != null) {
+        return formatDateTime(parsed);
+      }
+
+      // Already display format: 15/02/2026 22:43:35
+      final displayMatch = RegExp(r'^\d{2}/\d{2}/\d{4}\s\d{2}:\d{2}:\d{2}$')
+          .hasMatch(value);
+      if (displayMatch) {
+        return value;
+      }
+
+      return value;
     } catch (_) {
       return raw;
     }
@@ -204,7 +236,7 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
             child: NavBarMainWidget(),
           ),
           centerTitle: false,
-          toolbarHeight: MediaQuery.sizeOf(context).height * 0.05,
+          toolbarHeight: AppTextStyles.navBarHeight,
           elevation: 2,
         ),
         body: SafeArea(
@@ -274,7 +306,7 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
   TableRow _buildTableHeader(BuildContext context) {
     return TableRow(
       decoration: BoxDecoration(color: FlutterFlowTheme.of(context).primary),
-      children: ['Full License Plate', 'Camera ID', 'Timestamp', 'Image']
+      children: ['Full License Plate', 'Camera Name', 'Timestamp', 'Image']
           .map(
             (col) => TableCell(
               verticalAlignment: TableCellVerticalAlignment.middle,
@@ -297,14 +329,22 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
   }
 
   List<TableRow> _buildTableRows(BuildContext context) {
-    return _model.listOfPlates.asMap().entries.map((entry) {
+    final start = (_model.currentPage - 1) * ListPlatePageModel.pageSize;
+    final end = (start + ListPlatePageModel.pageSize)
+        .clamp(0, _model.listOfPlates.length)
+        .toInt();
+    final currentPageItems =
+        start >= _model.listOfPlates.length ? <Map<String, dynamic>>[] :
+        _model.listOfPlates.sublist(start, end);
+
+    return currentPageItems.asMap().entries.map((entry) {
       final i = entry.key;
       final item = entry.value;
 
       final plate = item['licensePlate'] as Map<String, dynamic>?;
       final fullPlate = plate?['fullPlate'] as String? ?? '-';
       final province = plate?['province'] as String? ?? '';
-      final cameraId = item['cameraId'] as String? ?? '-';
+      final cameraName = item['cameraName'] as String? ?? '-';
       final timestamp = item['timestamp'] as String? ?? '-';
       final imageUrl = item['imageUrl'] as String? ?? '';
 
@@ -316,10 +356,10 @@ class _ListPlatePageWidgetState extends State<ListPlatePageWidget> {
           // Full plate + province
           _PlateCell(fullPlate: fullPlate, province: province),
 
-          // Camera ID
+          // Camera Name
           _IconLabelCell(
             icon: Icons.videocam_outlined,
-            label: cameraId,
+            label: cameraName,
             fontSize: AppTextStyles.tableCell,
           ),
 
@@ -761,7 +801,7 @@ class _PlateCell extends StatelessWidget {
   }
 }
 
-/// A cell with a leading icon and a text label (used for cameraId & timestamp)
+/// A cell with a leading icon and a text label (used for cameraName & timestamp)
 class _IconLabelCell extends StatelessWidget {
   final IconData icon;
   final String label;

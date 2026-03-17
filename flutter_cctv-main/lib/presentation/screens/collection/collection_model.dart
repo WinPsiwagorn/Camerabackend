@@ -17,10 +17,6 @@ class CollectionModel extends FlutterFlowModel<CollectionWidget> {
 
   bool? isMenuOpen;
 
-  bool filterAssignedCategory = false;
-  
-  bool filterUnassignedCategory = false;
-
   Map<String, bool> expandedCategories = {};
 
   List<String> selectedCameras = [];

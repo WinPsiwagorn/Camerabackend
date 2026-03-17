@@ -8,13 +8,20 @@ import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+
+import com.backendcam.backendcam.model.entity.Camera;
+import com.backendcam.backendcam.repository.CameraRepository;
 
 @Service
 @RequiredArgsConstructor
 public class LicensePlateService {
 
     private final LicensePlateRepository licensePlateRepository;
+    private final CameraRepository cameraRepository;
 
     private static final int FUZZY_THRESHOLD = 60;
     private static final int MAX_RESULTS = 10;
@@ -119,10 +126,60 @@ public class LicensePlateService {
                         .collect(Collectors.toList());
             }
 
+            // --- Step 4: Populate camera documents based on cameraId ---
+            populateCameras(results);
+
             return results;
         } catch (Exception e) {
             throw new RuntimeException("Failed to search license plates", e);
         }
+    }
+
+    /**
+     * Populate each LicensePlate's `camera` field using its `cameraId` in a batch-optimized way.
+     */
+    private void populateCameras(List<LicensePlate> plates) throws ExecutionException, InterruptedException {
+        // Collect distinct non-null camera IDs
+        List<String> ids = plates.stream()
+                .map(LicensePlate::getCameraId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (ids.isEmpty()) {
+            return;
+        }
+
+        Map<String, Camera> cache = ids.stream()
+                .map(id -> {
+                    try {
+                        return cameraRepository.getCameraById(id)
+                                .map(cam -> Map.entry(id, cam))
+                                .orElse(null);
+                    } catch (Exception e) {
+                        return null; // ignore individual failures
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        // Assign a trimmed camera object (id, name, latLong, address, status only) back to each plate
+        plates.forEach(p -> {
+            String camId = p.getCameraId();
+            if (camId != null) {
+                Camera full = cache.get(camId);
+                if (full != null) {
+                    Camera trimmed = new Camera();
+                    trimmed.setId(full.getId());
+                    trimmed.setName(full.getName());
+                    trimmed.setLatLong(full.getLatLong());
+                    trimmed.setAddress(full.getAddress());
+                    trimmed.setStatus(full.getStatus());
+                    // rtspUrl, categories, lastSeen are intentionally omitted
+                    p.setCamera(trimmed);
+                }
+            }
+        });
     }
 
     private String normalize(String input) {

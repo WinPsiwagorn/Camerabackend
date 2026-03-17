@@ -66,13 +66,9 @@ public class SaveMotionFrameService {
     public void uploadMotionFrame(Frame frame, String cameraId) {
         if (!bootstrap.isInitialized()) return;
 
-        try {
-            BufferedImage image = deepCopyFrameToImage(frame);
-            if (image == null) return;
-            uploadBufferedImage(image, cameraId);
-        } catch (Exception e) {
-            throw new RuntimeException("Upload frame to Firebase Storage failed", e);
-        }
+        BufferedImage image = deepCopyFrameToImage(frame);
+        if (image == null) return;
+        uploadBufferedImage(image, cameraId);
     }
 
     /**
@@ -83,11 +79,7 @@ public class SaveMotionFrameService {
         if (!bootstrap.isInitialized()) return;
         if (image == null) return;
 
-        try {
-            uploadBufferedImage(image, cameraId);
-        } catch (Exception e) {
-            throw new RuntimeException("Upload BufferedImage to Firebase Storage failed", e);
-        }
+        uploadBufferedImage(image, cameraId);
     }
 
     /**
@@ -95,30 +87,47 @@ public class SaveMotionFrameService {
      * After a successful upload, fires a MotionEvent to Kafka so downstream
      * consumers (accident-ai, license-plate, etc.) are notified automatically.
      */
-    private void uploadBufferedImage(BufferedImage image, String cameraId) throws Exception {
+    private void uploadBufferedImage(BufferedImage image, String cameraId) {
         byte[] bytes;
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             ImageIO.write(image, "jpg", baos);
             bytes = baos.toByteArray();
+        } catch (Exception e) {
+            log.error("Failed to encode image to JPEG for camera {}: {}", cameraId, e.getMessage());
+            return;
         }
 
         String path = "motion/" + cameraId + "/" + System.currentTimeMillis() + ".jpg";
+        String url;
 
-        Bucket bucket = StorageClient.getInstance().bucket();
-        Blob blob = bucket.create(path, bytes, "image/jpeg");
+        // Firebase Upload
+        try {
+            Bucket bucket = StorageClient.getInstance().bucket();
+            Blob blob = bucket.create(path, bytes, "image/jpeg");
 
-        String url = "https://storage.googleapis.com/"
-                + bucket.getName() + "/"
-                + blob.getName();
+            url = "https://storage.googleapis.com/"
+                    + bucket.getName() + "/"
+                    + blob.getName();
 
-        log.info("Motion frame uploaded for camera {}", cameraId);
+            log.info("Motion frame uploaded for camera {}", cameraId);
 
-        motionEventProducer.send(MotionEvent.builder()
-                .cameraId(cameraId)
-                .timestamp(System.currentTimeMillis())
-                .imageUrl(url)
-                .build());
-        
-        log.info("Kafka event sent for camera {}", cameraId);
+        } catch (Exception e) {
+            log.error("Firebase upload failed for camera {}: {}", cameraId, e.getMessage());
+            return;
+        }
+
+        // Kafka Send - separate try-catch so Firebase success isn't wasted
+        try {
+            motionEventProducer.send(MotionEvent.builder()
+                    .cameraId(cameraId)
+                    .timestamp(System.currentTimeMillis())
+                    .imageUrl(url)
+                    .build());
+            
+            log.info("Kafka event sent for camera {}", cameraId);
+
+        } catch (Exception e) {
+            log.error("Kafka send failed for camera {}: {}", cameraId, e.getMessage(), e);
+        }
     }
 }

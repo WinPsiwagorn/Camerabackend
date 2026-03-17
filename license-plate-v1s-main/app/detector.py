@@ -188,6 +188,7 @@ class LicensePlateDetector:
         use_ocr: Optional[bool] = None,
         kafka_timestamp: Optional[str] = None,
         image_url: Optional[str] = None,
+        camera_name: Optional[str] = None,
         camera_id: Optional[str] = None
     ) -> Dict:
         """
@@ -200,6 +201,7 @@ class LicensePlateDetector:
             use_ocr: ใช้ OCR หรือไม่ (ถ้าไม่ได้ระบุ จะใช้ค่าจากการตั้งค่าเริ่มต้น)
             kafka_timestamp: timestamp จาก Kafka message
             image_url: URL ของภาพต้นฉบับจาก Kafka
+            camera_name: ชื่อของกล้องที่ส่งภาพมา
             camera_id: ID ของกล้องที่ส่งภาพมา
         
         Returns:
@@ -268,6 +270,7 @@ class LicensePlateDetector:
             "timestamp": timestamp_iso,
             "kafka_timestamp": kafka_timestamp,
             "imageUrl": image_url,
+            "cameraName": camera_name,
             "cameraId": camera_id,
             "detections": detections,
             "total_plates": len(detections),
@@ -610,12 +613,14 @@ class LicensePlateDetector:
         docs = []
         timestamp = output_data.get("timestamp")
         imageUrl = output_data.get("imageUrl")
+        cameraName = output_data.get("cameraName")
         cameraId = output_data.get("cameraId")
         for det in output_data.get("detections", []):
             ocr = det.get("ocr", {})
             doc = {
                 "timestamp": timestamp,
                 "imageUrl": imageUrl,
+                "cameraName": cameraName,
                 "cameraId": cameraId,
                 "licensePlate": {
                     "fullPlate": ocr.get("full_plate", ""),

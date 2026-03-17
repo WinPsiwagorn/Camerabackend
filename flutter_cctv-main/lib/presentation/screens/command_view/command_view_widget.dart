@@ -51,6 +51,7 @@ class _CommandViewWidgetState extends State<CommandViewWidget> {
             SliverAppBar(
               pinned: false,
               floating: false,
+              toolbarHeight: AppTextStyles.navBarHeight,
               backgroundColor: Colors.white,
               iconTheme: IconThemeData(color: Color(0xFFD6C6C6)),
               automaticallyImplyLeading: false,
