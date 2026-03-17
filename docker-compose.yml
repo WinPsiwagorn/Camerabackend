@@ -13,7 +13,7 @@ services:
       GOOGLE_APPLICATION_CREDENTIALS: "/secrets/serviceAccount.json"
       SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
       FIREBASE_CREDENTIALS_PATH: "file:/secrets/serviceAccount.json"
-      JAVA_OPTS: "-Xmx3g -Xms1g -XX:MaxDirectMemorySize=2g"
+      JAVA_OPTS: "-Xms3G -Xmx3G -XX:MaxDirectMemorySize=2G -Xss512k -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
     volumes:
       - ./main-gateway/hls:/hls
       - ./main-gateway/secrets/serviceAccount.json:/secrets/serviceAccount.json:ro

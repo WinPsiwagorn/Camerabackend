@@ -299,11 +299,12 @@ class FFmpegRecorderConfig {
 
         // HLS specific settings for HD - Optimized for Low Latency
         recorder.setOption("hls_time", String.valueOf(hlsTime)); // segment duration
-        recorder.setOption("hls_list_size", "6"); // 5s buffer — resilient against encode hiccups without too much delay
-        recorder.setOption("hls_delete_threshold", "1");
+        recorder.setOption("hls_list_size", "5"); // 5s buffer — resilient against encode hiccups without too much delay
+        recorder.setOption("hls_delete_threshold", "1"); // keep 1 segment before deleting old ones
         recorder.setOption("hls_allow_cache", "0");
+        //recorder.setOption("hls_version", "3"); 
         recorder.setOption("hls_segment_type", "mpegts");
-        recorder.setOption("hls_flags", "delete_segments+omit_endlist+temp_file+independent_segments");
+        recorder.setOption("hls_flags", "delete_segments+omit_endlist");//+temp_file+independent_segments
 
         // Segment filename pattern - use normalized path
         String segPath = normalizedPath + "/s%04d.ts";
