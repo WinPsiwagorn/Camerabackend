@@ -32,8 +32,8 @@ class FFmpegRecorderConfig {
     private static final int HD_VIDEO_BITRATE_1080P = 4500_000; // 4.5 Mbps for 1080p
     private static final int HD_CRF_QUALITY = 23; // Balanced quality for faster encoding
 
-    private static final int 2K_TARGET_FPS= 15;
-    private static final int 2K_HLS_TIME = 1; // 2-second segments for 2K to allow more time for encoding
+    private static final int TARGET_FPS_2K= 15;
+    private static final int HLS_TIME_2K = 1; // 2-second segments for 2K to allow more time for encoding
     private static final int VIDEO_BITRATE_2K = 10_000_000; // 10 Mbps for 2K resolution
     private static final int CRF_QUALITY_2K = 25; // Slightly higher CRF for 2K to reduce CPU load while maintaining good quality
 
@@ -252,7 +252,7 @@ class FFmpegRecorderConfig {
         // Normalize path to forward slashes for FFmpeg compatibility
         String normalizedPath = outputDir.getAbsolutePath().replace('\\', '/');
 
-        boolean is4K = (height > 1080);
+        boolean is4K = (height > 2160);
         boolean is2K = (height > 1080 && height <= 2160);
         boolean is1080p = (height == 1080);
         // boolean is720p = (height <= 720);
@@ -262,10 +262,10 @@ class FFmpegRecorderConfig {
                                 : HD_VIDEO_BITRATE_720P;
 
         int targetFPS = is4K ? UHD_TARGET_FPS
-                            : is2K ? 2K_TARGET_FPS
+                            : is2K ? TARGET_FPS_2K
                                 : HD_TARGET_FPS;
         int hlsTime = is4K ? UHD_HLS_TIME 
-                                : is2K ? 2K_HLS_TIME
+                                : is2K ? HLS_TIME_2K
                                     : HD_HLS_TIME;
         int crfQuality = is4K ? UHD_CRF_QUALITY 
                             : is2K ? CRF_QUALITY_2K
@@ -273,23 +273,8 @@ class FFmpegRecorderConfig {
         // Determine output resolution dynamically based on input height
         // Downscales to the appropriate target rather than hardcoding 1920x1080
 
-        int targetWidth;
-        int targetHeight;
-
-        if (is4K) {
-            
-            // 4K input → output true 4K (no downscale)
-            targetWidth = 3840;
-            targetHeight = 2160;
-        } else if (is1080p) {
-            // 1080p input → output 1080p
-            targetWidth = 1920;
-            targetHeight = 1080;
-        } else {
-            // 720p or below → output native resolution, no upscale
-            targetWidth = width;
-            targetHeight = height;
-        }
+           int targetWidth  = width;
+           int targetHeight = height;
 
         recorder.setImageWidth(targetWidth);
         recorder.setImageHeight(targetHeight);
