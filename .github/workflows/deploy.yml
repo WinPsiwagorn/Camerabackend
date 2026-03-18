@@ -1,4 +1,4 @@
-name: Deploy to server via Cloudflare SSH
+name: Deploy to server via SSH
 
 on:
   push:
@@ -12,16 +12,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Run commands on remote via Cloudflare Tunnel
-        uses: and-fm/cloudflared-ssh-action@v3
+      - name: Run commands on remote via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HOST }}       # Cloudflare Tunnel hostname
-          username: ${{ secrets.USER }}   # SSH user
-          private_key_filename: "id_rsa"
-          private_key_value: ${{ secrets.SSH_KEY }}
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script_stop: true
 
-          # คำสั่งที่มึงจะรันบน remote
-          commands: |
+          script: |
             set -e
 
             APP_DIR=/home/se-lab/Github/CCTVbackend/cctv-prod/Chiang-rai-cctv
