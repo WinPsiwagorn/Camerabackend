@@ -278,12 +278,12 @@ public class FFmpegGrabberConfig {
         // HD requires larger probe settings for proper codec detection
         // Especially important for high-bitrate HEVC/H.265 streams
         grabber.setOption("analyzeduration", "2000000"); // 2 seconds - reduced for faster startup
-        grabber.setOption("probesize", "5000000"); // 5MB - balanced for HD detection
+        grabber.setOption("probesize", "10000000"); // 10MB - balanced for HD detection
         grabber.setOption("max_delay", "500000"); // 500ms max delay
         grabber.setOption("reorder_queue_size", "0"); // No reordering for lower latency
 
-        // Flags configuration for HD streaming with minimum buffering igndts+ +flush_packets
-        grabber.setOption("fflags", "+nobuffer+discardcorrupt+igndts+genpts+flush_packets");
+        // Flags configuration for HD streaming with minimum buffering igndts+ +flush_packets+nobuffer
+        grabber.setOption("fflags", "+discardcorrupt+igndts+genpts+flush_packets");
         grabber.setOption("flags", "low_delay");
 
         // RTSP specific settings
@@ -297,7 +297,7 @@ public class FFmpegGrabberConfig {
         grabber.setOption("use_wallclock_as_timestamps", "1");
 
         // Reduced buffer size for lower latency
-        grabber.setOption("buffer_size", "5000000"); // 512KB buffer for lower latency
+        grabber.setOption("buffer_size", "67108864"); 
         
         grabber.setOption("err_detect", "ignore_err");
 
