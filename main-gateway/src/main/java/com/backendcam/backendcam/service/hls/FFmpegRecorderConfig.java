@@ -32,6 +32,11 @@ class FFmpegRecorderConfig {
     private static final int HD_VIDEO_BITRATE_1080P = 4500_000; // 4.5 Mbps for 1080p
     private static final int HD_CRF_QUALITY = 23; // Balanced quality for faster encoding
 
+    private static final int 2K_TARGET_FPS= 15;
+    private static final int 2K_HLS_TIME = 1; // 2-second segments for 2K to allow more time for encoding
+    private static final int VIDEO_BITRATE_2K = 10_000_000; // 10 Mbps for 2K resolution
+    private static final int CRF_QUALITY_2K = 25; // Slightly higher CRF for 2K to reduce CPU load while maintaining good quality
+
     // FPS is kept at 15 — encoding true 4K at 30fps realtime requires dedicated
     // hardware (NVENC/VAAPI)
     private static final int UHD_TARGET_FPS = 15; // 15fps — max stable for software 4K encoding
@@ -248,15 +253,23 @@ class FFmpegRecorderConfig {
         String normalizedPath = outputDir.getAbsolutePath().replace('\\', '/');
 
         boolean is4K = (height > 1080);
+        boolean is2K = (height > 1080 && height <= 2160);
         boolean is1080p = (height == 1080);
         // boolean is720p = (height <= 720);
         int bitrate = is4K ? UHD_VIDEO_BITRATE_2160P
-                : is1080p ? HD_VIDEO_BITRATE_1080P
-                        : HD_VIDEO_BITRATE_720P;
+                        : is2K ? VIDEO_BITRATE_2K
+                            : is1080p ? HD_VIDEO_BITRATE_1080P
+                                : HD_VIDEO_BITRATE_720P;
 
-        int targetFPS = is4K ? UHD_TARGET_FPS : HD_TARGET_FPS;
-        int hlsTime = is4K ? UHD_HLS_TIME : HD_HLS_TIME;
-        int crfQuality = is4K ? UHD_CRF_QUALITY : HD_CRF_QUALITY;
+        int targetFPS = is4K ? UHD_TARGET_FPS
+                            : is2K ? 2K_TARGET_FPS
+                                : HD_TARGET_FPS;
+        int hlsTime = is4K ? UHD_HLS_TIME 
+                                : is2K ? 2K_HLS_TIME
+                                    : HD_HLS_TIME;
+        int crfQuality = is4K ? UHD_CRF_QUALITY 
+                            : is2K ? CRF_QUALITY_2K
+                                : HD_CRF_QUALITY;
         // Determine output resolution dynamically based on input height
         // Downscales to the appropriate target rather than hardcoding 1920x1080
 
@@ -314,7 +327,7 @@ class FFmpegRecorderConfig {
         // control
         // Keeping this hardcoded ensures each camera gets equal, controlled CPU
         // allocation
-        recorder.setOption("threads", "2");
+        recorder.setOption("threads", "1");
         //recorder.setOption("threads", is4K ? "4" : "2");
 
 
@@ -323,7 +336,7 @@ class FFmpegRecorderConfig {
         // realtime at HD resolution
         // "superfast" removes that lookahead pressure while still producing acceptable
         // HD quality
-        recorder.setOption("preset", "superfast");
+        recorder.setOption("preset", "ultrafast"); // "superfast" is a good balance for HD on limited CPU, "ultrafast" for max speed with lower quality
 
         recorder.setOption("tune", "zerolatency"); // Critical for live streaming
         recorder.setOption("bf", "0"); // No B-frames for lower latency

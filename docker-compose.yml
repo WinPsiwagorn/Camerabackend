@@ -13,7 +13,13 @@ services:
       GOOGLE_APPLICATION_CREDENTIALS: "/secrets/serviceAccount.json"
       SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
       FIREBASE_CREDENTIALS_PATH: "file:/secrets/serviceAccount.json"
-      JAVA_OPTS: "-Xms3G -Xmx3G -XX:MaxDirectMemorySize=2G -Xss512k -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+      JAVA_OPTS: >-
+        -Xms2G -Xmx2G
+        -XX:MaxDirectMemorySize=3G
+        -XX:MaxMetaspaceSize=256M
+        -Xss512k
+        -XX:+UseG1GC
+        -XX:MaxGCPauseMillis=200
     volumes:
       - ./main-gateway/hls:/hls
       - ./main-gateway/secrets/serviceAccount.json:/secrets/serviceAccount.json:ro
@@ -25,7 +31,7 @@ services:
       resources:
         limits:
           cpus: '8'
-          memory: 6G
+          memory: 8G
         reservations:
           cpus: '2'
           memory: 2G

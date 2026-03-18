@@ -161,6 +161,7 @@ public class HLSStreamService {
                                                 streamName, reconnectAttempts, MAX_RECONNECT_ATTEMPTS);
                                         try {
                                             grabberConfig.safeClose(grabber);
+                                            recorderConfig.safeClose(context.recorder);  
                                             // Fetch fresh RTSP URL from Firebase in case it was updated
                                             String freshUrl = fetchRtspUrlFromFirebase(streamName, currentRtspUrl.get());
                                             currentRtspUrl.set(freshUrl);
@@ -171,6 +172,7 @@ public class HLSStreamService {
                                             // grabber = grabberConfig.startGrabberWithRetry(currentRtspUrl.get(), streamName, context);
                                             // HD Configuration
                                             grabber = grabberConfig.startGrabberWithRetryHD(currentRtspUrl.get(), streamName, context);
+                                            recorder = recorderConfig.startRecorderWithRetryHD(hlsOutput, outputDir, width, height, streamName, context);
                                             nullFrameCount = 0;
                                             logger.info("Stream {} - Reconnected successfully", streamName);
                                         } catch (Exception reconnectEx) {

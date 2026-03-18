@@ -278,7 +278,7 @@ public class FFmpegGrabberConfig {
         // HD requires larger probe settings for proper codec detection
         // Especially important for high-bitrate HEVC/H.265 streams
         grabber.setOption("analyzeduration", "2000000"); // 2 seconds - reduced for faster startup
-        grabber.setOption("probesize", "15000000"); // 5MB - balanced for HD detection
+        grabber.setOption("probesize", "5000000"); // 5MB - balanced for HD detection
         grabber.setOption("max_delay", "500000"); // 500ms max delay
         grabber.setOption("reorder_queue_size", "0"); // No reordering for lower latency
 
